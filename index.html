@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>MT3608 SEPIC Voltage Calculator</title>
+	<style>
+		body {
+			font-family: Arial, sans-serif;
+			background-color: #f0f0f0;
+		}
+		.container {
+			max-width: 400px;
+			margin: 40px auto;
+			padding: 20px;
+			background-color: #fff;
+			border: 1px solid #ddd;
+			border-radius: 10px;
+			box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+		}
+		.form-group {
+			margin-bottom: 20px;
+		}
+		.form-group label {
+			display: block;
+			margin-bottom: 10px;
+		}
+		.form-group select {
+			width: 100%;
+			padding: 10px;
+			margin-bottom: 10px;
+			border: 1px solid #ccc;
+			border-radius: 5px;
+		}
+		.button {
+			background-color: #4CAF50;
+			color: #fff;
+			padding: 10px 20px;
+			border: none;
+			border-radius: 5px;
+			cursor: pointer;
+		}
+		.button:hover {
+			background-color: #3e8e41;
+		}
+		#result {
+			margin-top: 20px;
+			font-size: 24px;
+			font-weight: bold;
+		}
+	</style>
+</head>
+<body>
+	<div class="container">
+		<h1>MT3608 SEPIC Voltage Calculator</h1>
+		<p>This calculator is based on the design by <a href="https://github.com/wagiminator/Power-Boards/tree/master/SEPIC_MT3608" target="_blank">WAGIMINATOR</a>.</p>
+		<form>
+			<div class="form-group">
+				<label for="r1">R1 (Ohms):</label>
+				<select id="r1">
+                                        <option value="1000">1KΩ</option>
+                                        <option value="1200">1K2Ω</option>
+                                        <option value="1500">1K5Ω</option>
+                                        <option value="1800">1K8Ω</option>
+                                        <option value="2200">2K2Ω</option>
+                                        <option value="2700">2K7Ω</option>
+                                        <option value="3300">3K3Ω</option>
+                                        <option value="3900">3K9Ω</option>
+                                        <option value="4700">4K7Ω</option>
+                                        <option value="5100">5K1Ω</option>
+                                        <option value="5600">5K6Ω</option>
+                                        <option value="6800">6K8Ω</option>
+                                        <option value="8200">8K2Ω</option>
+                                        <option value="10000">10KΩ</option>
+                                        <option value="12000">12KΩ</option>
+                                        <option value="15000">15KΩ</option>
+                                        <option value="18000">18KΩ</option>
+                                        <option value="22000">22KΩ</option>
+                                        <option value="27000">27KΩ</option>
+                                        <option value="33000">33KΩ</option>
+                                        <option value="39000">39KΩ</option>
+                                        <option value="47000">47KΩ</option>
+                                        <option value="51000">51KΩ</option>
+                                        <option value="56000">56KΩ</option>
+                                        <option value="68000">68KΩ</option>
+                                        <option value="82000">82KΩ</option>
+                                        <option value="100000">100KΩ</option>
+                                        <option value="120000">120KΩ</option>
+                                        <option value="150000">150KΩ</option>
+                                        <option value="180000">180KΩ</option>
+                                        <option value="220000">220KΩ</option>
+                                        <option value="270000">270KΩ</option>
+                                        <option value="330000">330KΩ</option>
+                                        <option value="390000">390KΩ</option>
+                                        <option value="470000">470KΩ</option>
+                                        <option value="510000">510KΩ</option>
+                                        <option value="560000">560KΩ</option>
+                                        <option value="680000">680KΩ</option>
+                                        <option value="820000">820KΩ</option>
+                                        <option value="1000000">1MΩ</option>
+                                        <option value="1200000">1M2Ω</option>
+                                        <option value="1500000">1M5Ω</option>
+                                        <option value="1800000">1M8Ω</option>
+                                        <option value="2200000">2M2Ω</option>
+                                        <option value="2700000">2M7Ω</option>
+                                        <option value="3300000">3M3Ω</option>
+                                        <option value="3900000">3M9Ω</option>
+                                        <option value="4700000">4M7Ω</option>
+                                        <option value="5100000">5M1Ω</option>
+                                        <option value="5600000">5M6Ω</option>
+                                        <option value="6800000">6M8Ω</option>
+                                        <option value="8200000">8M2Ω</option>
+                                        <option value="10000000">10MΩ</option>
+					<!-- ... -->
+				</select>
+			</div>
+			<div class="form-group">
+				<label for="r2">R2 (Ohms):</label>
+				<select id="r2">
+                                        <option value="1000">1KΩ</option>
+                                        <option value="1200">1K2Ω</option>
+                                        <option value="1500">1K5Ω</option>
+                                        <option value="1800">1K8Ω</option>
+                                        <option value="2200">2K2Ω</option>
+                                        <option value="2700">2K7Ω</option>
+                                        <option value="3300">3K3Ω</option>
+                                        <option value="3900">3K9Ω</option>
+                                        <option value="4700">4K7Ω</option>
+                                        <option value="5100">5K1Ω</option>
+                                        <option value="5600">5K6Ω</option>
+                                        <option value="6800">6K8Ω</option>
+                                        <option value="8200">8K2Ω</option>
+                                        <option value="10000">10KΩ</option>
+                                        <option value="12000">12KΩ</option>
+                                        <option value="15000">15KΩ</option>
+                                        <option value="18000">18KΩ</option>
+                                        <option value="22000">22KΩ</option>
+                                        <option value="27000">27KΩ</option>
+                                        <option value="33000">33KΩ</option>
+                                        <option value="39000">39KΩ</option>
+                                        <option value="47000">47KΩ</option>
+                                        <option value="51000">51KΩ</option>
+                                        <option value="56000">56KΩ</option>
+                                        <option value="68000">68KΩ</option>
+                                        <option value="82000">82KΩ</option>
+                                        <option value="100000">100KΩ</option>
+                                        <option value="120000">120KΩ</option>
+                                        <option value="150000">150KΩ</option>
+                                        <option value="180000">180KΩ</option>
+                                        <option value="220000">220KΩ</option>
+                                        <option value="270000">270KΩ</option>
+                                        <option value="330000">330KΩ</option>
+                                        <option value="390000">390KΩ</option>
+                                        <option value="470000">470KΩ</option>
+                                        <option value="510000">510KΩ</option>
+                                        <option value="560000">560KΩ</option>
+                                        <option value="680000">680KΩ</option>
+                                        <option value="820000">820KΩ</option>
+                                        <option value="1000000">1MΩ</option>
+                                        <option value="1200000">1M2Ω</option>
+                                        <option value="1500000">1M5Ω</option>
+                                        <option value="1800000">1M8Ω</option>
+                                        <option value="2200000">2M2Ω</option>
+                                        <option value="2700000">2M7Ω</option>
+                                        <option value="3300000">3M3Ω</option>
+                                        <option value="3900000">3M9Ω</option>
+                                        <option value="4700000">4M7Ω</option>
+                                        <option value="5100000">5M1Ω</option>
+                                        <option value="5600000">5M6Ω</option>
+                                        <option value="6800000">6M8Ω</option>
+                                        <option value="8200000">8M2Ω</option>
+                                        <option value="10000000">10MΩ</option>
+					<!-- ... -->
+				</select>
+			</div>
+			<div class="form-group">
+				<label for="vref">Voltage Reference (V):</label>
+				<select id="vref">
+					<option value="0.6">0.6</option>
+					<option value="0.7">0.7</option>
+					<option value="0.8">0.8</option>
+					<option value="0.9">0.9</option>
+				</select>
+			</div>
+			<button type="button" class="button" onclick="calculateVoltage()">Calculate Voltage</button>
+			<button type="button" class="button" onclick="findCombinations()">Find Combinations</button>
+			<p id="result"></p>
+			<p id="combinations"></p>
+		</form>
+	</div>
+
+<script>
+  const resistanceValues = [
+    			1000, 1200, 1500, 1800, 2200, 2700, 3300, 3900, 4700, 5100, 5600, 6800, 8200, 10000, 12000, 15000, 18000, 22000, 27000, 33000, 39000, 47000, 51000, 56000, 68000, 82000,
+			100000, 120000, 150000, 180000, 220000, 270000, 330000, 390000, 470000, 510000, 560000, 680000, 820000, 1000000, 1200000, 1500000, 1800000, 2200000, 2700000, 3300000, 3900000, 4700000, 5100000, 5600000, 6800000, 8200000, 10000000
+  ];
+
+  // Function to calculate output voltage
+  function calculateVoltage() {
+    // Get values of R1, R2, and Vref from the dropdown menus
+    const r1 = parseFloat(document.getElementById('r1').value);
+    const r2 = parseFloat(document.getElementById('r2').value);
+    const vref = parseFloat(document.getElementById('vref').value);
+    // Calculate output voltage using the formula
+    const vout = vref * ((r1 + r2) / r1);
+    // Display result in the paragraph
+    document.getElementById('result').innerHTML = `The output voltage is: ${vout.toFixed(2)} V`;
+  }
+
+  // Function to find combinations of R1 and R2 that meet the voltage requirements
+  function findCombinations() {
+    // Get minimum and maximum voltage values from user input
+    const vmin = parseFloat(prompt("Enter minimum voltage (V):"));
+    const vmax = parseFloat(prompt("Enter maximum voltage (V):"));
+    // Get Vref value from the dropdown menu
+    const vref = parseFloat(document.getElementById('vref').value);
+    // Initialize array of combinations
+    const combinations = [];
+    // Loop to iterate over R1 and R2 values
+    for (let i = 0; i < resistanceValues.length; i++) {
+      for (let j = 0; j < resistanceValues.length; j++) {
+        const r1 = resistanceValues[i];
+        const r2 = resistanceValues[j];
+        // Calculate output voltage using the formula
+        const vout = vref * ((r1 + r2) / r1);
+        // Check if voltage is within the required range
+        if (vout >= vmin && vout <= vmax) {
+          // Add combination to the array
+          combinations.push(`Vout: ${vout.toFixed(2)}V, R1: ${formatResistance(r1)}Ω, R2: ${formatResistance(r2)}Ω`);
+        }
+      }
+    }
+    // After generating all combinations
+    combinations.sort((a, b) => {
+      // Extract voltages from each combination string
+      const voutA = parseFloat(a.split('Vout: ')[1]);
+      const voutB = parseFloat(b.split('Vout: ')[1]);
+
+      // Compare voltages and sort in ascending order
+      return voutA - voutB;
+    });
+
+    // Display combinations in paragraph
+    document.getElementById('combinations').innerHTML = combinations.join('<br>');
+  }
+
+  // Function to format resistance
+  function formatResistance(resistance) {
+    if (resistance >= 1000000) {
+      return parseFloat((resistance / 1000000).toFixed(2)).toString() + 'M';
+    } else if (resistance >= 1000) {
+      return parseFloat((resistance / 1000).toFixed(2)).toString() + 'K';
+    } else {
+      return resistance.toString();
+    }
+  }
+</script>
+</body>
+</html>
