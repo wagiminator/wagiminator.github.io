@@ -10,6 +10,7 @@ assets/css/site.css     Shared styles and color tokens for all pages
 apps/
   _template/            Starting point for a new app (not published)
   d64-viewer/           D64 Disk Viewer
+  d64-editor/           D64 Disk Editor
   mt3608-sepic/         MT3608 SEPIC Voltage Calculator
 mt3608_sepic.html       Redirect for the calculator's old address
 ```
@@ -43,3 +44,17 @@ Turns a Commodore 64 disk image into a picture of the floppy disk. Every ring is
 - Files are read locally with the FileReader API; nothing is uploaded.
 
 Code: `d64.js` parses and draws the image (no dependencies), `app.js` is the user interface.
+
+### D64 Disk Editor
+
+Edits Commodore 64 disk images: add and remove files, arrange the directory, add separator lines, defragment and save.
+
+- Starts with an empty disk; New disk creates 35 or 40 track (SpeedDOS) images, Open loads an existing .d64 (35, 40 or 42 tracks).
+- Add files by button or drag and drop; PC64 files (.P00, .S00, .U00) keep their C64 name. Files can be extracted again.
+- New files are placed like the 1541 DOS does it: starting on the free track nearest to the directory track 18 where the whole file fits, then sector by sector with the chosen interleave (10 = 1541 standard).
+- Directory: reorder by drag and drop, buttons or Alt+arrow keys; separator lines are DEL entries without data. Names can contain C64 graphics characters, the number of blocks shown for separators can be set freely.
+- Defragment rewrites all PRG, SEQ and USR files so that each one lies on consecutive tracks next to the directory. REL files and used sectors that belong to no file (custom loaders, copy protection) stay where they are.
+- Shows blocks free, directory usage, split files and a sector map of the whole disk. Undo and redo for every change.
+- Saved images have no error info.
+
+Code: `d64edit.js` is the disk library (no dependencies, also runs in Node.js), `app.js` is the user interface.

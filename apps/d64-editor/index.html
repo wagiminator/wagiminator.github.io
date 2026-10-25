@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>D64 Disk Editor</title>
+  <meta name="description" content="Edit Commodore 64 disk images (.d64) in your browser: add and remove files, arrange the directory, add separator lines, defragment and save.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chivo:wght@400;700&family=Press+Start+2P&display=swap">
+  <link rel="stylesheet" href="../../assets/css/site.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav class="site-bar" aria-label="Breadcrumb">
+    <a href="../../">wagiminator</a><span class="sep">/</span><span>Apps</span><span class="sep">/</span><span>D64 Disk Editor</span>
+  </nav>
+
+  <main class="app">
+    <header class="app-head">
+      <h1>D64 Disk Editor</h1>
+      <p>Add and remove files on a Commodore 64 disk image, arrange the directory, add separator lines and save the result. Files are placed the way the 1541 does it: next to the directory track, sector by sector with an interleave. Everything happens in your browser.</p>
+    </header>
+
+    <div class="toolbar" role="toolbar" aria-label="Disk">
+      <div class="tool-group">
+        <button type="button" class="btn" id="btn-new">New disk</button>
+        <button type="button" class="btn" id="btn-open">Open .d64</button>
+      </div>
+      <div class="tool-group">
+        <button type="button" class="btn" id="btn-add">Add files</button>
+        <button type="button" class="btn" id="btn-sep">Add separator</button>
+      </div>
+      <div class="tool-group">
+        <button type="button" class="btn btn-icon" id="btn-undo" title="Undo (Ctrl+Z)" aria-label="Undo">↶</button>
+        <button type="button" class="btn btn-icon" id="btn-redo" title="Redo (Ctrl+Y)" aria-label="Redo">↷</button>
+      </div>
+      <div class="tool-group tool-save">
+        <span class="doc-name" id="doc-name"></span>
+        <button type="button" class="btn btn-primary" id="btn-save">Save .d64</button>
+      </div>
+      <input type="file" id="open-input" accept=".d64" hidden>
+      <input type="file" id="add-input" multiple hidden>
+    </div>
+
+    <p class="status" id="status" role="status" aria-live="polite"></p>
+
+    <div class="work">
+      <section class="panel dir-panel" aria-labelledby="dir-title">
+        <div class="panel-head">
+          <h2 id="dir-title">Directory</h2>
+          <span class="hint">Drag entries to reorder them. Drop program files anywhere to add them.</span>
+        </div>
+        <div class="c64" id="screen">
+          <div class="c64-line" id="dir-header"></div>
+          <ul class="dir-list" id="dir-list" role="listbox" aria-label="Directory entries"></ul>
+          <div class="c64-line" id="dir-footer"></div>
+        </div>
+      </section>
+
+      <section class="panel map-panel" aria-labelledby="map-title">
+        <div class="panel-head">
+          <h2 id="map-title">Disk map</h2>
+          <span class="hint">One column per track, one cell per sector. Select a cell to find its file.</span>
+        </div>
+        <div class="map-scroll">
+          <div class="disk-map" id="disk-map"></div>
+        </div>
+        <ul class="map-legend">
+          <li><span class="cell free"></span>Free</li>
+          <li><span class="cell dir"></span>BAM and directory</li>
+          <li><span class="cell other"></span>Used, not part of a file</li>
+          <li><span class="cell file"></span>Files (one color each)</li>
+        </ul>
+      </section>
+    </div>
+
+    <aside class="side">
+      <section class="panel" aria-labelledby="space-title">
+        <h2 id="space-title">Free space</h2>
+        <p class="space-big"><span id="space-free">664</span> blocks free</p>
+        <div class="space-bar" aria-hidden="true"><div id="space-used"></div></div>
+        <p class="space-detail" id="space-detail"></p>
+        <p class="space-detail" id="space-frag"></p>
+        <div class="field">
+          <label for="opt-interleave">Sector interleave</label>
+          <select id="opt-interleave"></select>
+          <p class="field-note">Used for new files and for defragmenting. 10 is what the 1541 uses; fast loaders often prefer a smaller value.</p>
+        </div>
+        <label class="choice"><input type="checkbox" id="opt-erase" checked> Erase free sectors while defragmenting</label>
+        <button type="button" class="btn btn-wide" id="btn-defrag">Defragment disk</button>
+      </section>
+
+      <section class="panel" aria-labelledby="entry-title">
+        <h2 id="entry-title">Entry</h2>
+        <p class="hint" id="entry-empty">Select an entry in the directory to edit it.</p>
+        <form id="entry-form" hidden autocomplete="off">
+          <div class="field">
+            <label for="entry-name">Name <span class="count" id="entry-count"></span></label>
+            <input type="text" id="entry-name" class="petscii-input" spellcheck="false">
+            <div class="glyphs" id="glyphs" aria-label="Insert C64 graphics character"></div>
+          </div>
+          <div class="field-row">
+            <div class="field">
+              <label for="entry-type">Type</label>
+              <select id="entry-type">
+                <option value="0">DEL</option>
+                <option value="1">SEQ</option>
+                <option value="2">PRG</option>
+                <option value="3">USR</option>
+                <option value="4" disabled>REL</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="entry-blocks">Blocks shown</label>
+              <input type="number" id="entry-blocks" min="0" max="65535">
+            </div>
+          </div>
+          <label class="choice"><input type="checkbox" id="entry-locked"> Locked (shown as <code>&lt;</code>)</label>
+          <label class="choice"><input type="checkbox" id="entry-closed"> Closed (unclosed files show <code>*</code>)</label>
+          <p class="entry-info" id="entry-info"></p>
+          <div class="entry-actions">
+            <button type="button" class="btn" id="entry-up">Move up</button>
+            <button type="button" class="btn" id="entry-down">Move down</button>
+            <button type="button" class="btn" id="entry-extract">Extract file</button>
+            <button type="button" class="btn btn-danger" id="entry-delete">Delete</button>
+          </div>
+        </form>
+      </section>
+
+      <section class="panel" aria-labelledby="disk-title">
+        <h2 id="disk-title">Disk</h2>
+        <div class="field">
+          <label for="disk-name">Disk name</label>
+          <input type="text" id="disk-name" class="petscii-input" spellcheck="false">
+        </div>
+        <div class="field">
+          <label for="disk-id">ID</label>
+          <input type="text" id="disk-id" class="petscii-input" spellcheck="false">
+        </div>
+        <p class="space-detail" id="disk-format"></p>
+        <ul class="notes" id="disk-notes"></ul>
+      </section>
+    </aside>
+  </main>
+
+  <dialog id="new-dialog" aria-labelledby="new-title">
+    <form method="dialog" id="new-form">
+      <h2 id="new-title">New disk</h2>
+      <div class="field">
+        <label for="new-name">Disk name</label>
+        <input type="text" id="new-name" class="petscii-input" value="NEW DISK" spellcheck="false">
+      </div>
+      <div class="field">
+        <label for="new-id">ID</label>
+        <input type="text" id="new-id" class="petscii-input" value="00" spellcheck="false">
+      </div>
+      <fieldset class="field">
+        <legend>Tracks</legend>
+        <label class="choice"><input type="radio" name="new-tracks" value="35" checked> 35 (standard, 664 blocks)</label>
+        <label class="choice"><input type="radio" name="new-tracks" value="40"> 40 (SpeedDOS, 749 blocks)</label>
+      </fieldset>
+      <div class="dialog-actions">
+        <button type="submit" class="btn" value="cancel" formnovalidate>Cancel</button>
+        <button type="submit" class="btn btn-primary" value="create">Create disk</button>
+      </div>
+    </form>
+  </dialog>
+
+  <footer class="site-footer">
+    D64 Disk Editor by <a href="https://github.com/wagiminator">wagiminator</a>. Want to see your disk? Try the <a href="../d64-viewer/">D64 Disk Viewer</a>.
+  </footer>
+
+  <script src="d64edit.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
