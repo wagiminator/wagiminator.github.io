@@ -1,4 +1,4 @@
-/* RISC-V Programmer: user interface (protocol in rvprog.js, chip tables in tables.js) */
+/* WCH RISC-V Programmer: user interface (protocol in rvprog.js, chip tables in tables.js) */
 (function () {
   "use strict";
 

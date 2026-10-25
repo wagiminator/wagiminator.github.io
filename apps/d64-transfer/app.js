@@ -1,4 +1,4 @@
-/* D64 Disk Transfer: user interface (protocol in adapter.js, drive code in drivecode.js) */
+/* C64 Disk Transfer: user interface (protocol in adapter.js, drive code in drivecode.js) */
 (function () {
   "use strict";
 

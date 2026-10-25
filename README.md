@@ -12,12 +12,12 @@ assets/js/serial-link.js  Shared Web Serial connection with timeouts (transfer a
 assets/js/tap.js        Shared TAP tape library (read, write, decode, optimize)
 apps/
   _template/            Starting point for a new app (not published)
-  d64-viewer/           D64 Disk Viewer
-  d64-editor/           D64 Disk Editor
-  d64-transfer/         D64 Disk Transfer
-  tap-transfer/         TAP Tape Transfer
-  cart-builder/         Cartridge Builder
-  rvprog/               RISC-V Programmer
+  d64-viewer/           C64 Disk Viewer
+  d64-editor/           C64 Disk Editor
+  d64-transfer/         C64 Disk Transfer
+  tap-transfer/         C64 Tape Transfer
+  cart-builder/         C64 Cartridge Builder
+  rvprog/               WCH RISC-V Programmer
   mt3608-sepic/         MT3608 SEPIC Voltage Calculator
 mt3608_sepic.html       Redirect for the calculator's old address
 ```
@@ -41,7 +41,7 @@ Folders starting with `_` are not published by GitHub Pages (Jekyll), so the tem
 
 ## Apps
 
-### D64 Disk Viewer
+### C64 Disk Viewer
 
 Turns a Commodore 64 disk image into a picture of the floppy disk. Every ring is a track (track 1 outside), every segment a sector, and every byte is drawn as eight radial stripes, one per bit. The picture can be downloaded as PNG (1024, 2048 or 4096 pixels, black or transparent background).
 
@@ -52,7 +52,7 @@ Turns a Commodore 64 disk image into a picture of the floppy disk. Every ring is
 
 Code: `d64.js` parses and draws the image (no dependencies), `app.js` is the user interface.
 
-### D64 Disk Editor
+### C64 Disk Editor
 
 Edits Commodore 64 disk images: add and remove files, arrange the directory, add separator lines, defragment and save.
 
@@ -66,7 +66,7 @@ Edits Commodore 64 disk images: add and remove files, arrange the directory, add
 
 Code: `/assets/js/d64edit.js` is the disk library (no dependencies, also runs in Node.js), `app.js` is the user interface.
 
-### D64 Disk Transfer
+### C64 Disk Transfer
 
 Reads, writes and formats real floppy disks in a 1541 or 1541-II drive through a [DiskBuddy64](https://github.com/wagiminator/C64-Collection/tree/master/C64_DiskBuddy64), [DiskMaster64](https://github.com/wagiminator/C64-Collection/tree/master/C64_DiskMaster64) or [DumpMaster64](https://github.com/wagiminator/C64-Collection/tree/master/C64_DumpMaster64) adapter.
 
@@ -78,7 +78,7 @@ Reads, writes and formats real floppy disks in a 1541 or 1541-II drive through a
 
 Code: `adapter.js` is a port of the adapters' Python library (`software/pc/libs/adapter.py`) including both block transfer variants, `drivecode.js` contains the 6502 fast loaders that are uploaded into the drive, `app.js` is the user interface.
 
-### TAP Tape Transfer
+### C64 Tape Transfer
 
 Reads cassettes from a Commodore Datasette into TAP files and writes TAP files back to tape through a [TapeBuddy64](https://github.com/wagiminator/C64-Collection/tree/master/C64_TapeBuddy64), [TapeDump64](https://github.com/wagiminator/C64-Collection/tree/master/C64_TapeDump64) (read only) or [DumpMaster64](https://github.com/wagiminator/C64-Collection/tree/master/C64_DumpMaster64). Opening, inspecting and optimizing TAP files also works without an adapter and in any browser.
 
@@ -90,7 +90,7 @@ Reads cassettes from a Commodore Datasette into TAP files and writes TAP files b
 
 Code: `/assets/js/tap.js` is the TAP library (no dependencies, also runs in Node.js), `tapeadapter.js` is a port of the adapters' Python tape scripts, `app.js` is the user interface.
 
-### Cartridge Builder
+### C64 Cartridge Builder
 
 Builds cartridge images for the [64k/256k](https://github.com/wagiminator/C64-Collection/tree/master/C64_Cartridge_64k_256k) and [512k](https://github.com/wagiminator/C64-Collection/tree/master/C64_Cartridge_512k) Magic Desk cartridges from one or more PRG files. A JavaScript port of the Magic Desk Cartridge Generator by Žarko Živanov (`crtgen.py` v3.0 as included in the C64 Collection), GPL v3.
 
@@ -103,7 +103,7 @@ Builds cartridge images for the [64k/256k](https://github.com/wagiminator/C64-Co
 
 Code: `cartgen.js` creates the image (no dependencies, also runs in Node.js), `menucode.js` contains the C64 menu programs (sources in `source/`), `preview.js` draws the menu preview, `app.js` is the user interface.
 
-### RISC-V Programmer
+### WCH RISC-V Programmer
 
 Flashes WCH RISC-V microcontrollers through a WCH-LinkE (also WCH-LinkW, WCH-LinkB and compatible programmers). A JavaScript port of [rvprog](https://github.com/wagiminator/MCU-Flash-Tools) (MIT License) using the WebUSB API.
 

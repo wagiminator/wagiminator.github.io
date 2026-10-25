@@ -181,7 +181,7 @@
     if (!kind && preferred && preferred !== "auto") kind = preferred;
     if (!kind) {
       await link.close();
-      if (["DiskBuddy64", "DiskMaster64"].includes(ident)) throw new TapeError(`This is a ${ident}, which works with disk drives only. Use the D64 Disk Transfer app for it.`);
+      if (["DiskBuddy64", "DiskMaster64"].includes(ident)) throw new TapeError(`This is a ${ident}, which works with disk drives only. Use the C64 Disk Transfer app for it.`);
       throw new TapeError(ident ? `The device answered “${ident}”, which is not a tape adapter.` : "The device did not answer. Is it a TapeBuddy64, TapeDump64 or DumpMaster64 with its switch set to UART?");
     }
     const adapter = new TapeAdapter(link, kind);

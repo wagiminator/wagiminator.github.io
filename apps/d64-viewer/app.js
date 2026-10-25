@@ -1,4 +1,4 @@
-/* D64 Disk Viewer: user interface (parsing and drawing live in d64.js) */
+/* C64 Disk Viewer: user interface (parsing and drawing live in d64.js) */
 (function () {
   "use strict";
 
@@ -259,7 +259,7 @@
     }, "image/png");
   });
 
-  /* ---------- Image handed over by another app (e.g. D64 Disk Transfer) ---------- */
+  /* ---------- Image handed over by another app (e.g. C64 Disk Transfer) ---------- */
 
   if (new URLSearchParams(location.search).has("import")) {
     try {

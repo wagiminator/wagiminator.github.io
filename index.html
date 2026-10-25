@@ -25,31 +25,38 @@
         .links {
             margin-top: 20px;
         }
-        .links a {
-            display: block;
-            margin: 10px 0;
+        h2 {
+            margin: 28px 0 8px;
         }
-        /* Web Apps: one entry per app in /apps/ */
-        .apps {
+        h3 {
+            margin: 22px 0 4px;
+            font-size: 1.0625rem;
+            color: var(--ink-soft);
+        }
+        /* One entry per web app or link: name, then a short description */
+        .entries {
             list-style: none;
             margin: 0 auto;
             padding: 0;
             max-width: 560px;
             text-align: left;
         }
-        .apps li {
+        .entries li {
             padding: 12px 0;
             border-bottom: 1px solid var(--line);
         }
-        .apps li:last-child {
+        .entries li:last-child {
             border-bottom: 0;
         }
-        .apps a {
-            display: inline;
-            margin: 0;
+        .entries a {
             font-weight: bold;
         }
-        .apps p {
+        .entries .host {
+            margin-left: 6px;
+            font-size: 0.8125rem;
+            color: var(--ink-soft);
+        }
+        .entries p {
             margin: 4px 0 0;
             color: var(--ink-soft);
             font-size: 0.9375rem;
@@ -62,29 +69,29 @@
         <p>Hobbyist who likes to build simple projects around simple microcontrollers.</p>
         <div class="links">
             <h2>Web Apps</h2>
-                <ul class="apps">
+                <ul class="entries">
                     <li>
-                        <a href="apps/d64-viewer/">D64 Disk Viewer</a>
+                        <a href="apps/d64-viewer/">C64 Disk Viewer</a>
                         <p>Turns a C64 disk image (.d64) into a picture of the floppy disk, showing every track, sector and bit.</p>
                     </li>
                     <li>
-                        <a href="apps/d64-editor/">D64 Disk Editor</a>
+                        <a href="apps/d64-editor/">C64 Disk Editor</a>
                         <p>Adds and removes files on a C64 disk image, arranges the directory with separator lines, defragments and saves it.</p>
                     </li>
                     <li>
-                        <a href="apps/d64-transfer/">D64 Disk Transfer</a>
+                        <a href="apps/d64-transfer/">C64 Disk Transfer</a>
                         <p>Reads, writes and formats real 1541 floppy disks with a DiskBuddy64, DiskMaster64 or DumpMaster64 adapter.</p>
                     </li>
                     <li>
-                        <a href="apps/tap-transfer/">TAP Tape Transfer</a>
+                        <a href="apps/tap-transfer/">C64 Tape Transfer</a>
                         <p>Reads and writes C64 cassettes with a TapeBuddy64, TapeDump64 or DumpMaster64, shows every pulse and cleans up TAP files.</p>
                     </li>
                     <li>
-                        <a href="apps/cart-builder/">Cartridge Builder</a>
+                        <a href="apps/cart-builder/">C64 Cartridge Builder</a>
                         <p>Puts one or more C64 programs on a Magic Desk cartridge with a selection menu, as BIN for the EPROM or CRT for emulators.</p>
                     </li>
                     <li>
-                        <a href="apps/rvprog/">RISC-V Programmer</a>
+                        <a href="apps/rvprog/">WCH RISC-V Programmer</a>
                         <p>Flashes WCH RISC-V microcontrollers (CH32V, CH32X, CH32L, CH5xx) with a WCH-LinkE: BIN and HEX files, erase, unlock, unbrick.</p>
                     </li>
                     <li>
@@ -94,29 +101,96 @@
                 </ul>
             <h2>Useful Links</h2>
                 <h3>My Project Pages</h3>
-                <a href="https://github.com/wagiminator">My Projects on Github</a>
-                <a href="https://hackaday.io/projects/hacker/769247">My Projects on Hackaday</a>
-                <a href="https://www.youtube.com/channel/UCXu_GP5cqQrj-q8A8ie5CIA">My Projects on YouTube</a>
-                <a href="https://oshwlab.com/wagiminator">My Hardware Designs on OSHWLab</a>
+                <ul class="entries">
+                    <li>
+                        <a href="https://github.com/wagiminator">My Projects on Github</a> <span class="host">github.com</span>
+                        <p>Source code, schematics and PCB files of my projects.</p>
+                    </li>
+                    <li>
+                        <a href="https://hackaday.io/projects/hacker/769247">My Projects on Hackaday</a> <span class="host">hackaday.io</span>
+                        <p>Project pages with descriptions and build details.</p>
+                    </li>
+                    <li>
+                        <a href="https://www.youtube.com/channel/UCXu_GP5cqQrj-q8A8ie5CIA">My Projects on YouTube</a> <span class="host">youtube.com</span>
+                        <p>Videos of my projects.</p>
+                    </li>
+                    <li>
+                        <a href="https://oshwlab.com/wagiminator">My Hardware Designs on OSHWLab</a> <span class="host">oshwlab.com</span>
+                        <p>My hardware designs made with EasyEDA.</p>
+                    </li>
+                </ul>
                 <h3>Microcontroller Tools</h3>
-                <a href="https://www.engbedded.com/fusecalc/">AVR Fuse Calculator</a>
-                <a href="http://darcy.rsgc.on.ca/ACES/TEI4M/AVRdelay.html">AVR Delay Loop Calculator</a>
-                <a href="https://www.stephenkingston.net/CH55x-WebProgrammer/">CH55x Web Programmer</a>
-                <a href="https://eleccelerator.com/usbdescreqparser/">USB Descriptor Parser</a>
+                <ul class="entries">
+                    <li>
+                        <a href="https://www.engbedded.com/fusecalc/">AVR Fuse Calculator</a> <span class="host">engbedded.com</span>
+                        <p>Works out the fuse settings for AVR microcontrollers.</p>
+                    </li>
+                    <li>
+                        <a href="http://darcy.rsgc.on.ca/ACES/TEI4M/AVRdelay.html">AVR Delay Loop Calculator</a> <span class="host">darcy.rsgc.on.ca</span>
+                        <p>Generates delay loops for AVR microcontrollers.</p>
+                    </li>
+                    <li>
+                        <a href="https://www.stephenkingston.net/CH55x-WebProgrammer/">CH55x Web Programmer</a> <span class="host">stephenkingston.net</span>
+                        <p>Programs WCH CH55x microcontrollers over USB from the browser.</p>
+                    </li>
+                    <li>
+                        <a href="https://eleccelerator.com/usbdescreqparser/">USB Descriptor Parser</a> <span class="host">eleccelerator.com</span>
+                        <p>Decodes USB descriptors and HID report descriptors into readable form.</p>
+                    </li>
+                </ul>
                 <h3>PCB Design Tools</h3>
-                <a href="https://easyeda.com/">EasyEDA PCB Design Tool</a>
-                <a href="https://www.pcbway.com/project/OnlineGerberViewer.html">Online Gerber Viewer</a>
+                <ul class="entries">
+                    <li>
+                        <a href="https://easyeda.com/">EasyEDA PCB Design Tool</a> <span class="host">easyeda.com</span>
+                        <p>Draws schematics and PCB layouts online.</p>
+                    </li>
+                    <li>
+                        <a href="https://www.pcbway.com/project/OnlineGerberViewer.html">Online Gerber Viewer</a> <span class="host">pcbway.com</span>
+                        <p>Shows the Gerber files of a PCB in the browser.</p>
+                    </li>
+                </ul>
                 <h3>Calculation Tools</h3>
-                <a href="https://www.rapidtables.com/convert/number/hex-to-decimal.html">Hex to Dec Converter</a>
-                <a href="https://www.rapidtables.com/calc/math/binary-calculator.html">Binary Calculator</a>
-                <a href="https://www.ti.com/download/kbase/volt/volt_div3.htm">Voltage Divider Calculator</a>
-                <a href="http://sim.okawa-denshi.jp/Fkeisan.htm">Filter Calculation Tool</a>
+                <ul class="entries">
+                    <li>
+                        <a href="https://www.rapidtables.com/convert/number/hex-to-decimal.html">Hex to Dec Converter</a> <span class="host">rapidtables.com</span>
+                        <p>Converts hexadecimal numbers to decimal.</p>
+                    </li>
+                    <li>
+                        <a href="https://www.rapidtables.com/calc/math/binary-calculator.html">Binary Calculator</a> <span class="host">rapidtables.com</span>
+                        <p>Calculates with binary numbers.</p>
+                    </li>
+                    <li>
+                        <a href="https://www.ti.com/download/kbase/volt/volt_div3.htm">Voltage Divider Calculator</a> <span class="host">ti.com</span>
+                        <p>Calculates resistors and output voltage of a voltage divider.</p>
+                    </li>
+                    <li>
+                        <a href="http://sim.okawa-denshi.jp/Fkeisan.htm">Filter Calculation Tool</a> <span class="host">sim.okawa-denshi.jp</span>
+                        <p>Calculates the components of electronic filters.</p>
+                    </li>
+                </ul>
                 <h3>Graphic Tools</h3>
-                <a href="http://sourpuss.net/projects/fontedit/">OLED Font Editor</a>
-                <a href="http://www.majer.ch/lcd/adf_bitmap.php">OLED Bitmap Converter</a>
-                <a href="https://en.radzio.dxp.pl/bitmap_converter/">LCD Bitmap Converter</a>
-                <a href="https://dotmatrixtool.com/">Dot Matrix Tool</a>
-                <a href="https://javl.github.io/image2cpp/">Image to cpp Converter</a>
+                <ul class="entries">
+                    <li>
+                        <a href="http://sourpuss.net/projects/fontedit/">OLED Font Editor</a> <span class="host">sourpuss.net</span>
+                        <p>Creates and edits pixel fonts for small displays.</p>
+                    </li>
+                    <li>
+                        <a href="http://www.majer.ch/lcd/adf_bitmap.php">OLED Bitmap Converter</a> <span class="host">majer.ch</span>
+                        <p>Converts images into data for monochrome displays.</p>
+                    </li>
+                    <li>
+                        <a href="https://en.radzio.dxp.pl/bitmap_converter/">LCD Bitmap Converter</a> <span class="host">en.radzio.dxp.pl</span>
+                        <p>Converts bitmaps into data for graphic LCDs.</p>
+                    </li>
+                    <li>
+                        <a href="https://dotmatrixtool.com/">Dot Matrix Tool</a> <span class="host">dotmatrixtool.com</span>
+                        <p>Draws characters and symbols on a pixel grid and outputs them as hex values.</p>
+                    </li>
+                    <li>
+                        <a href="https://javl.github.io/image2cpp/">Image to cpp Converter</a> <span class="host">javl.github.io</span>
+                        <p>Converts images into byte arrays for Arduino sketches and OLED displays.</p>
+                    </li>
+                </ul>
         </div>
     </div>
 </body>

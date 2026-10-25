@@ -1,4 +1,4 @@
-/* Cartridge Builder: user interface (image layout in cartgen.js) */
+/* C64 Cartridge Builder: user interface (image layout in cartgen.js) */
 (function () {
   "use strict";
 

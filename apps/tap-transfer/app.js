@@ -1,4 +1,4 @@
-/* TAP Tape Transfer: user interface (TAP logic in /assets/js/tap.js, protocol in tapeadapter.js) */
+/* C64 Tape Transfer: user interface (TAP logic in /assets/js/tap.js, protocol in tapeadapter.js) */
 (function () {
   "use strict";
 

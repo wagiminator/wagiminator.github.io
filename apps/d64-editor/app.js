@@ -1,4 +1,4 @@
-/* D64 Disk Editor: user interface (disk logic lives in d64edit.js) */
+/* C64 Disk Editor: user interface (disk logic lives in d64edit.js) */
 (function () {
   "use strict";
 
@@ -596,7 +596,7 @@
 
   setDisk(L.Disk.create(35, "NEW DISK", "00"), "", []);
 
-  /* ---------- Image handed over by another app (e.g. D64 Disk Transfer) ---------- */
+  /* ---------- Image handed over by another app (e.g. C64 Disk Transfer) ---------- */
 
   if (new URLSearchParams(location.search).has("import")) {
     try {
