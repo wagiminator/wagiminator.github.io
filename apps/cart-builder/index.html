@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cartridge Builder</title>
+  <meta name="description" content="Build Magic Desk cartridge images for the C64 from one or more PRG files, with a selection menu, as BIN for the EPROM or CRT for emulators.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chivo:wght@400;700&family=Press+Start+2P&display=swap">
+  <link rel="stylesheet" href="../../assets/css/site.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav class="site-bar" aria-label="Breadcrumb">
+    <a href="../../">wagiminator</a><span class="sep">/</span><span>Apps</span><span class="sep">/</span><span>Cartridge Builder</span>
+  </nav>
+
+  <main class="app">
+    <header class="app-head">
+      <h1>Cartridge Builder</h1>
+      <p>Put one or more C64 programs on a Magic Desk cartridge for the <a href="https://github.com/wagiminator/C64-Collection/tree/master/C64_Cartridge_64k_256k">64k/256k</a> or <a href="https://github.com/wagiminator/C64-Collection/tree/master/C64_Cartridge_512k">512k cartridge</a>. Several programs get a selection menu; a single program starts right away. The result is a BIN file for the EPROM and a CRT file for emulators.</p>
+    </header>
+
+    <div class="work">
+      <section class="panel" aria-labelledby="size-title">
+        <h2 id="size-title"><span class="step">1</span> EPROM size</h2>
+        <div class="sizes" id="sizes" role="radiogroup" aria-labelledby="size-title"></div>
+      </section>
+
+      <section class="panel" aria-labelledby="prg-title">
+        <div class="panel-head">
+          <h2 id="prg-title"><span class="step">2</span> Programs</h2>
+          <div class="head-actions">
+            <button type="button" class="btn" id="btn-add-menu">Add menu</button>
+            <button type="button" class="btn btn-primary" id="btn-add">Add programs</button>
+          </div>
+        </div>
+        <input type="file" id="file-input" accept=".prg,.p00" multiple hidden>
+        <label class="drop" id="drop" for="file-input">
+          <strong>Drop .prg files here or choose them</strong>
+          <span>One-file programs in PRG format (first two bytes are the load address). PC64 files (.P00) work too.</span>
+        </label>
+        <div id="menus"></div>
+        <p class="hint" id="order-hint" hidden>Drag entries to change their order or move them to another menu. Keys show which key starts the program in the menu.</p>
+      </section>
+
+      <section class="panel" aria-labelledby="preview-title" id="preview-panel" hidden>
+        <div class="panel-head">
+          <h2 id="preview-title">Menu preview</h2>
+          <div class="preview-tabs" id="preview-tabs" role="tablist" aria-label="Menu"></div>
+        </div>
+        <canvas id="preview" class="preview" role="img" aria-label="Preview of the cartridge menu"></canvas>
+        <p class="hint" id="preview-note">Close to what the C64 shows, drawn without the C64 character set and without the waving. Programs start with the key in front of their name; F-keys or RETURN switch between menus.</p>
+      </section>
+
+      <section class="panel" aria-labelledby="out-title">
+        <h2 id="out-title"><span class="step">3</span> Cartridge image</h2>
+        <ul class="messages" id="messages"></ul>
+        <div class="field">
+          <label for="out-name">File name</label>
+          <input type="text" id="out-name" value="cartridge" spellcheck="false">
+        </div>
+        <div class="out-actions">
+          <button type="button" class="btn btn-primary" id="btn-bin" disabled>Download .bin (EPROM)</button>
+          <button type="button" class="btn" id="btn-crt" disabled>Download .crt (emulator)</button>
+        </div>
+        <p class="hint">Burn the BIN file to the EPROM with your programmer. The CRT file runs in VICE and other emulators (Magic Desk type).</p>
+      </section>
+    </div>
+
+    <aside class="side">
+      <section class="panel" aria-labelledby="space-title">
+        <h2 id="space-title">Free space</h2>
+        <p class="space-big"><span id="free-kb">64</span> <span id="free-unit">KB free</span></p>
+        <div class="bar" id="bar" aria-hidden="true"></div>
+        <dl class="facts" id="space-facts"></dl>
+      </section>
+
+      <section class="panel" aria-labelledby="opt-title">
+        <h2 id="opt-title">Menu options</h2>
+        <label class="choice" id="direct-wrap"><input type="checkbox" id="opt-direct" checked> Start a single program right away (no menu)</label>
+        <div class="field">
+          <label for="opt-help">Text on the bottom line <span class="count" id="help-count"></span></label>
+          <input type="text" id="opt-help" maxlength="40" value="(Shift)CRSR: Scroll, Fn/Ret: Menu select" spellcheck="false">
+        </div>
+        <label class="choice"><input type="checkbox" id="opt-wave" checked> Wave the menu</label>
+        <label class="choice"><input type="checkbox" id="opt-sound"> Menu sound (Ross cartridges)</label>
+        <fieldset class="field colors">
+          <legend>Colors when a program starts</legend>
+          <label>Border <select id="opt-border"></select></label>
+          <label>Background <select id="opt-background"></select></label>
+          <label>Text <select id="opt-character"></select></label>
+        </fieldset>
+      </section>
+    </aside>
+  </main>
+
+  <footer class="site-footer">
+    Cartridge Builder by <a href="https://github.com/wagiminator">wagiminator</a>, a port of the <a href="https://bitbucket.org/zzarko/magic-desk-cartridge-generator/">Magic Desk Cartridge Generator</a> by Žarko Živanov (GPL v3) with the single program menu by <a href="https://github.com/Feandreu/mdeskcrtgenfsp">Feandreu</a>. Cartridge hardware by Marko Šolajić.
+  </footer>
+
+  <script src="menucode.js"></script>
+  <script src="cartgen.js"></script>
+  <script src="preview.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

@@ -16,6 +16,7 @@ apps/
   d64-editor/           D64 Disk Editor
   d64-transfer/         D64 Disk Transfer
   tap-transfer/         TAP Tape Transfer
+  cart-builder/         Cartridge Builder
   mt3608-sepic/         MT3608 SEPIC Voltage Calculator
 mt3608_sepic.html       Redirect for the calculator's old address
 ```
@@ -87,3 +88,16 @@ Reads cassettes from a Commodore Datasette into TAP files and writes TAP files b
 - The Tapuino has no USB connection to a computer; TAP files prepared here can be copied to its SD card.
 
 Code: `/assets/js/tap.js` is the TAP library (no dependencies, also runs in Node.js), `tapeadapter.js` is a port of the adapters' Python tape scripts, `app.js` is the user interface.
+
+### Cartridge Builder
+
+Builds cartridge images for the [64k/256k](https://github.com/wagiminator/C64-Collection/tree/master/C64_Cartridge_64k_256k) and [512k](https://github.com/wagiminator/C64-Collection/tree/master/C64_Cartridge_512k) Magic Desk cartridges from one or more PRG files. A JavaScript port of the Magic Desk Cartridge Generator by Žarko Živanov (`crtgen.py` v3.0 as included in the C64 Collection), GPL v3.
+
+- EPROM sizes 64 KB (27C512), 128 KB (27C010), 256 KB (27C020), 512 KB (27C040) and 1 MB (27C080).
+- Add PRG files (or PC64 .P00) by button or drag and drop; rename, set start addresses, reorder (drag and drop, buttons, Alt+arrow keys) and remove them. Up to 8 menus (F1/F3/F5/F7/F2/F4/F6/F8) with up to 62 programs each; a single program can start without a menu (Single PRG modification by Feandreu).
+- Shows free space, used banks and the size of the menu area, warns about programs that load where the cartridge copy routine or the I/O area is, and previews the menu screen.
+- Downloads a BIN file for the EPROM and a CRT file (Magic Desk, hardware type 19) for VICE and other emulators.
+- Tested: the BIN files are byte-identical to the ones `crtgen.py` creates for the same programs and settings, the CRT files are byte-identical to `cartconv -t md` from VICE.
+- Not covered: the simple 8k cartridge, which has no bank switching and needs ready-made 8 KB ROM images instead of PRG files.
+
+Code: `cartgen.js` creates the image (no dependencies, also runs in Node.js), `menucode.js` contains the C64 menu programs (sources in `source/`), `preview.js` draws the menu preview, `app.js` is the user interface.
