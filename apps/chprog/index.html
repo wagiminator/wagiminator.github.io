@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WCH USB Programmer</title>
+  <meta name="description" content="Flash WCH microcontrollers (CH55x, CH56x, CH57x, CH58x, CH59x, CH32F, CH32V, CH32X, CH32L, CH64x) over USB with their factory bootloader, straight from the browser.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chivo:wght@400;700&display=swap">
+  <link rel="stylesheet" href="../../assets/css/site.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav class="site-bar" aria-label="Breadcrumb">
+    <a href="../../">wagiminator</a><span class="sep">/</span><span>Apps</span><span class="sep">/</span><span>WCH USB Programmer</span>
+  </nav>
+
+  <main class="app">
+    <header class="app-head">
+      <h1>WCH USB Programmer</h1>
+      <p>Flash WCH microcontrollers over USB with their built-in bootloader, no programmer needed. Supports the CH54x, CH55x, CH56x, CH57x, CH58x, CH59x, CH643, CH32F103/20x, CH32V103/20x/30x, CH32X03x and CH32L103 with bootloader version 2.x.</p>
+    </header>
+
+    <p class="banner" id="unsupported" hidden>This browser cannot access USB devices. Open this page in Chrome, Edge or Opera on a desktop computer.</p>
+
+    <div class="work">
+      <section class="panel" aria-labelledby="fw-title">
+        <h2 id="fw-title">Firmware</h2>
+        <label class="drop" id="drop" for="file-input">
+          <strong id="fw-name">Drop a .bin or .hex file here or choose one</strong>
+          <span id="fw-info">BIN files are written to the start of the code flash, HEX files to their addresses.</span>
+          <input type="file" id="file-input" accept=".bin,.hex,.ihx">
+        </label>
+        <div class="fit" id="fit" hidden>
+          <div class="fit-bar" aria-hidden="true"><div id="fit-used"></div></div>
+          <p class="fit-text" id="fit-text"></p>
+        </div>
+        <ul class="messages" id="fw-messages"></ul>
+        <div class="flash-row">
+          <button type="button" class="btn btn-primary btn-big" id="btn-flash" disabled>Flash firmware</button>
+          <div class="progress-wrap" id="progress" hidden>
+            <div class="progress"><div id="progress-bar"></div></div>
+            <span class="progress-label" id="progress-label"></span>
+          </div>
+        </div>
+        <p class="hint">Put the chip into bootloader mode, then choose Flash firmware and select the bootloader in the list the browser shows. The firmware is written, verified, and the chip restarts with it.</p>
+      </section>
+
+      <section class="panel" aria-labelledby="boot-title">
+        <h2 id="boot-title">Entering bootloader mode</h2>
+        <p class="small">Connect the chip by USB while its boot pin or button is active. The board then shows up as a USB device, not as its usual function. Typical ways:</p>
+        <ul class="ways">
+          <li><strong>CH55x:</strong> pull D+ (P3.6) to 3.3 V through a 10 kΩ resistor while plugging in, or hold the board's BOOT button.</li>
+          <li><strong>CH32F/V/X/L:</strong> set BOOT0 high (or hold the BOOT button) while plugging in or resetting.</li>
+          <li><strong>CH56x, CH57x, CH58x, CH59x:</strong> activate the chip's download pin (often a BOOT button on the board) while plugging in.</li>
+          <li><strong>Firmware with a bootloader jump:</strong> some programs can restart into the bootloader themselves.</li>
+        </ul>
+        <p class="small">Details depend on the chip and board; see the board's documentation.</p>
+      </section>
+    </div>
+
+    <aside class="side">
+      <section class="panel" aria-labelledby="dev-title">
+        <h2 id="dev-title">Bootloader</h2>
+        <p class="conn" id="conn"><span class="dot"></span><span id="conn-text">Not connected</span></p>
+        <p class="link-note" id="link-note">Put the chip into bootloader mode and connect it.</p>
+        <button type="button" class="btn btn-wide" id="btn-connect">Connect and read chip info</button>
+        <details class="more">
+          <summary>Driver setup</summary>
+          <p class="small"><strong>Windows:</strong> the browser needs the WinUSB driver for the bootloader. Put the chip into bootloader mode, start <a href="https://zadig.akeo.ie/">Zadig</a>, choose Options, List All Devices, select the WCH device (USB ID 4348:55E0 or 1A86:55E0) and install WinUSB. The libusb-win32 driver that chprog uses does not work in the browser.</p>
+          <p class="small"><strong>Linux:</strong> allow access to the device:</p>
+          <pre class="code">echo 'SUBSYSTEM=="usb", ATTR{idVendor}=="4348", ATTR{idProduct}=="55e0", MODE="666"' | sudo tee /etc/udev/rules.d/99-ch55x.rules
+echo 'SUBSYSTEM=="usb", ATTR{idVendor}=="1a86", ATTR{idProduct}=="55e0", MODE="666"' | sudo tee -a /etc/udev/rules.d/99-ch55x.rules
+sudo udevadm control --reload-rules</pre>
+          <p class="small"><strong>macOS:</strong> no driver needed.</p>
+        </details>
+      </section>
+
+      <section class="panel" aria-labelledby="chip-title">
+        <h2 id="chip-title">Connected chip</h2>
+        <dl class="facts" id="chip-facts"><dt>Chip</dt><dd>Not read yet</dd></dl>
+      </section>
+
+      <section class="panel log-panel" aria-labelledby="log-title">
+        <h2 id="log-title">Log</h2>
+        <ol class="log" id="log"></ol>
+      </section>
+    </aside>
+  </main>
+
+  <footer class="site-footer">
+    WCH USB Programmer by <a href="https://github.com/wagiminator">wagiminator</a>, a port of <a href="https://github.com/wagiminator/MCU-Flash-Tools">chprog</a> (MIT License), which is based on isp55e0 by Frank Zago, chflasher by Aaron Christophel and wchprog by juliuswwj.
+  </footer>
+
+  <script src="../../assets/js/firmware.js"></script>
+  <script src="tables.js"></script>
+  <script src="chprog.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

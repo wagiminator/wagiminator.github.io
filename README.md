@@ -10,6 +10,7 @@ assets/css/site.css     Shared styles and color tokens for all pages
 assets/js/d64edit.js    Shared D64 disk library (editor and transfer app)
 assets/js/serial-link.js  Shared Web Serial connection with timeouts (transfer apps)
 assets/js/tap.js        Shared TAP tape library (read, write, decode, optimize)
+assets/js/firmware.js   Shared BIN/HEX firmware file handling (programmer apps)
 apps/
   _template/            Starting point for a new app (not published)
   d64-viewer/           C64 Disk Viewer
@@ -18,6 +19,7 @@ apps/
   tap-transfer/         C64 Tape Transfer
   cart-builder/         C64 Cartridge Builder
   rvprog/               WCH RISC-V Programmer
+  chprog/               WCH USB Programmer
   mt3608-sepic/         MT3608 SEPIC Voltage Calculator
 mt3608_sepic.html       Redirect for the calculator's old address
 ```
@@ -112,4 +114,16 @@ Flashes WCH RISC-V microcontrollers through a WCH-LinkE (also WCH-LinkW, WCH-Lin
 - Needs Chrome, Edge or Opera on a desktop computer. Same driver setup as rvprog: WinUSB via Zadig on Windows, udev rules on Linux. After switching from ARM to RISC-V mode the browser asks once more for the device, as it appears with a new USB id.
 - Tested against a simulated WCH-Link: for all actions the USB traffic is byte-identical to rvprog.py.
 
-Code: `rvprog.js` is the programmer and file handling, `tables.js` holds the flash loaders and chip tables taken from rvprog.py, `app.js` is the user interface.
+Code: `rvprog.js` is the programmer, `/assets/js/firmware.js` reads BIN and HEX files, `tables.js` holds the flash loaders and chip tables taken from rvprog.py, `app.js` is the user interface.
+
+### WCH USB Programmer
+
+Flashes WCH microcontrollers over USB with their factory bootloader (version 2.x), without a programmer. A JavaScript port of [chprog](https://github.com/wagiminator/MCU-Flash-Tools) (MIT License) using the WebUSB API.
+
+- Chips: CH543-CH549, CH551-CH559, CH563-CH569, CH570-CH579, CH581-CH583, CH591/592, CH643, CH32F103/203/205/207/208, CH32V103/203/208/303/305/307, CH32X033/035, CH32L103.
+- Flash BIN and Intel HEX files: the code flash is erased, written and verified, then the chip restarts. Read-protected chips are unlocked first (as chprog does), which erases them. Connect and read chip info shows type, bootloader version, flash sizes and unique ID without changing anything.
+- Needs Chrome, Edge or Opera on a desktop computer. Windows needs the WinUSB driver (Zadig; the libusb-win32 driver used by chprog does not work in browsers), Linux the udev rules from chprog.
+- Firmware whose length is not a multiple of 8 is padded with 0xFF bytes. chprog.py v2.5.3 appends the text "0xff" instead (`b'0xff'` instead of `b'\xff'` in `writeflash`).
+- Tested against a simulated bootloader: the USB traffic is byte-identical to chprog.py (with that padding fixed for unaligned lengths).
+
+Code: `chprog.js` is the programmer, `tables.js` holds the chip table taken from chprog.py, `app.js` is the user interface.
