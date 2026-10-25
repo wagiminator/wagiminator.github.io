@@ -17,6 +17,7 @@ apps/
   d64-transfer/         D64 Disk Transfer
   tap-transfer/         TAP Tape Transfer
   cart-builder/         Cartridge Builder
+  rvprog/               RISC-V Programmer
   mt3608-sepic/         MT3608 SEPIC Voltage Calculator
 mt3608_sepic.html       Redirect for the calculator's old address
 ```
@@ -101,3 +102,14 @@ Builds cartridge images for the [64k/256k](https://github.com/wagiminator/C64-Co
 - Not covered: the simple 8k cartridge, which has no bank switching and needs ready-made 8 KB ROM images instead of PRG files.
 
 Code: `cartgen.js` creates the image (no dependencies, also runs in Node.js), `menucode.js` contains the C64 menu programs (sources in `source/`), `preview.js` draws the menu preview, `app.js` is the user interface.
+
+### RISC-V Programmer
+
+Flashes WCH RISC-V microcontrollers through a WCH-LinkE (also WCH-LinkW, WCH-LinkB and compatible programmers). A JavaScript port of [rvprog](https://github.com/wagiminator/MCU-Flash-Tools) (MIT License) using the WebUSB API.
+
+- Chips: CH32V002-V007, CH32V103, CH32V203/205/208, CH32V303/305/307/317, CH32X033/035, CH32L103, CH571/573, CH581/582/583, CH591/592.
+- Flash BIN and Intel HEX files (written and verified), read chip info, erase, unlock (remove read protection), unbrick (power-cycle erase), lock, PD7 as GPIO or reset pin (CH32V00x), and switch the WCH-Link between RISC-V and ARM mode.
+- Needs Chrome, Edge or Opera on a desktop computer. Same driver setup as rvprog: WinUSB via Zadig on Windows, udev rules on Linux. After switching from ARM to RISC-V mode the browser asks once more for the device, as it appears with a new USB id.
+- Tested against a simulated WCH-Link: for all actions the USB traffic is byte-identical to rvprog.py.
+
+Code: `rvprog.js` is the programmer and file handling, `tables.js` holds the flash loaders and chip tables taken from rvprog.py, `app.js` is the user interface.

@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RISC-V Programmer</title>
+  <meta name="description" content="Flash WCH RISC-V microcontrollers (CH32V, CH32X, CH32L, CH5xx) from the browser with a WCH-LinkE: write BIN and HEX files, erase, unlock and unbrick chips.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chivo:wght@400;700&display=swap">
+  <link rel="stylesheet" href="../../assets/css/site.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav class="site-bar" aria-label="Breadcrumb">
+    <a href="../../">wagiminator</a><span class="sep">/</span><span>Apps</span><span class="sep">/</span><span>RISC-V Programmer</span>
+  </nav>
+
+  <main class="app">
+    <header class="app-head">
+      <h1>RISC-V Programmer</h1>
+      <p>Flash WCH RISC-V microcontrollers with a WCH-LinkE (or WCH-LinkW/-LinkB) straight from the browser: write BIN and HEX files, erase, unlock and unbrick chips. Supports the CH32V00x, CH32V103, CH32V20x, CH32V30x, CH32X03x, CH32L103 and CH57x/58x/59x.</p>
+    </header>
+
+    <p class="banner" id="unsupported" hidden>This browser cannot access USB devices. Open this page in Chrome, Edge or Opera on a desktop computer.</p>
+
+    <div class="work">
+      <section class="panel" aria-labelledby="fw-title">
+        <h2 id="fw-title">Firmware</h2>
+        <label class="drop" id="drop" for="file-input">
+          <strong id="fw-name">Drop a .bin or .hex file here or choose one</strong>
+          <span id="fw-info">BIN files are written to the start of the code flash, HEX files to their addresses.</span>
+          <input type="file" id="file-input" accept=".bin,.hex,.ihx">
+        </label>
+        <div class="fit" id="fit" hidden>
+          <div class="fit-bar" aria-hidden="true"><div id="fit-used"></div></div>
+          <p class="fit-text" id="fit-text"></p>
+        </div>
+        <ul class="messages" id="fw-messages"></ul>
+        <div class="flash-row">
+          <button type="button" class="btn btn-primary btn-big" id="btn-flash" disabled>Flash firmware</button>
+          <div class="progress" id="progress" hidden><div id="progress-bar"></div></div>
+        </div>
+        <p class="hint">Flashing writes and verifies the firmware. A locked chip is unlocked first, which erases it.</p>
+      </section>
+
+      <section class="panel" aria-labelledby="chip-title">
+        <h2 id="chip-title">Chip</h2>
+        <div class="actions">
+          <div class="action">
+            <button type="button" class="btn" id="btn-info" disabled>Read chip info</button>
+            <p>Connects to the chip and shows its type and flash size.</p>
+          </div>
+          <div class="action">
+            <button type="button" class="btn" id="btn-erase" disabled>Erase chip</button>
+            <p>Erases the whole code flash.</p>
+          </div>
+          <div class="action">
+            <button type="button" class="btn" id="btn-unlock" disabled>Unlock chip</button>
+            <p>Removes the read protection. This erases the chip.</p>
+          </div>
+          <div class="action">
+            <button type="button" class="btn" id="btn-unbrick" disabled>Unbrick chip</button>
+            <p>Power-cycle erase for chips that no longer respond, for example after a program disabled the debug pins.</p>
+          </div>
+        </div>
+        <details class="more">
+          <summary>More options</summary>
+          <div class="actions">
+            <div class="action">
+              <button type="button" class="btn" id="btn-lock" disabled>Lock chip</button>
+              <p>Sets the read protection. Reading the flash is then impossible until the chip is unlocked (and erased).</p>
+            </div>
+            <div class="action">
+              <button type="button" class="btn" id="btn-gpio" disabled>PD7 as GPIO</button>
+              <p>CH32V00x only: use the reset pin PD7 as a normal I/O pin.</p>
+            </div>
+            <div class="action">
+              <button type="button" class="btn" id="btn-reset" disabled>PD7 as reset</button>
+              <p>CH32V00x only: make PD7 the reset pin again.</p>
+            </div>
+          </div>
+        </details>
+      </section>
+    </div>
+
+    <aside class="side">
+      <section class="panel" aria-labelledby="link-title">
+        <h2 id="link-title">WCH-Link</h2>
+        <p class="conn" id="conn"><span class="dot"></span><span id="conn-text">Not connected</span></p>
+        <p class="link-note" id="link-note"></p>
+        <div class="stack">
+          <button type="button" class="btn btn-wide" id="btn-connect">Connect WCH-Link</button>
+          <button type="button" class="btn btn-wide" id="btn-rvmode" hidden>Switch to RISC-V mode</button>
+        </div>
+        <details class="more">
+          <summary>Setup and link mode</summary>
+          <p class="small">The WCH-Link must be in RISC-V mode: its blue LED is off. If the blue LED is on, connect it and choose Switch to RISC-V mode, or hold the ModeS button while plugging it in.</p>
+          <p class="small"><strong>Windows:</strong> install the WinUSB driver for the WCH-Link's debug interface (not the serial port) with <a href="https://zadig.akeo.ie/">Zadig</a>, as for rvprog.</p>
+          <p class="small"><strong>Linux:</strong> allow access to the device:</p>
+          <pre class="code" id="udev">echo 'SUBSYSTEM=="usb", ATTR{idVendor}=="1a86", ATTR{idProduct}=="8010", MODE="666"' | sudo tee /etc/udev/rules.d/99-WCH-LinkE.rules
+echo 'SUBSYSTEM=="usb", ATTR{idVendor}=="1a86", ATTR{idProduct}=="8012", MODE="666"' | sudo tee -a /etc/udev/rules.d/99-WCH-LinkE.rules
+sudo udevadm control --reload-rules</pre>
+          <button type="button" class="btn btn-wide" id="btn-armmode" disabled>Switch to ARM mode</button>
+        </details>
+      </section>
+
+      <section class="panel" aria-labelledby="info-title">
+        <h2 id="info-title">Connected chip</h2>
+        <dl class="facts" id="chip-facts"><dt>Chip</dt><dd>Not read yet</dd></dl>
+      </section>
+
+      <section class="panel log-panel" aria-labelledby="log-title">
+        <h2 id="log-title">Log</h2>
+        <ol class="log" id="log"></ol>
+      </section>
+    </aside>
+  </main>
+
+  <footer class="site-footer">
+    RISC-V Programmer by <a href="https://github.com/wagiminator">wagiminator</a>, a port of <a href="https://github.com/wagiminator/MCU-Flash-Tools">rvprog</a> (MIT License). Protocol based on <a href="https://github.com/cnlohr/ch32v003fun/tree/master/minichlink">minichlink</a> by CNLohr.
+  </footer>
+
+  <script src="tables.js"></script>
+  <script src="rvprog.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
