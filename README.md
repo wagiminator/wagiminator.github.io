@@ -8,11 +8,14 @@ Personal page of wagiminator with links and small browser apps, published with G
 index.html              Start page (links and the "Web Apps" list)
 assets/css/site.css     Shared styles and color tokens for all pages
 assets/js/d64edit.js    Shared D64 disk library (editor and transfer app)
+assets/js/serial-link.js  Shared Web Serial connection with timeouts (transfer apps)
+assets/js/tap.js        Shared TAP tape library (read, write, decode, optimize)
 apps/
   _template/            Starting point for a new app (not published)
   d64-viewer/           D64 Disk Viewer
   d64-editor/           D64 Disk Editor
   d64-transfer/         D64 Disk Transfer
+  tap-transfer/         TAP Tape Transfer
   mt3608-sepic/         MT3608 SEPIC Voltage Calculator
 mt3608_sepic.html       Redirect for the calculator's old address
 ```
@@ -72,3 +75,15 @@ Reads, writes and formats real floppy disks in a 1541 or 1541-II drive through a
 - Not supported: the xu1541, which uses the OpenCBM USB protocol instead of a serial port.
 
 Code: `adapter.js` is a port of the adapters' Python library (`software/pc/libs/adapter.py`) including both block transfer variants, `drivecode.js` contains the 6502 fast loaders that are uploaded into the drive, `app.js` is the user interface.
+
+### TAP Tape Transfer
+
+Reads cassettes from a Commodore Datasette into TAP files and writes TAP files back to tape through a [TapeBuddy64](https://github.com/wagiminator/C64-Collection/tree/master/C64_TapeBuddy64), [TapeDump64](https://github.com/wagiminator/C64-Collection/tree/master/C64_TapeDump64) (read only) or [DumpMaster64](https://github.com/wagiminator/C64-Collection/tree/master/C64_DumpMaster64). Opening, inspecting and optimizing TAP files also works without an adapter and in any browser.
+
+- Uses the Web Serial API (Chrome, Edge, Opera on desktop). After the first connection the adapter is found and identified automatically.
+- Pulse view: every pulse plotted by its length, live while reading and with a moving position mark while writing; zoom, drag and an overview of the whole tape. ROM loader pilot, header, data and damaged blocks are colored. Histogram of pulse lengths.
+- Tape contents: files saved with the standard C64 ROM loader are decoded (name, type, addresses, size) and both copies are checked.
+- Optimize (a subset of what [TAPClean](https://sourceforge.net/projects/tapclean/) does): remove glitches, join pauses, set ROM loader pulses to their ideal lengths, repair damaged ROM loader blocks from the other copy, and move the pulses of other loaders onto the centers of clearly separated length groups. Turbo loaders are not decoded individually.
+- The Tapuino has no USB connection to a computer; TAP files prepared here can be copied to its SD card.
+
+Code: `/assets/js/tap.js` is the TAP library (no dependencies, also runs in Node.js), `tapeadapter.js` is a port of the adapters' Python tape scripts, `app.js` is the user interface.

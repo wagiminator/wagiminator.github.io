@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TAP Tape Transfer</title>
+  <meta name="description" content="Read C64 cassettes into TAP files, write TAP files to tape, view the pulses and optimize tapes, with a TapeBuddy64, TapeDump64 or DumpMaster64 adapter.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chivo:wght@400;700&display=swap">
+  <link rel="stylesheet" href="../../assets/css/site.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav class="site-bar" aria-label="Breadcrumb">
+    <a href="../../">wagiminator</a><span class="sep">/</span><span>Apps</span><span class="sep">/</span><span>TAP Tape Transfer</span>
+  </nav>
+
+  <main class="app">
+    <header class="app-head">
+      <h1>TAP Tape Transfer</h1>
+      <p>Read a cassette from the Datasette into a TAP file, write a TAP file back to tape, look at every pulse and clean up worn recordings. Works with the <a href="https://github.com/wagiminator/C64-Collection/tree/master/C64_TapeBuddy64">TapeBuddy64</a>, <a href="https://github.com/wagiminator/C64-Collection/tree/master/C64_TapeDump64">TapeDump64</a> (read only) and <a href="https://github.com/wagiminator/C64-Collection/tree/master/C64_DumpMaster64">DumpMaster64</a>.</p>
+    </header>
+
+    <p class="banner" id="unsupported" hidden>This browser cannot talk to USB adapters. You can still open, inspect and optimize TAP files; for reading and writing tapes use Chrome, Edge or Opera on a desktop computer.</p>
+
+    <div class="work">
+      <section class="panel tasks" aria-label="Tape operations">
+        <div class="tabs" role="tablist">
+          <button type="button" role="tab" id="tab-read" aria-controls="pane-read" aria-selected="true">Read from tape</button>
+          <button type="button" role="tab" id="tab-write" aria-controls="pane-write" aria-selected="false" tabindex="-1">Write to tape</button>
+          <button type="button" role="tab" id="tab-open" aria-controls="pane-open" aria-selected="false" tabindex="-1">Open TAP file</button>
+        </div>
+
+        <div class="pane" role="tabpanel" id="pane-read" aria-labelledby="tab-read">
+          <p class="pane-intro">Rewind the cassette, choose Read tape, then press PLAY on the Datasette within 10 seconds. Reading ends when you press STOP, at the end of the tape or after 25 seconds without signal.</p>
+          <button type="button" class="btn btn-primary" id="btn-read">Read tape</button>
+        </div>
+
+        <div class="pane" role="tabpanel" id="pane-write" aria-labelledby="tab-write" hidden>
+          <p class="pane-intro" id="write-intro">Open or read a TAP file first; it is written exactly as shown in the pulse view.</p>
+          <fieldset class="field" id="write-source" hidden>
+            <legend>Version to write</legend>
+            <label class="choice"><input type="radio" name="write-which" value="original" checked> Original</label>
+            <label class="choice"><input type="radio" name="write-which" value="optimized"> Optimized</label>
+          </fieldset>
+          <p class="pane-intro">Choose Write to tape, then press RECORD and PLAY on the Datasette within 10 seconds.</p>
+          <button type="button" class="btn btn-primary" id="btn-write" disabled>Write to tape</button>
+        </div>
+
+        <div class="pane" role="tabpanel" id="pane-open" aria-labelledby="tab-open" hidden>
+          <label class="drop" id="drop" for="file-input">
+            <strong>Drop a .tap file here or choose one</strong>
+            <span>C64 TAP files, version 0 or 1. Opening works without an adapter.</span>
+            <input type="file" id="file-input" accept=".tap">
+          </label>
+        </div>
+
+        <div class="prompt" id="prompt" hidden>
+          <p class="prompt-main" id="prompt-main"></p>
+          <p class="prompt-sub" id="prompt-sub"></p>
+        </div>
+      </section>
+
+      <section class="panel scope-panel" aria-labelledby="scope-title">
+        <div class="panel-head">
+          <h2 id="scope-title">Pulses</h2>
+          <div class="scope-tools">
+            <label class="choice inline" id="show-wrap" hidden><span>Show</span>
+              <select id="show-which"><option value="original">Original</option><option value="optimized">Optimized</option></select>
+            </label>
+            <label class="choice inline"><input type="checkbox" id="follow" checked> Follow</label>
+            <button type="button" class="btn btn-icon" id="zoom-out" title="Zoom out" aria-label="Zoom out">−</button>
+            <button type="button" class="btn btn-icon" id="zoom-in" title="Zoom in" aria-label="Zoom in">+</button>
+            <button type="button" class="btn" id="zoom-fit">Whole tape</button>
+          </div>
+        </div>
+        <div class="scope">
+          <canvas id="scope" tabindex="0" aria-label="Pulse lengths over the tape. Scroll or use + and − to zoom, drag or use the arrow keys to move."></canvas>
+          <canvas id="overview" aria-hidden="true"></canvas>
+        </div>
+        <p class="scope-info" id="scope-info">Pulse lengths appear here while a tape is read or when a TAP file is opened.</p>
+        <ul class="legend">
+          <li><span class="key k-other"></span>Other loaders</li>
+          <li><span class="key k-pilot"></span>ROM loader pilot</li>
+          <li><span class="key k-header"></span>ROM loader header</li>
+          <li><span class="key k-data"></span>ROM loader data</li>
+          <li><span class="key k-bad"></span>Damaged block</li>
+          <li><span class="key k-pause"></span>Longer than 0x80 (pauses), drawn at the top</li>
+        </ul>
+      </section>
+
+      <section class="panel" aria-labelledby="hist-title">
+        <h2 id="hist-title">Pulse lengths</h2>
+        <canvas id="hist" aria-label="Histogram of pulse lengths"></canvas>
+        <p class="hint" id="hist-info"></p>
+      </section>
+
+      <section class="panel" aria-labelledby="contents-title">
+        <h2 id="contents-title">Tape contents</h2>
+        <p class="hint" id="contents-empty">Files saved with the standard C64 ROM loader are listed here. Turbo loaders show up in the pulse view only.</p>
+        <div class="table-wrap">
+          <table class="contents" id="contents" hidden>
+            <thead><tr><th scope="col">Position</th><th scope="col">Name</th><th scope="col">Type</th><th scope="col">Address</th><th scope="col">Bytes</th><th scope="col">Check</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="panel" aria-labelledby="opt-title">
+        <h2 id="opt-title">Optimize</h2>
+        <p class="pane-intro">Cleans up a recording, similar to TAPClean but limited to what works for any tape: ROM loader files are fully understood, other loaders are cleaned by pulse statistics.</p>
+        <label class="choice"><input type="checkbox" id="opt-glitches" checked> Remove glitches (pulses shorter than 64 µs)</label>
+        <label class="choice"><input type="checkbox" id="opt-pauses" checked> Join pauses and remove noise inside them</label>
+        <label class="choice"><input type="checkbox" id="opt-cbm" checked> ROM loader: set ideal pulse lengths and repair damaged blocks from the second copy</label>
+        <label class="choice"><input type="checkbox" id="opt-generic" checked> Other loaders: move pulses onto the center of their length group</label>
+        <button type="button" class="btn btn-primary" id="btn-optimize" disabled>Optimize</button>
+        <ul class="report" id="opt-report" hidden></ul>
+      </section>
+    </div>
+
+    <aside class="side">
+      <section class="panel" aria-labelledby="adapter-title">
+        <h2 id="adapter-title">Adapter</h2>
+        <p class="conn" id="conn"><span class="dot"></span><span id="conn-text">Not connected</span></p>
+        <div class="field">
+          <label for="adapter-kind">Adapter type</label>
+          <select id="adapter-kind">
+            <option value="auto" selected>Detect automatically</option>
+            <option value="TapeBuddy64">TapeBuddy64</option>
+            <option value="TapeDump64">TapeDump64</option>
+            <option value="DumpMaster64">DumpMaster64</option>
+          </select>
+        </div>
+        <button type="button" class="btn btn-wide" id="btn-connect">Connect adapter</button>
+        <p class="field-note">The first time, your browser asks which USB device to use; after that the adapter is found automatically. Set the switch on the adapter to UART.</p>
+      </section>
+
+      <section class="panel" aria-labelledby="image-title">
+        <h2 id="image-title">TAP file</h2>
+        <dl class="facts" id="facts"><dt>File</dt><dd>None yet</dd></dl>
+        <div class="field">
+          <label for="tap-name">File name</label>
+          <input type="text" id="tap-name" value="tape.tap" spellcheck="false">
+        </div>
+        <div class="stack">
+          <button type="button" class="btn btn-wide" id="btn-save" disabled>Download TAP</button>
+          <button type="button" class="btn btn-wide" id="btn-save-opt" hidden>Download optimized TAP</button>
+        </div>
+      </section>
+
+      <section class="panel log-panel" aria-labelledby="log-title">
+        <h2 id="log-title">Log</h2>
+        <ol class="log" id="log"></ol>
+      </section>
+    </aside>
+  </main>
+
+  <footer class="site-footer">
+    TAP Tape Transfer by <a href="https://github.com/wagiminator">wagiminator</a>, based on the Python tools in the <a href="https://github.com/wagiminator/C64-Collection">C64 Collection</a>. For full format-aware cleaning use <a href="https://sourceforge.net/projects/tapclean/">TAPClean</a>.
+  </footer>
+
+  <script src="../../assets/js/serial-link.js"></script>
+  <script src="../../assets/js/tap.js"></script>
+  <script src="tapeadapter.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
