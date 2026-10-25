@@ -12,9 +12,11 @@
   // Buffers everything the port sends and offers pySerial-like reads:
   // read(n) waits up to `timeout` ms and may return fewer bytes.
   class SerialLink {
-    constructor(port, baud) {
+    // options: extra settings for port.open(), e.g. { parity: "even" }
+    constructor(port, baud, options) {
       this.port = port;
       this.baud = baud || 460800;
+      this.options = options || {};
       this.chunks = [];
       this.length = 0;
       this.waiter = null;
@@ -22,8 +24,9 @@
     }
 
     async open() {
-      await this.port.open({ baudRate: this.baud, bufferSize: 1 << 20 });
-      try { await this.port.setSignals({ dataTerminalReady: true, requestToSend: true }); } catch (e) { /* not supported by every port */ }
+      await this.port.open(Object.assign({ baudRate: this.baud, bufferSize: 1 << 20 }, this.options));
+      // DTR and RTS on after opening, as pySerial does
+      await this.setSignals({ dtr: true, rts: true });
       this.writer = this.port.writable.getWriter();
       this.reader = this.port.readable.getReader();
       this.loop = this.readLoop();
@@ -97,6 +100,14 @@
     }
 
     flushInput() { this.chunks = []; this.length = 0; }
+
+    // Set control lines: { dtr, rts } (true = asserted, as in pySerial)
+    async setSignals(sig) {
+      const s = {};
+      if (sig.dtr !== undefined) s.dataTerminalReady = !!sig.dtr;
+      if (sig.rts !== undefined) s.requestToSend = !!sig.rts;
+      try { await this.port.setSignals(s); return true; } catch (e) { return false; }   // not supported by every port
+    }
 
     // Put bytes back in front of the buffer (read too far)
     unread(bytes) {

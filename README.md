@@ -20,6 +20,7 @@ apps/
   cart-builder/         C64 Cartridge Builder
   rvprog/               WCH RISC-V Programmer
   chprog/               WCH USB Programmer
+  puyaisp/              PUYA ISP Programmer
   mt3608-sepic/         MT3608 SEPIC Voltage Calculator
 mt3608_sepic.html       Redirect for the calculator's old address
 ```
@@ -127,3 +128,17 @@ Flashes WCH microcontrollers over USB with their factory bootloader (version 2.x
 - Tested against a simulated bootloader: the USB traffic is byte-identical to chprog.py (with that padding fixed for unaligned lengths).
 
 Code: `chprog.js` is the programmer, `tables.js` holds the chip table taken from chprog.py, `app.js` is the user interface.
+
+### PUYA ISP Programmer
+
+Flashes PUYA PY32 microcontrollers through a USB-to-serial converter and the UART bootloader built into the chip. A JavaScript port of [puyaisp](https://github.com/wagiminator/MCU-Flash-Tools) v1.4 (MIT License) using the Web Serial API (115200 baud by default, 8E1) and, for chips with a USB HID bootloader, the WebHID API.
+
+- Chips: PY32F0xx (PY32F002A/B, PY32F003, PY32F030, bootloader PID 0x440) and PY32F07x/F040 (PID 0x448); other PIDs can be flashed, but their option bytes are not changed.
+- Flash BIN and Intel HEX files to 0x08000000: the chip is erased, written, verified byte by byte and started. Optionally lock the chip and set the nRST pin as GPIO or RESET afterwards.
+- Chip actions: read chip info (bootloader version, option bytes OPTR/SDKR/WRPR, read protection, nRST mode), erase, unlock (removes the read protection and erases the chip), lock, nRST as GPIO or RESET, reset the option bytes.
+- With a CH340X converter whose DTR and RTS lines are wired to BOOT0 and nRST, the bootloader is started and the chip reset automatically, using the same control-line sequence as puyaisp.
+- Differences to puyaisp.py: verification compares every byte (puyaisp.py compares only the sets of byte values, `set(flash) != set(data)`, so swapped or repeated bytes pass); the bootloader version shows the full low nibble (`ver & 0x0f` instead of `ver & 7`); a NACK on the sync byte counts as "already synchronized", so a chip that stayed in bootloader mode (after Read chip info) needs no reset before the next action.
+- Needs Chrome, Edge or Opera on a desktop computer.
+- Tested against a simulated PY32 bootloader: bytes and control-line changes are identical to puyaisp.py for serial and HID transports.
+
+Code: `puyaisp.js` is the programmer, `app.js` is the user interface; `/assets/js/serial-link.js` and `/assets/js/firmware.js` are shared with other apps.

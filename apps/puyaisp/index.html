@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PUYA ISP Programmer</title>
+  <meta name="description" content="Flash PUYA PY32 microcontrollers (PY32F002, PY32F003, PY32F030, PY32F07x) through a USB-to-serial converter and their UART bootloader, straight from the browser.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chivo:wght@400;700&display=swap">
+  <link rel="stylesheet" href="../../assets/css/site.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav class="site-bar" aria-label="Breadcrumb">
+    <a href="../../">wagiminator</a><span class="sep">/</span><span>Apps</span><span class="sep">/</span><span>PUYA ISP Programmer</span>
+  </nav>
+
+  <main class="app">
+    <header class="app-head">
+      <h1>PUYA ISP Programmer</h1>
+      <p>Flash PUYA PY32 microcontrollers (PY32F002A/B, PY32F003, PY32F030, PY32F07x, PY32F040) with a cheap USB-to-serial converter and the bootloader built into every chip. Write BIN and HEX files, erase, lock and unlock the chip and set the nRST pin.</p>
+    </header>
+
+    <p class="banner" id="unsupported" hidden>This browser cannot access serial ports. Open this page in Chrome, Edge or Opera on a desktop computer.</p>
+
+    <div class="work">
+      <section class="panel" aria-labelledby="fw-title">
+        <h2 id="fw-title">Firmware</h2>
+        <label class="drop" id="drop" for="file-input">
+          <strong id="fw-name">Drop a .bin or .hex file here or choose one</strong>
+          <span id="fw-info">BIN files are written to the start of the flash (0x08000000), HEX files to their addresses.</span>
+          <input type="file" id="file-input" accept=".bin,.hex,.ihx">
+        </label>
+        <div class="fit" id="fit" hidden>
+          <div class="fit-bar" aria-hidden="true"><div id="fit-used"></div></div>
+          <p class="fit-text" id="fit-text"></p>
+        </div>
+        <ul class="messages" id="fw-messages"></ul>
+        <div class="after" role="group" aria-label="After flashing">
+          <label><input type="checkbox" id="opt-lock"> Lock the chip afterwards</label>
+          <label>nRST pin
+            <select id="opt-nrst">
+              <option value="">unchanged</option>
+              <option value="gpio">as GPIO</option>
+              <option value="reset">as RESET</option>
+            </select>
+          </label>
+        </div>
+        <div class="flash-row">
+          <button type="button" class="btn btn-primary btn-big" id="btn-flash" disabled>Flash firmware</button>
+          <div class="progress-wrap" id="progress" hidden>
+            <div class="progress"><div id="progress-bar"></div></div>
+            <span class="progress-label" id="progress-label"></span>
+          </div>
+        </div>
+        <p class="hint">Put the chip into bootloader mode, choose Flash firmware and select the converter's serial port. The chip is erased, the firmware written and verified byte by byte, and the chip starts it.</p>
+      </section>
+
+      <section class="panel" aria-labelledby="chip-act-title">
+        <h2 id="chip-act-title">Chip</h2>
+        <div class="actions">
+          <div class="action">
+            <button type="button" class="btn" id="btn-info" disabled>Read chip info</button>
+            <p>Shows the chip family, bootloader version and option bytes. The chip stays in bootloader mode.</p>
+          </div>
+          <div class="action">
+            <button type="button" class="btn" id="btn-erase" disabled>Erase chip</button>
+            <p>Erases the whole flash.</p>
+          </div>
+          <div class="action">
+            <button type="button" class="btn" id="btn-unlock" disabled>Unlock chip</button>
+            <p>Removes the read protection. This erases the chip and resets the option bytes.</p>
+          </div>
+        </div>
+        <details class="more">
+          <summary>Option bytes</summary>
+          <div class="actions">
+            <div class="action">
+              <button type="button" class="btn" id="btn-lock" disabled>Lock chip</button>
+              <p>Sets the read protection. The flash can then not be read until the chip is unlocked (and erased).</p>
+            </div>
+            <div class="action">
+              <button type="button" class="btn" id="btn-gpio" disabled>nRST as GPIO</button>
+              <p>Uses the reset pin (PF2 on PY32F0xx) as a normal I/O pin.</p>
+            </div>
+            <div class="action">
+              <button type="button" class="btn" id="btn-reset" disabled>nRST as RESET</button>
+              <p>Makes the pin the reset pin again.</p>
+            </div>
+            <div class="action">
+              <button type="button" class="btn" id="btn-rstopt" disabled>Reset option bytes</button>
+              <p>Writes the factory defaults of the option bytes.</p>
+            </div>
+          </div>
+        </details>
+      </section>
+
+      <section class="panel" aria-labelledby="boot-title">
+        <h2 id="boot-title">Wiring and bootloader mode</h2>
+        <p class="small">Connect the converter to the chip (3.3 V or 5 V, as the chip is powered):</p>
+        <pre class="wiring">Converter   PY32F0xx
+   RXD  &lt;-- PA2 or PA9  or PA14
+   TXD  --&gt; PA3 or PA10 or PA15
+   VCC  --&gt; VCC
+   GND  --&gt; GND</pre>
+        <p class="small">Then start the bootloader in ONE of these ways:</p>
+        <ul class="ways">
+          <li><strong>While powering up:</strong> unplug the converter, pull BOOT0 (PF4) to VCC or hold the BOOT button, plug the converter in and release BOOT0.</li>
+          <li><strong>With a reset:</strong> pull BOOT0 (PF4) to VCC, briefly pull nRST (PF2) to GND, release BOOT0 (or hold BOOT, press and release RESET, release BOOT).</li>
+          <li><strong>Automatically:</strong> with a CH340X converter whose control lines are wired to nRST and BOOT0, the app starts the bootloader by itself and resets the chip afterwards.</li>
+        </ul>
+      </section>
+    </div>
+
+    <aside class="side">
+      <section class="panel" aria-labelledby="dev-title">
+        <h2 id="dev-title">Converter</h2>
+        <p class="conn" id="conn"><span class="dot"></span><span id="conn-text">No port chosen</span></p>
+        <p class="link-note" id="link-note">Every action asks for the serial port the first time.</p>
+        <button type="button" class="btn btn-wide" id="btn-port">Choose serial port</button>
+        <details class="more">
+          <summary>More options</summary>
+          <div class="radio" role="radiogroup" aria-label="Bootloader connection">
+            <label><input type="radio" name="transport" value="serial" checked> UART through a USB-to-serial converter</label>
+            <label><input type="radio" name="transport" value="hid"> USB HID bootloader (VID FFFF, PID 0448)</label>
+          </div>
+          <label class="field"><span>Baud rate</span>
+            <select id="baud">
+              <option>4800</option><option>9600</option><option>19200</option><option>38400</option><option>57600</option>
+              <option selected>115200</option><option>230400</option><option>460800</option><option>500000</option><option>921600</option><option>1000000</option>
+            </select>
+            <small>The bootloader detects the rate itself; 115200 is the most reliable.</small>
+          </label>
+          <p class="small"><strong>Drivers:</strong> CH340, CP210x and FTDI converters usually work without installing anything on current Windows, macOS and Linux versions; otherwise install the manufacturer's driver. On Linux the user must be in the <code>dialout</code> group.</p>
+        </details>
+      </section>
+
+      <section class="panel" aria-labelledby="chip-title">
+        <h2 id="chip-title">Connected chip</h2>
+        <dl class="facts" id="chip-facts"><dt>Chip</dt><dd>Not read yet</dd></dl>
+      </section>
+
+      <section class="panel log-panel" aria-labelledby="log-title">
+        <h2 id="log-title">Log</h2>
+        <ol class="log" id="log"></ol>
+      </section>
+    </aside>
+  </main>
+
+  <footer class="site-footer">
+    PUYA ISP Programmer by <a href="https://github.com/wagiminator">wagiminator</a>, a port of <a href="https://github.com/wagiminator/MCU-Flash-Tools">puyaisp</a> (MIT License).
+  </footer>
+
+  <script src="../../assets/js/firmware.js"></script>
+  <script src="../../assets/js/serial-link.js"></script>
+  <script src="puyaisp.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
