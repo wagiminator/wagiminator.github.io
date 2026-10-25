@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>D64 Disk Viewer</title>
+  <meta name="description" content="Turn a Commodore 64 disk image (.d64) into a picture of the floppy disk, showing every track, sector and bit. Runs entirely in your browser.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chivo:wght@400;700&family=Press+Start+2P&display=swap">
+  <link rel="stylesheet" href="../../assets/css/site.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav class="site-bar" aria-label="Breadcrumb">
+    <a href="../../">wagiminator</a><span class="sep">/</span><span>Apps</span><span class="sep">/</span><span>D64 Disk Viewer</span>
+  </nav>
+
+  <main class="app">
+    <header class="app-head">
+      <h1>D64 Disk Viewer</h1>
+      <p>Turns a Commodore 64 disk image into a picture of the floppy: every ring is a track, every segment a sector, every stripe a bit. Your file stays on your computer; nothing is uploaded.</p>
+    </header>
+
+    <section class="stage" id="stage">
+      <!-- Empty state: drop zone -->
+      <label class="dropzone" id="dropzone" for="file-input">
+        <svg class="dropzone-disk" viewBox="0 0 100 100" aria-hidden="true">
+          <circle cx="50" cy="50" r="48" />
+          <circle cx="50" cy="50" r="40" class="track" />
+          <circle cx="50" cy="50" r="32" class="track" />
+          <circle cx="50" cy="50" r="24" class="track" />
+          <circle cx="50" cy="50" r="8" class="hole" />
+        </svg>
+        <strong>Drop a .d64 file here</strong>
+        <span>or <span class="link-like">choose a file</span> from your computer</span>
+        <input type="file" id="file-input" accept=".d64,application/octet-stream">
+      </label>
+
+      <!-- Loaded state: preview -->
+      <div class="preview" id="preview" hidden>
+        <div class="preview-bar">
+          <span class="file-name" id="file-name"></span>
+          <button type="button" class="btn btn-quiet" id="open-other">Open another file</button>
+        </div>
+        <div class="canvas-wrap" id="canvas-wrap">
+          <div class="busy" id="busy" hidden>Drawing the disk…</div>
+        </div>
+        <p class="hover-info" id="hover-info" aria-live="polite">Point at the disk to see track, sector and file.</p>
+      </div>
+
+      <p class="error" id="error" role="alert" hidden></p>
+    </section>
+
+    <aside class="side" id="side" hidden>
+      <section class="panel">
+        <h2>Image</h2>
+        <div class="field">
+          <label for="opt-size">Size</label>
+          <select id="opt-size">
+            <option value="1024">1024 × 1024 px</option>
+            <option value="2048" selected>2048 × 2048 px</option>
+            <option value="4096">4096 × 4096 px</option>
+          </select>
+        </div>
+        <fieldset class="field">
+          <legend>Background</legend>
+          <label class="choice"><input type="radio" name="opt-bg" value="black" checked> Black</label>
+          <label class="choice"><input type="radio" name="opt-bg" value="transparent"> Transparent</label>
+        </fieldset>
+        <div class="field">
+          <label for="opt-label">Label text</label>
+          <input type="text" id="opt-label" maxlength="40" spellcheck="false">
+        </div>
+        <label class="choice"><input type="checkbox" id="opt-diskname" checked> Disk name and ID on the label</label>
+        <button type="button" class="btn btn-primary" id="download">Download PNG</button>
+      </section>
+
+      <section class="panel">
+        <h2>Legend</h2>
+        <ul class="legend" id="legend"></ul>
+      </section>
+
+      <section class="panel">
+        <h2>Directory</h2>
+        <p class="hint">Select a file to highlight its sectors. The download shows the highlight too.</p>
+        <div class="c64" id="directory"></div>
+        <button type="button" class="btn btn-quiet" id="clear-highlight" hidden>Show all files</button>
+      </section>
+
+      <section class="panel">
+        <h2>Disk</h2>
+        <dl class="facts" id="facts"></dl>
+      </section>
+    </aside>
+  </main>
+
+  <footer class="site-footer">
+    D64 Disk Viewer by <a href="https://github.com/wagiminator">wagiminator</a>. Inspired by the disk pictures of <a href="https://cbm8bit.com/webdrive/">WebDrive</a>.
+  </footer>
+
+  <script src="d64.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

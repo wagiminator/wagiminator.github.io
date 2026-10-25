@@ -4,31 +4,23 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>wagiminator</title>
+    <link rel="stylesheet" href="assets/css/site.css">
     <style>
         body {
             font-family: Arial, sans-serif;
-            background-color: #f4f4f9;
-            color: #333;
             text-align: center;
             padding: 20px;
         }
         h1 {
-            color: #00509e;
-        }
-        a {
-            text-decoration: none;
-            color: #007bff;
-        }
-        a:hover {
-            color: #0056b3;
+            color: var(--brand);
         }
         .content {
             margin: 20px auto;
             padding: 20px;
             max-width: 800px;
-            background: white;
+            background: var(--surface);
             box-shadow: 0 0 10px rgba(0,0,0,0.1);
-            border-radius: 8px;
+            border-radius: var(--radius);
         }
         .links {
             margin-top: 20px;
@@ -37,6 +29,31 @@
             display: block;
             margin: 10px 0;
         }
+        /* Web Apps: one entry per app in /apps/ */
+        .apps {
+            list-style: none;
+            margin: 0 auto;
+            padding: 0;
+            max-width: 560px;
+            text-align: left;
+        }
+        .apps li {
+            padding: 12px 0;
+            border-bottom: 1px solid var(--line);
+        }
+        .apps li:last-child {
+            border-bottom: 0;
+        }
+        .apps a {
+            display: inline;
+            margin: 0;
+            font-weight: bold;
+        }
+        .apps p {
+            margin: 4px 0 0;
+            color: var(--ink-soft);
+            font-size: 0.9375rem;
+        }
     </style>
 </head>
 <body>
@@ -44,6 +61,17 @@
         <h1>wagiminator</h1>
         <p>Hobbyist who likes to build simple projects around simple microcontrollers.</p>
         <div class="links">
+            <h2>Web Apps</h2>
+                <ul class="apps">
+                    <li>
+                        <a href="apps/d64-viewer/">D64 Disk Viewer</a>
+                        <p>Turns a C64 disk image (.d64) into a picture of the floppy disk, showing every track, sector and bit.</p>
+                    </li>
+                    <li>
+                        <a href="apps/mt3608-sepic/">MT3608 SEPIC Voltage Calculator</a>
+                        <p>Finds resistor values for the output voltage of the MT3608 SEPIC converter.</p>
+                    </li>
+                </ul>
             <h2>Useful Links</h2>
                 <h3>My Project Pages</h3>
                 <a href="https://github.com/wagiminator">My Projects on Github</a>
@@ -62,7 +90,6 @@
                 <a href="https://www.rapidtables.com/convert/number/hex-to-decimal.html">Hex to Dec Converter</a>
                 <a href="https://www.rapidtables.com/calc/math/binary-calculator.html">Binary Calculator</a>
                 <a href="https://www.ti.com/download/kbase/volt/volt_div3.htm">Voltage Divider Calculator</a>
-                <a href="mt3608_sepic.html">MT3608 SEPIC Voltage Calculator</a>
                 <a href="http://sim.okawa-denshi.jp/Fkeisan.htm">Filter Calculation Tool</a>
                 <h3>Graphic Tools</h3>
                 <a href="http://sourpuss.net/projects/fontedit/">OLED Font Editor</a>

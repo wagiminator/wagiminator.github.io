@@ -1,0 +1,8 @@
+/* App-specific styles. Shared styles and color tokens: /assets/css/site.css */
+
+.app {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 1.5rem 1.25rem 0;
+}
+.app h1 { margin: 0 0 0.35rem; color: var(--brand); }

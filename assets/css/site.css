@@ -1,0 +1,72 @@
+/* ===================================================================
+ * Shared styles for wagiminator.github.io
+ * Used by the start page and by every app in /apps/.
+ * Apps add their own stylesheet for app-specific layout.
+ * =================================================================== */
+
+:root {
+  --bg: #f4f4f9;
+  --surface: #ffffff;
+  --ink: #2b2f36;
+  --ink-soft: #5d6470;
+  --line: #dcdde6;
+  --brand: #00509e;
+  --link: #0a66c8;
+  --link-hover: #00427f;
+  --focus: #f0a400;
+  --radius: 8px;
+  --shadow: 0 1px 2px rgba(20, 30, 60, 0.06), 0 4px 16px rgba(20, 30, 60, 0.06);
+  --font: "Chivo", Arial, Helvetica, sans-serif;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html { -webkit-text-size-adjust: 100%; }
+
+[hidden] { display: none !important; }
+
+body {
+  margin: 0;
+  font-family: var(--font);
+  font-size: 16px;
+  line-height: 1.5;
+  background: var(--bg);
+  color: var(--ink);
+}
+
+a { color: var(--link); text-decoration: none; }
+a:hover { color: var(--link-hover); text-decoration: underline; }
+
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+
+h1, h2, h3 { line-height: 1.2; }
+
+/* ---------- Site bar (shown on app pages) ---------- */
+
+.site-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
+  padding: 0.75rem 1.25rem;
+  font-size: 0.9375rem;
+  color: var(--ink-soft);
+  border-bottom: 1px solid var(--line);
+  background: var(--surface);
+}
+.site-bar a { color: var(--brand); font-weight: 700; }
+.site-bar .sep { color: var(--line); }
+
+/* ---------- Footer ---------- */
+
+.site-footer {
+  max-width: 1200px;
+  margin: 3rem auto 2rem;
+  padding: 0 1.25rem;
+  font-size: 0.875rem;
+  color: var(--ink-soft);
+  text-align: center;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition: none !important; animation: none !important; }
+}
