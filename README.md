@@ -7,10 +7,12 @@ Personal page of wagiminator with links and small browser apps, published with G
 ```
 index.html              Start page (links and the "Web Apps" list)
 assets/css/site.css     Shared styles and color tokens for all pages
+assets/js/d64edit.js    Shared D64 disk library (editor and transfer app)
 apps/
   _template/            Starting point for a new app (not published)
   d64-viewer/           D64 Disk Viewer
   d64-editor/           D64 Disk Editor
+  d64-transfer/         D64 Disk Transfer
   mt3608-sepic/         MT3608 SEPIC Voltage Calculator
 mt3608_sepic.html       Redirect for the calculator's old address
 ```
@@ -57,4 +59,16 @@ Edits Commodore 64 disk images: add and remove files, arrange the directory, add
 - Shows blocks free, directory usage, split files and a sector map of the whole disk. Undo and redo for every change.
 - Saved images have no error info.
 
-Code: `d64edit.js` is the disk library (no dependencies, also runs in Node.js), `app.js` is the user interface.
+Code: `/assets/js/d64edit.js` is the disk library (no dependencies, also runs in Node.js), `app.js` is the user interface.
+
+### D64 Disk Transfer
+
+Reads, writes and formats real floppy disks in a 1541 or 1541-II drive through a [DiskBuddy64](https://github.com/wagiminator/C64-Collection/tree/master/C64_DiskBuddy64), [DiskMaster64](https://github.com/wagiminator/C64-Collection/tree/master/C64_DiskMaster64) or [DumpMaster64](https://github.com/wagiminator/C64-Collection/tree/master/C64_DumpMaster64) adapter.
+
+- Uses the Web Serial API, which Chrome, Edge and Opera offer on desktop computers (not Firefox, Safari or iOS).
+- The browser asks once which USB device to use (filtered to the adapters' USB ids). After that the app reconnects by itself, identifies the adapter by asking for its name and looks for drives 8 to 11, including the drive model.
+- Read disk (optionally only sectors used in the BAM, error info for unreadable sectors), write disk (optionally with read-back verify), format disk (bump, demagnetize, verify) and read the directory. A sector map shows the progress; long operations can be stopped after the current track.
+- A disk that was read can be downloaded or opened directly in the Disk Editor or Disk Viewer.
+- Not supported: the xu1541, which uses the OpenCBM USB protocol instead of a serial port.
+
+Code: `adapter.js` is a port of the adapters' Python library (`software/pc/libs/adapter.py`) including both block transfer variants, `drivecode.js` contains the 6502 fast loaders that are uploaded into the drive, `app.js` is the user interface.

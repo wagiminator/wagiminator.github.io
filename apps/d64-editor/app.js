@@ -595,4 +595,17 @@
   /* ---------- Start with an empty disk ---------- */
 
   setDisk(L.Disk.create(35, "NEW DISK", "00"), "", []);
+
+  /* ---------- Image handed over by another app (e.g. D64 Disk Transfer) ---------- */
+
+  if (new URLSearchParams(location.search).has("import")) {
+    try {
+      const h = JSON.parse(localStorage.getItem("wagiminator.d64-handoff") || "null");
+      localStorage.removeItem("wagiminator.d64-handoff");
+      if (h) {
+        const bytes = Uint8Array.from(atob(h.data), (c) => c.charCodeAt(0));
+        openD64(new File([bytes], h.name));
+      }
+    } catch (e) { /* nothing handed over */ }
+  }
 })();

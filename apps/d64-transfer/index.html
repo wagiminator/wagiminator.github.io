@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>D64 Disk Transfer</title>
+  <meta name="description" content="Read, write and format real 1541 floppy disks from the browser with a DiskBuddy64, DiskMaster64 or DumpMaster64 USB adapter.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chivo:wght@400;700&family=Press+Start+2P&display=swap">
+  <link rel="stylesheet" href="../../assets/css/site.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav class="site-bar" aria-label="Breadcrumb">
+    <a href="../../">wagiminator</a><span class="sep">/</span><span>Apps</span><span class="sep">/</span><span>D64 Disk Transfer</span>
+  </nav>
+
+  <main class="app">
+    <header class="app-head">
+      <h1>D64 Disk Transfer</h1>
+      <p>Read a floppy disk into a .d64 image, write an image back to a disk or format a disk, using a 1541 or 1541-II drive and a <a href="https://github.com/wagiminator/C64-Collection/tree/master/C64_DiskBuddy64">DiskBuddy64</a>, <a href="https://github.com/wagiminator/C64-Collection/tree/master/C64_DiskMaster64">DiskMaster64</a> or <a href="https://github.com/wagiminator/C64-Collection/tree/master/C64_DumpMaster64">DumpMaster64</a> adapter.</p>
+    </header>
+
+    <p class="banner" id="unsupported" hidden>This browser cannot talk to USB serial devices. Open this page in Chrome, Edge or Opera on a desktop computer.</p>
+
+    <div class="work">
+      <section class="panel tasks" aria-label="Disk operations">
+        <div class="tabs" role="tablist">
+          <button type="button" role="tab" id="tab-read" aria-controls="pane-read" aria-selected="true">Read disk</button>
+          <button type="button" role="tab" id="tab-write" aria-controls="pane-write" aria-selected="false" tabindex="-1">Write disk</button>
+          <button type="button" role="tab" id="tab-format" aria-controls="pane-format" aria-selected="false" tabindex="-1">Format disk</button>
+          <button type="button" role="tab" id="tab-dir" aria-controls="pane-dir" aria-selected="false" tabindex="-1">Directory</button>
+        </div>
+
+        <div class="pane" role="tabpanel" id="pane-read" aria-labelledby="tab-read">
+          <p class="pane-intro">Copies the disk in the drive into a .d64 image that you can download or open in the Disk Editor or Disk Viewer.</p>
+          <fieldset class="field">
+            <legend>Tracks</legend>
+            <label class="choice"><input type="radio" name="read-tracks" value="35" checked> 35 (standard)</label>
+            <label class="choice"><input type="radio" name="read-tracks" value="40"> 40 (extended)</label>
+          </fieldset>
+          <label class="choice"><input type="checkbox" id="read-bam" checked> Only read sectors marked as used in the BAM (faster)</label>
+          <label class="choice"><input type="checkbox" id="read-errinfo" checked> Add error info to the image if sectors cannot be read</label>
+          <button type="button" class="btn btn-primary task-btn" id="btn-read">Read disk</button>
+        </div>
+
+        <div class="pane" role="tabpanel" id="pane-write" aria-labelledby="tab-write" hidden>
+          <p class="pane-intro">Writes a .d64 image to the disk in the drive. Everything on the disk is overwritten.</p>
+          <label class="drop" id="write-drop" for="write-input">
+            <strong id="write-file">Drop a .d64 file here or choose one</strong>
+            <span id="write-info">35 or 40 tracks, with or without error info.</span>
+            <input type="file" id="write-input" accept=".d64">
+          </label>
+          <label class="choice"><input type="checkbox" id="write-bam" checked> Only write sectors marked as used in the BAM (faster)</label>
+          <label class="choice"><input type="checkbox" id="write-verify" checked> Read the disk back and compare after writing</label>
+          <button type="button" class="btn btn-primary task-btn" id="btn-write" disabled>Write disk</button>
+        </div>
+
+        <div class="pane" role="tabpanel" id="pane-format" aria-labelledby="tab-format" hidden>
+          <p class="pane-intro">Formats the disk in the drive with a fast formatter. Everything on the disk is erased.</p>
+          <div class="field-row">
+            <div class="field">
+              <label for="format-name">Disk name</label>
+              <input type="text" id="format-name" class="petscii-input" value="COMMODORE" maxlength="16" spellcheck="false">
+            </div>
+            <div class="field field-id">
+              <label for="format-id">ID</label>
+              <input type="text" id="format-id" class="petscii-input" value="64" maxlength="2" spellcheck="false">
+            </div>
+          </div>
+          <fieldset class="field">
+            <legend>Tracks</legend>
+            <label class="choice"><input type="radio" name="format-tracks" value="35" checked> 35 (standard)</label>
+            <label class="choice"><input type="radio" name="format-tracks" value="40"> 40 (extended)</label>
+          </fieldset>
+          <label class="choice"><input type="checkbox" id="format-bump" checked> Move the head to track 1 first (bump)</label>
+          <label class="choice"><input type="checkbox" id="format-clear"> Erase (demagnetize) the disk first, recommended for new disks</label>
+          <label class="choice"><input type="checkbox" id="format-verify"> Verify every track after formatting</label>
+          <button type="button" class="btn btn-primary task-btn" id="btn-format">Format disk</button>
+        </div>
+
+        <div class="pane" role="tabpanel" id="pane-dir" aria-labelledby="tab-dir" hidden>
+          <p class="pane-intro">Shows the directory of the disk in the drive without copying the whole disk.</p>
+          <button type="button" class="btn btn-primary task-btn" id="btn-dir">Read directory</button>
+          <div class="c64" id="dir-screen" hidden></div>
+        </div>
+      </section>
+
+      <section class="panel progress" aria-labelledby="progress-title">
+        <div class="panel-head">
+          <h2 id="progress-title">Progress</h2>
+          <button type="button" class="btn" id="btn-cancel" hidden>Stop after this track</button>
+        </div>
+        <p class="activity" id="activity" aria-live="polite">Connect the adapter, then choose what to do with the disk.</p>
+        <div class="stats" id="stats"></div>
+        <div class="map-scroll">
+          <div class="disk-map" id="disk-map"></div>
+        </div>
+        <ul class="map-legend">
+          <li><span class="cell"></span>Waiting</li>
+          <li><span class="cell skip"></span>Skipped (free)</li>
+          <li><span class="cell busy"></span>In progress</li>
+          <li><span class="cell ok"></span>Done</li>
+          <li><span class="cell verified"></span>Verified</li>
+          <li><span class="cell error"></span>Error</li>
+        </ul>
+      </section>
+
+      <section class="panel result" id="result" aria-labelledby="result-title" hidden>
+        <h2 id="result-title">Disk image</h2>
+        <div class="c64" id="result-screen"></div>
+        <div class="field">
+          <label for="result-name">File name</label>
+          <input type="text" id="result-name" spellcheck="false">
+        </div>
+        <div class="result-actions">
+          <button type="button" class="btn btn-primary" id="btn-download">Download .d64</button>
+          <button type="button" class="btn" id="btn-to-editor">Open in Disk Editor</button>
+          <button type="button" class="btn" id="btn-to-viewer">Open in Disk Viewer</button>
+        </div>
+      </section>
+    </div>
+
+    <aside class="side">
+      <section class="panel" aria-labelledby="adapter-title">
+        <h2 id="adapter-title">Adapter</h2>
+        <p class="conn" id="conn"><span class="dot"></span><span id="conn-text">Not connected</span></p>
+        <div class="field">
+          <label for="adapter-kind">Adapter type</label>
+          <select id="adapter-kind">
+            <option value="auto" selected>Detect automatically</option>
+            <option value="DiskBuddy64">DiskBuddy64</option>
+            <option value="DiskMaster64">DiskMaster64</option>
+            <option value="DumpMaster64">DumpMaster64</option>
+          </select>
+        </div>
+        <button type="button" class="btn btn-wide" id="btn-connect">Connect adapter</button>
+        <p class="field-note">The first time, your browser asks which USB device to use. After that the adapter is found automatically. DumpMaster64: set the mode switch to UART.</p>
+      </section>
+
+      <section class="panel" aria-labelledby="drive-title">
+        <h2 id="drive-title">Drive</h2>
+        <div class="field">
+          <label for="drive">Device number</label>
+          <select id="drive">
+            <option value="8">8</option><option value="9">9</option><option value="10">10</option><option value="11">11</option>
+          </select>
+        </div>
+        <p class="drive-info" id="drive-info">No drive checked yet.</p>
+        <button type="button" class="btn btn-wide" id="btn-detect" disabled>Find drives</button>
+      </section>
+
+      <section class="panel log-panel" aria-labelledby="log-title">
+        <h2 id="log-title">Log</h2>
+        <ol class="log" id="log"></ol>
+      </section>
+    </aside>
+  </main>
+
+  <footer class="site-footer">
+    D64 Disk Transfer by <a href="https://github.com/wagiminator">wagiminator</a>, based on the Python tools of the adapters in the <a href="https://github.com/wagiminator/C64-Collection">C64 Collection</a>.
+  </footer>
+
+  <script src="../../assets/js/d64edit.js"></script>
+  <script src="drivecode.js"></script>
+  <script src="adapter.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
