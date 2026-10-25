@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AVR Tiny UPDI Programmer</title>
+  <meta name="description" content="Flash tinyAVR 0-, 1- and 2-series microcontrollers through a USB-to-serial converter on their UPDI pin, set fuses and the oscillator, straight from the browser.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chivo:wght@400;700&display=swap">
+  <link rel="stylesheet" href="../../assets/css/site.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav class="site-bar" aria-label="Breadcrumb">
+    <a href="../../">wagiminator</a><span class="sep">/</span><span>Apps</span><span class="sep">/</span><span>AVR Tiny UPDI Programmer</span>
+  </nav>
+
+  <main class="app">
+    <header class="app-head">
+      <h1>AVR Tiny UPDI Programmer</h1>
+      <p>Program tinyAVR 0-, 1- and 2-series microcontrollers (ATtiny202 to ATtiny3227) with a plain USB-to-serial converter on their one-wire UPDI pin. Write BIN and HEX files, erase the chip, set the fuses and choose the 16 or 20 MHz oscillator.</p>
+    </header>
+
+    <p class="banner" id="unsupported" hidden>This browser cannot access serial ports. Open this page in Chrome, Edge or Opera on a desktop computer.</p>
+
+    <div class="work">
+      <section class="panel" aria-labelledby="fw-title">
+        <h2 id="fw-title">Firmware</h2>
+        <label class="drop" id="drop" for="file-input">
+          <strong id="fw-name">Drop a .bin or .hex file here or choose one</strong>
+          <span id="fw-info">BIN files are written to the start of the flash, HEX files to their addresses.</span>
+          <input type="file" id="file-input" accept=".bin,.hex,.ihx">
+        </label>
+        <div class="fit" id="fit" hidden>
+          <div class="fit-bar" aria-hidden="true"><div id="fit-used"></div></div>
+          <p class="fit-text" id="fit-text"></p>
+        </div>
+        <ul class="messages" id="fw-messages"></ul>
+        <div class="after">
+          <label><input type="checkbox" id="opt-settings"> Also write the changed fuses and the clock setting below</label>
+        </div>
+        <div class="flash-row">
+          <button type="button" class="btn btn-primary btn-big" id="btn-flash" disabled>Flash firmware</button>
+          <div class="progress-wrap" id="progress" hidden>
+            <div class="progress"><div id="progress-bar"></div></div>
+            <span class="progress-label" id="progress-label"></span>
+          </div>
+        </div>
+        <p class="hint">Choose Flash firmware and select the converter's serial port. The chip is erased, the firmware written and verified, and the chip restarts with it.</p>
+      </section>
+
+      <section class="panel" aria-labelledby="fuse-title">
+        <h2 id="fuse-title">Clock and fuses</h2>
+        <div class="osc-row">
+          <label for="osc">Clock</label>
+          <select id="osc"><option value="">unchanged</option></select>
+          <button type="button" class="btn" id="btn-trim" disabled>Set oscillator</button>
+        </div>
+        <p class="small">Selects the 16 or 20 MHz internal oscillator with its factory calibration (fuse OSCCFG). The firmware divides it down to the chosen clock with the prescaler, so build it for the same frequency (F_CPU).</p>
+        <div class="table-wrap">
+          <table class="fuses" id="fuses">
+            <thead><tr><th>#</th><th>Fuse</th><th>Chip</th><th>New</th><th>Meaning</th></tr></thead>
+            <tbody id="fuse-rows"></tbody>
+          </table>
+        </div>
+        <div class="btn-row">
+          <button type="button" class="btn" id="btn-readfuses" disabled>Read fuses</button>
+          <button type="button" class="btn btn-primary" id="btn-writefuses" disabled>Write changed fuses</button>
+        </div>
+        <p class="small">Enter new values as hex (for example 0x04). Empty fields stay as they are. Careful with SYSCFG0: if its reset pin setting is not UPDI, the chip can only be programmed again with a 12 V high-voltage programmer.</p>
+      </section>
+
+      <section class="panel" aria-labelledby="chip-act-title">
+        <h2 id="chip-act-title">Chip</h2>
+        <div class="actions">
+          <div class="action">
+            <button type="button" class="btn" id="btn-info" disabled>Read chip info</button>
+            <p>Shows chip type, flash size, revision, serial number and fuses. Changes nothing.</p>
+          </div>
+          <div class="action">
+            <button type="button" class="btn" id="btn-erase" disabled>Erase chip</button>
+            <p>Erases flash and EEPROM (unless SYSCFG0 keeps the EEPROM). Also unlocks a locked chip.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel" aria-labelledby="wire-title">
+        <h2 id="wire-title">Wiring</h2>
+        <p class="small">UPDI needs only one data wire. Join TXD and RXD of the converter through a resistor and connect RXD to the UPDI pin of the chip:</p>
+        <pre class="wiring">Converter              tinyAVR
+   TXD ---[ 1k ]---+
+   RXD ------------+---> UPDI
+   VCC ----------------> VCC
+   GND ----------------> GND</pre>
+        <p class="small">Any resistor from 470 Ω to 1 kΩ works, as does a Schottky diode with its cathode towards TXD. The converter and the chip must use the same voltage (3.3 V or 5 V). Boards with a built-in USB-to-UPDI circuit connect directly by USB.</p>
+      </section>
+    </div>
+
+    <aside class="side">
+      <section class="panel" aria-labelledby="dev-title">
+        <h2 id="dev-title">Converter</h2>
+        <p class="conn" id="conn"><span class="dot"></span><span id="conn-text">No port chosen</span></p>
+        <p class="link-note" id="link-note">Every action asks for the serial port the first time.</p>
+        <button type="button" class="btn btn-wide" id="btn-port">Choose serial port</button>
+        <details class="more">
+          <summary>More options</summary>
+          <label class="field"><span>UPDI baud rate</span>
+            <select id="baud">
+              <option>57600</option><option>115200</option><option selected>230400</option><option>460800</option>
+            </select>
+            <small>tinyupdi uses 230400. Try a lower rate if the connection is unreliable.</small>
+          </label>
+          <p class="small"><strong>Drivers:</strong> CH340, CP210x and FTDI converters usually work without installing anything on current Windows, macOS and Linux versions; otherwise install the manufacturer's driver. On Linux the user must be in the <code>dialout</code> group.</p>
+        </details>
+      </section>
+
+      <section class="panel" aria-labelledby="chip-title">
+        <h2 id="chip-title">Connected chip</h2>
+        <dl class="facts" id="chip-facts"><dt>Chip</dt><dd>Not read yet</dd></dl>
+      </section>
+
+      <section class="panel log-panel" aria-labelledby="log-title">
+        <h2 id="log-title">Log</h2>
+        <ol class="log" id="log"></ol>
+      </section>
+    </aside>
+  </main>
+
+  <footer class="site-footer">
+    AVR Tiny UPDI Programmer by <a href="https://github.com/wagiminator">wagiminator</a>, a port of <a href="https://github.com/wagiminator/MCU-Flash-Tools">tinyupdi</a> (MIT License), which is based on pyupdi and pymcuprog.
+  </footer>
+
+  <script src="../../assets/js/firmware.js"></script>
+  <script src="../../assets/js/serial-link.js"></script>
+  <script src="updi.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

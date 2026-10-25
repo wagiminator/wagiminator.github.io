@@ -21,6 +21,7 @@ apps/
   rvprog/               WCH RISC-V Programmer
   chprog/               WCH USB Programmer
   puyaisp/              PUYA ISP Programmer
+  tinyupdi/             AVR Tiny UPDI Programmer
   mt3608-sepic/         MT3608 SEPIC Voltage Calculator
 mt3608_sepic.html       Redirect for the calculator's old address
 ```
@@ -142,3 +143,18 @@ Flashes PUYA PY32 microcontrollers through a USB-to-serial converter and the UAR
 - Tested against a simulated PY32 bootloader: bytes and control-line changes are identical to puyaisp.py for serial and HID transports.
 
 Code: `puyaisp.js` is the programmer, `app.js` is the user interface; `/assets/js/serial-link.js` and `/assets/js/firmware.js` are shared with other apps.
+
+### AVR Tiny UPDI Programmer
+
+Programs tinyAVR 0-, 1- and 2-series microcontrollers through a USB-to-serial converter on their UPDI pin (TXD and RXD joined through a 470 Ω to 1 kΩ resistor). A JavaScript port of [tinyupdi](https://github.com/wagiminator/MCU-Flash-Tools) v1.5 (MIT License, based on pyupdi and pymcuprog) using the Web Serial API: double break at 300 baud, then UPDI at 230400 baud 8E2 (lower rates selectable).
+
+- Chips: the 37 tinyAVRs of tinyupdi's device table, ATtiny202 to ATtiny3227, detected by their signature.
+- Flash BIN and Intel HEX files: chip erase, page writes, verify. EEPROM and fuse sections in HEX files (0x810000 and up) are skipped with a note.
+- Clock: chooses the 16 or 20 MHz oscillator (fuse OSCCFG) for every frequency tinyupdi's `-t` accepts (oscillator divided by 1, 2, 4, 6, 8, 10, 12, 16, 24, 32, 48 or 64).
+- Fuses: reads and shows all fuses with their meaning, writes and verifies the changed ones. Settings that turn the UPDI pin into GPIO/RESET (SYSCFG0) or lock the chip (LOCKBIT) need a confirmation. Fuses and clock can be written together with the firmware.
+- Read chip info shows type, series, signature, flash and page size, revision and serial number. Erase chip also unlocks a locked chip.
+- Differences to tinyupdi.py: the last flash page is padded with 0xFF to the full page size (tinyupdi.py pads by `len(data) % pagesize` bytes instead of `-len(data) % pagesize`, so it writes up to a page of 0xFF beyond the data and, for files that nearly fill the flash, past its end); a locked chip is only erased (unlocked) for erase and flash, while tinyupdi.py erases it on every connection, even for fuse writes; after unlocking, programming mode is entered if it is not already active.
+- Needs Chrome, Edge or Opera on a desktop computer.
+- Tested against a simulated tinyAVR with one-wire echo: the serial traffic is byte-identical to tinyupdi.py (with the padding fixed for lengths that are not a multiple of the page size).
+
+Code: `updi.js` is the programmer, `app.js` is the user interface; `/assets/js/serial-link.js` and `/assets/js/firmware.js` are shared with other apps.
