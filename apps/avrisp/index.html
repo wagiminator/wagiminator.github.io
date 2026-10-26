@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AVR ISP Programmer</title>
+  <meta name="description" content="Flash classic AVR microcontrollers (ATtiny, ATmega, AT90) with a USBasp or USBtinyISP: BIN and HEX files, chip erase, fuses and lock bits, straight from the browser.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chivo:wght@400;700&display=swap">
+  <link rel="stylesheet" href="../../assets/css/site.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav class="site-bar" aria-label="Breadcrumb">
+    <a href="../../">wagiminator</a><span class="sep">/</span><span>Apps</span><span class="sep">/</span><span>AVR ISP Programmer</span>
+  </nav>
+
+  <main class="app">
+    <header class="app-head">
+      <h1>AVR ISP Programmer</h1>
+      <p>Program classic AVR microcontrollers (ATtiny, ATmega, AT90, 175 types) over their ISP header with a USBasp or a USBtinyISP. Write BIN and HEX files, erase the chip and set fuses and lock bits, with every fuse field explained.</p>
+    </header>
+
+    <p class="banner" id="unsupported" hidden>This browser cannot access USB devices. Open this page in Chrome, Edge or Opera on a desktop computer.</p>
+
+    <div class="work">
+      <section class="panel" aria-labelledby="fw-title">
+        <h2 id="fw-title">Firmware</h2>
+        <label class="drop" id="drop" for="file-input">
+          <strong id="fw-name">Drop a .bin or .hex file here or choose one</strong>
+          <span id="fw-info">BIN files are written to the start of the flash, HEX files to their addresses.</span>
+          <input type="file" id="file-input" accept=".bin,.hex,.ihx">
+        </label>
+        <div class="fit" id="fit" hidden>
+          <div class="fit-bar" aria-hidden="true"><div id="fit-used"></div></div>
+          <p class="fit-text" id="fit-text"></p>
+        </div>
+        <ul class="messages" id="fw-messages"></ul>
+        <div class="after">
+          <label><input type="checkbox" id="opt-fuses" disabled> Also write the changed fuses below</label>
+        </div>
+        <div class="flash-row">
+          <button type="button" class="btn btn-primary btn-big" id="btn-flash" disabled>Flash firmware</button>
+          <div class="progress-wrap" id="progress" hidden>
+            <div class="progress"><div id="progress-bar"></div></div>
+            <span class="progress-label" id="progress-label"></span>
+          </div>
+        </div>
+        <p class="hint">Choose Flash firmware and select the programmer. The chip is erased, the firmware written and verified, as avrdude -U flash:w does.</p>
+      </section>
+
+      <section class="panel" aria-labelledby="fuse-title">
+        <h2 id="fuse-title">Fuses and lock bits</h2>
+        <p class="empty-note" id="fuse-empty">Read the chip info first; the fields of its fuses then appear here.</p>
+        <div class="fuse-bytes" id="fuse-bytes"></div>
+        <div class="btn-row">
+          <button type="button" class="btn" id="btn-readfuses" disabled>Read fuses</button>
+          <button type="button" class="btn" id="btn-defaults" disabled>Factory defaults</button>
+          <button type="button" class="btn btn-primary" id="btn-writefuses" disabled>Write changed fuses</button>
+        </div>
+        <p class="small fuse-note">Change a field or type a hex value. Settings that disable the reset pin, turn on debugWIRE, select an external clock or lock the chip ask for confirmation: after them, ISP may need a high-voltage programmer, the external clock, or a chip erase.</p>
+      </section>
+
+      <section class="panel" aria-labelledby="chip-act-title">
+        <h2 id="chip-act-title">Chip</h2>
+        <div class="actions">
+          <div class="action">
+            <button type="button" class="btn" id="btn-info" disabled>Read chip info</button>
+            <p>Detects the chip by its signature and reads fuses, lock bits and calibration. Changes nothing.</p>
+          </div>
+          <div class="action">
+            <button type="button" class="btn" id="btn-erase" disabled>Erase chip</button>
+            <p>Erases flash and EEPROM (unless EESAVE is set) and removes the lock bits. Fuses stay.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel" aria-labelledby="wire-title">
+        <h2 id="wire-title">Wiring</h2>
+        <p class="small">Connect the programmer's ISP cable to the chip (pin 1 is marked on the plug):</p>
+        <pre class="pinout">  6-pin ISP              10-pin ISP (USBasp)
+ MISO  1 ● ● 2  VCC     MOSI  1 ● ● 2  VCC
+  SCK  3 ● ● 4  MOSI          3 ● ● 4  GND
+  RST  5 ● ● 6  GND      RST  5 ● ● 6  GND
+                         SCK  7 ● ● 8  GND
+                        MISO  9 ● ● 10 GND</pre>
+        <p class="small">The programmer can power the chip through its power jumper; many USBasp clones also select 5 V or 3.3 V with a jumper. The ISP clock (SCK) must be below a quarter of the chip's clock: new chips run at 1 MHz, so the default clocks work; for chips running at 128 kHz choose a slow SCK under More options (USBasp with old firmware: close the slow-clock jumper JP3).</p>
+      </section>
+    </div>
+
+    <aside class="side">
+      <section class="panel" aria-labelledby="dev-title">
+        <h2 id="dev-title">Programmer</h2>
+        <p class="conn" id="conn"><span class="dot"></span><span id="conn-text">No programmer chosen</span></p>
+        <p class="link-note" id="link-note">USBasp (16C0:05DC) or USBtinyISP (1781:0C9F).</p>
+        <button type="button" class="btn btn-wide" id="btn-dev">Choose programmer</button>
+        <details class="more">
+          <summary>More options</summary>
+          <label class="field"><span>ISP clock (SCK) of the USBasp</span>
+            <select id="sck-asp">
+              <option value="0" selected>Automatic (firmware default)</option>
+              <option value="3000000">3 MHz (UsbAsp-flash firmware only)</option>
+              <option value="1500000">1.5 MHz</option><option value="750000">750 kHz</option><option value="375000">375 kHz</option>
+              <option value="187500">187.5 kHz</option><option value="93750">93.75 kHz</option><option value="32000">32 kHz</option>
+              <option value="16000">16 kHz</option><option value="8000">8 kHz (for 128 kHz chips)</option><option value="4000">4 kHz</option>
+              <option value="2000">2 kHz</option><option value="1000">1 kHz</option><option value="500">500 Hz</option>
+            </select>
+            <small>Like avrdude -B. Chips need SCK below a quarter of their clock.</small>
+          </label>
+          <label class="field"><span>ISP clock period of the USBtinyISP</span>
+            <select id="sck-tiny">
+              <option value="1">1 µs (chip clock ≥ 4 MHz)</option><option value="2">2 µs</option><option value="5">5 µs</option>
+              <option value="0" selected>10 µs (default, chip clock ≥ 400 kHz)</option><option value="20">20 µs</option>
+              <option value="50">50 µs</option><option value="100">100 µs</option><option value="250">250 µs (for 128 kHz chips)</option>
+            </select>
+          </label>
+          <p class="small"><strong>Windows:</strong> the browser needs the WinUSB driver. Plug in the programmer, start <a href="https://zadig.akeo.ie/">Zadig</a>, choose Options, List All Devices, select USBasp or USBtiny and install WinUSB. Tools that expect the libusb-win32 or libusbK driver may then need that driver again.</p>
+          <p class="small"><strong>Linux:</strong> allow access to the programmers:</p>
+          <pre class="code">echo 'SUBSYSTEM=="usb", ATTR{idVendor}=="16c0", ATTR{idProduct}=="05dc", MODE="666"' | sudo tee /etc/udev/rules.d/99-avrisp.rules
+echo 'SUBSYSTEM=="usb", ATTR{idVendor}=="1781", ATTR{idProduct}=="0c9f", MODE="666"' | sudo tee -a /etc/udev/rules.d/99-avrisp.rules
+sudo udevadm control --reload-rules</pre>
+          <p class="small"><strong>macOS:</strong> no driver needed.</p>
+        </details>
+      </section>
+
+      <section class="panel" aria-labelledby="chip-title">
+        <h2 id="chip-title">Connected chip</h2>
+        <dl class="facts" id="chip-facts"><dt>Chip</dt><dd>Not read yet</dd></dl>
+        <label class="field" id="variant-row" hidden><span>Chip type</span>
+          <select id="variant"></select>
+          <small>These chips share the signature; choose the one on the board.</small>
+        </label>
+      </section>
+
+      <section class="panel log-panel" aria-labelledby="log-title">
+        <h2 id="log-title">Log</h2>
+        <ol class="log" id="log"></ol>
+      </section>
+    </aside>
+  </main>
+
+  <footer class="site-footer">
+    AVR ISP Programmer by <a href="https://github.com/wagiminator">wagiminator</a>, a port of parts of <a href="https://github.com/avrdudes/avrdude">avrdude</a> 8.3 (GNU GPL v2 or later); chip data and fuse fields from avrdude.conf and avrintel.c.
+  </footer>
+
+  <script src="../../assets/js/firmware.js"></script>
+  <script src="parts.js"></script>
+  <script src="fusebits.js"></script>
+  <script src="avrisp.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

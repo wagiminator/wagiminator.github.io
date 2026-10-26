@@ -22,6 +22,7 @@ apps/
   chprog/               WCH USB Programmer
   puyaisp/              PUYA ISP Programmer
   tinyupdi/             AVR Tiny UPDI Programmer
+  avrisp/               AVR ISP Programmer
   mt3608-sepic/         MT3608 SEPIC Voltage Calculator
 mt3608_sepic.html       Redirect for the calculator's old address
 ```
@@ -158,3 +159,17 @@ Programs tinyAVR 0-, 1- and 2-series microcontrollers through a USB-to-serial co
 - Tested against a simulated tinyAVR with one-wire echo: the serial traffic is byte-identical to tinyupdi.py (with the padding fixed for lengths that are not a multiple of the page size).
 
 Code: `updi.js` is the programmer, `app.js` is the user interface; `/assets/js/serial-link.js` and `/assets/js/firmware.js` are shared with other apps.
+
+### AVR ISP Programmer
+
+Programs classic AVR microcontrollers over ISP with a USBasp or a USBtinyISP. A JavaScript port of the relevant parts of [avrdude](https://github.com/avrdudes/avrdude) 8.3 (`usbasp.c`, `usbtiny.c`, and the memory algorithms of `avr.c`, `update.c` and `main.c`) using the WebUSB API. Because it is derived from avrdude, the files of this app (`apps/avrisp/`) are licensed under the GNU General Public License v2.0 or later.
+
+- Chips: the 175 AVRs of avrdude.conf with ISP and paged flash (ATtiny, ATmega, AT90, ATA…), detected by their signature; chips that share a signature can be chosen. Not supported: TPI chips (ATtiny4/5/9/10/20/40), AVRs without paged flash (AT90S, ATtiny12/15/22, AT89S51/52) and UPDI/PDI chips.
+- Flash BIN and Intel HEX files like `avrdude -U flash:w:file`: chip erase, paged write of all pages with data (partly used pages are filled with the chip's content), verify of every byte from the file. Trailing 0xFF bytes are skipped as avrdude does. Unlike avrdude, files larger than the flash are refused instead of being cut off silently.
+- Chip erase, reading signature, fuses, lock bits and calibration.
+- Fuse editor: every fuse and lock byte of the chip with its bit fields and their meanings (from avrdude's avrintel.c), factory defaults, writes like `avrdude -U lfuse:w:0x..:m` with read-back and verify. Settings that disable the reset pin, enable debugWIRE, select an external clock or lock the chip need a confirmation.
+- ISP clock: USBasp SCK from 500 Hz to 3 MHz or automatic, USBtinyISP SCK period from 1 to 250 µs (like `-B`).
+- Needs Chrome, Edge or Opera on a desktop computer; on Windows the programmer needs the WinUSB driver (Zadig), on Linux a udev rule.
+- Tested against avrdude 8.3 itself: avrdude was built with a stand-in libusb that passes every USB control transfer to the same simulated USBasp/USBtinyISP with a simulated AVR that the browser tests use. In 32 scenarios (both programmers, ATmega328P, ATtiny13/85, ATmega8, ATmega2560 above 64 and 128 KB, BIN and HEX with holes, fuses, lock bits, slow SCK, old USBasp firmware, error cases) the USB traffic of the app is identical to avrdude's.
+
+Code: `avrisp.js` is the programmer, `parts.js` holds the part data generated from avrdude.conf, `fusebits.js` the fuse fields generated from avrintel.c, `app.js` is the user interface.
