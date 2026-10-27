@@ -18,8 +18,8 @@ apps/
   d64-transfer/         C64 Disk Transfer
   tap-transfer/         C64 Tape Transfer
   cart-builder/         C64 Cartridge Builder
-  rvprog/               WCH RISC-V Programmer
   gameconsole/          Game Console Flasher
+  rvprog/               WCH RISC-V Programmer
   chprog/               WCH USB Programmer
   puyaisp/              PUYA ISP Programmer
   tinyupdi/             AVR Tiny UPDI Programmer
@@ -104,21 +104,9 @@ Builds cartridge images for the [64k/256k](https://github.com/wagiminator/C64-Co
 - Add PRG files (or PC64 .P00) by button or drag and drop; rename, set start addresses, reorder (drag and drop, buttons, Alt+arrow keys) and remove them. Up to 8 menus (F1/F3/F5/F7/F2/F4/F6/F8) with up to 62 programs each; a single program can start without a menu (Single PRG modification by Feandreu).
 - Shows free space, used banks and the size of the menu area, warns about programs that load where the cartridge copy routine or the I/O area is, and previews the menu screen.
 - Downloads a BIN file for the EPROM and a CRT file (Magic Desk, hardware type 19) for VICE and other emulators.
-- Tested: the BIN files are byte-identical to the ones `crtgen.py` creates for the same programs and settings, the CRT files are byte-identical to `cartconv -t md` from VICE.
 - Not covered: the simple 8k cartridge, which has no bank switching and needs ready-made 8 KB ROM images instead of PRG files.
 
 Code: `cartgen.js` creates the image (no dependencies, also runs in Node.js), `menucode.js` contains the C64 menu programs (sources in `source/`), `preview.js` draws the menu preview, `app.js` is the user interface.
-
-### WCH RISC-V Programmer
-
-Flashes WCH RISC-V microcontrollers through a WCH-LinkE (also WCH-LinkW, WCH-LinkB and compatible programmers). A JavaScript port of [rvprog](https://github.com/wagiminator/MCU-Flash-Tools) (MIT License) using the WebUSB API.
-
-- Chips: CH32V002-V007, CH32V103, CH32V203/205/208, CH32V303/305/307/317, CH32X033/035, CH32L103, CH571/573, CH581/582/583, CH591/592.
-- Flash BIN and Intel HEX files (written and verified), read chip info, erase, unlock (remove read protection), unbrick (power-cycle erase), lock, PD7 as GPIO or reset pin (CH32V00x), and switch the WCH-Link between RISC-V and ARM mode.
-- Needs Chrome, Edge or Opera on a desktop computer. Same driver setup as rvprog: WinUSB via Zadig on Windows, udev rules on Linux. After switching from ARM to RISC-V mode the browser asks once more for the device, as it appears with a new USB id.
-- Tested against a simulated WCH-Link: for all actions the USB traffic is byte-identical to rvprog.py.
-
-Code: `rvprog.js` is the programmer, `/assets/js/firmware.js` reads BIN and HEX files, `tables.js` holds the flash loaders and chip tables taken from rvprog.py, `app.js` is the user interface.
 
 ### Game Console Flasher
 
@@ -127,9 +115,18 @@ Flashes the games of the [CH32V003 Mini Game Console](https://github.com/wagimin
 - Games: Tiny Invaders, Lander, Tris, Arkanoid, Pacman, Doom, Boulder, Bubble, Karate, Run and Shooter, each with a short description and two screenshots. The selected game is kept in the address (`#tiny_run`), so a game can be linked directly.
 - The firmware binaries and screenshots are loaded from the game console repository (branch main) at raw.githubusercontent.com, with the jsDelivr mirror as fallback, so new versions of the games show up without changing this app.
 - The game is written and verified with the programmer of the WCH RISC-V Programmer; the app refuses to flash anything but a CH32V003. Needs Chrome, Edge or Opera on a desktop computer, with the same driver setup as the WCH RISC-V Programmer.
-- Tested against a simulated WCH-Link: the USB traffic is byte-identical to `rvprog -f <game>.bin`.
 
 Code: `games.js` holds the list of games and loads the binaries, `app.js` is the user interface; `../rvprog/rvprog.js`, `../rvprog/tables.js` and `/assets/js/firmware.js` are shared with the WCH RISC-V Programmer.
+
+### WCH RISC-V Programmer
+
+Flashes WCH RISC-V microcontrollers through a WCH-LinkE (also WCH-LinkW, WCH-LinkB and compatible programmers). A JavaScript port of [rvprog](https://github.com/wagiminator/MCU-Flash-Tools) (MIT License) using the WebUSB API.
+
+- Chips: CH32V002-V007, CH32V103, CH32V203/205/208, CH32V303/305/307/317, CH32X033/035, CH32L103, CH571/573, CH581/582/583, CH591/592.
+- Flash BIN and Intel HEX files (written and verified), read chip info, erase, unlock (remove read protection), unbrick (power-cycle erase), lock, PD7 as GPIO or reset pin (CH32V00x), and switch the WCH-Link between RISC-V and ARM mode.
+- Needs Chrome, Edge or Opera on a desktop computer. Same driver setup as rvprog: WinUSB via Zadig on Windows, udev rules on Linux. After switching from ARM to RISC-V mode the browser asks once more for the device, as it appears with a new USB id.
+
+Code: `rvprog.js` is the programmer, `/assets/js/firmware.js` reads BIN and HEX files, `tables.js` holds the flash loaders and chip tables taken from rvprog.py, `app.js` is the user interface.
 
 ### WCH USB Programmer
 
@@ -138,8 +135,7 @@ Flashes WCH microcontrollers over USB with their factory bootloader (version 2.x
 - Chips: CH543-CH549, CH551-CH559, CH563-CH569, CH570-CH579, CH581-CH583, CH591/592, CH643, CH32F103/203/205/207/208, CH32V103/203/208/303/305/307, CH32X033/035, CH32L103.
 - Flash BIN and Intel HEX files: the code flash is erased, written and verified, then the chip restarts. Read-protected chips are unlocked first (as chprog does), which erases them. Connect and read chip info shows type, bootloader version, flash sizes and unique ID without changing anything.
 - Needs Chrome, Edge or Opera on a desktop computer. Windows needs the WinUSB driver (Zadig; the libusb-win32 driver used by chprog does not work in browsers), Linux the udev rules from chprog.
-- Firmware whose length is not a multiple of 8 is padded with 0xFF bytes. chprog.py v2.5.3 appends the text "0xff" instead (`b'0xff'` instead of `b'\xff'` in `writeflash`).
-- Tested against a simulated bootloader: the USB traffic is byte-identical to chprog.py (with that padding fixed for unaligned lengths).
+- Firmware whose length is not a multiple of 8 is padded with 0xFF bytes.
 
 Code: `chprog.js` is the programmer, `tables.js` holds the chip table taken from chprog.py, `app.js` is the user interface.
 
@@ -151,9 +147,7 @@ Flashes PUYA PY32 microcontrollers through a USB-to-serial converter and the UAR
 - Flash BIN and Intel HEX files to 0x08000000: the chip is erased, written, verified byte by byte and started. Optionally lock the chip and set the nRST pin as GPIO or RESET afterwards.
 - Chip actions: read chip info (bootloader version, option bytes OPTR/SDKR/WRPR, read protection, nRST mode), erase, unlock (removes the read protection and erases the chip), lock, nRST as GPIO or RESET, reset the option bytes.
 - With a CH340X converter whose DTR and RTS lines are wired to BOOT0 and nRST, the bootloader is started and the chip reset automatically, using the same control-line sequence as puyaisp.
-- Differences to puyaisp.py: verification compares every byte (puyaisp.py compares only the sets of byte values, `set(flash) != set(data)`, so swapped or repeated bytes pass); the bootloader version shows the full low nibble (`ver & 0x0f` instead of `ver & 7`); a NACK on the sync byte counts as "already synchronized", so a chip that stayed in bootloader mode (after Read chip info) needs no reset before the next action.
 - Needs Chrome, Edge or Opera on a desktop computer.
-- Tested against a simulated PY32 bootloader: bytes and control-line changes are identical to puyaisp.py for serial and HID transports.
 
 Code: `puyaisp.js` is the programmer, `app.js` is the user interface; `/assets/js/serial-link.js` and `/assets/js/firmware.js` are shared with other apps.
 
@@ -166,9 +160,7 @@ Programs tinyAVR 0-, 1- and 2-series microcontrollers through a USB-to-serial co
 - Clock: chooses the 16 or 20 MHz oscillator (fuse OSCCFG) for every frequency tinyupdi's `-t` accepts (oscillator divided by 1, 2, 4, 6, 8, 10, 12, 16, 24, 32, 48 or 64).
 - Fuses: reads and shows all fuses with their meaning, writes and verifies the changed ones. Settings that turn the UPDI pin into GPIO/RESET (SYSCFG0) or lock the chip (LOCKBIT) need a confirmation. Fuses and clock can be written together with the firmware.
 - Read chip info shows type, series, signature, flash and page size, revision and serial number. Erase chip also unlocks a locked chip.
-- Differences to tinyupdi.py: the last flash page is padded with 0xFF to the full page size (tinyupdi.py pads by `len(data) % pagesize` bytes instead of `-len(data) % pagesize`, so it writes up to a page of 0xFF beyond the data and, for files that nearly fill the flash, past its end); a locked chip is only erased (unlocked) for erase and flash, while tinyupdi.py erases it on every connection, even for fuse writes; after unlocking, programming mode is entered if it is not already active.
 - Needs Chrome, Edge or Opera on a desktop computer.
-- Tested against a simulated tinyAVR with one-wire echo: the serial traffic is byte-identical to tinyupdi.py (with the padding fixed for lengths that are not a multiple of the page size).
 
 Code: `updi.js` is the programmer, `app.js` is the user interface; `/assets/js/serial-link.js` and `/assets/js/firmware.js` are shared with other apps.
 
@@ -182,6 +174,5 @@ Programs classic AVR microcontrollers over ISP with a USBasp or a USBtinyISP. A 
 - Fuse editor: every fuse and lock byte of the chip with its bit fields and their meanings (from avrdude's avrintel.c), factory defaults, writes like `avrdude -U lfuse:w:0x..:m` with read-back and verify. Settings that disable the reset pin, enable debugWIRE, select an external clock or lock the chip need a confirmation.
 - ISP clock: USBasp SCK from 500 Hz to 3 MHz or automatic, USBtinyISP SCK period from 1 to 250 µs (like `-B`).
 - Needs Chrome, Edge or Opera on a desktop computer; on Windows the programmer needs the WinUSB driver (Zadig), on Linux a udev rule.
-- Tested against avrdude 8.3 itself: avrdude was built with a stand-in libusb that passes every USB control transfer to the same simulated USBasp/USBtinyISP with a simulated AVR that the browser tests use. In 32 scenarios (both programmers, ATmega328P, ATtiny13/85, ATmega8, ATmega2560 above 64 and 128 KB, BIN and HEX with holes, fuses, lock bits, slow SCK, old USBasp firmware, error cases) the USB traffic of the app is identical to avrdude's.
 
 Code: `avrisp.js` is the programmer, `parts.js` holds the part data generated from avrdude.conf, `fusebits.js` the fuse fields generated from avrintel.c, `app.js` is the user interface.
