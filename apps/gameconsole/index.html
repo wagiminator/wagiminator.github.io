@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Game Console Flasher</title>
+  <meta name="description" content="Choose a game for the CH32V003 Mini Game Console and flash it from the browser with a WCH-LinkE.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chivo:wght@400;700&display=swap">
+  <link rel="stylesheet" href="../../assets/css/site.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav class="site-bar" aria-label="Breadcrumb">
+    <a href="../../">wagiminator</a><span class="sep">/</span><span>Apps</span><span class="sep">/</span><span>Game Console Flasher</span>
+  </nav>
+
+  <main class="app">
+    <header class="app-head">
+      <h1>Game Console Flasher</h1>
+      <p>Put a new game on your <a href="https://github.com/wagiminator/CH32V003-GameConsole">CH32V003 Mini Game Console</a>: choose a game, connect a WCH-LinkE to the PROG header of the console and flash it straight from the browser.</p>
+    </header>
+
+    <p class="banner" id="unsupported" hidden>This browser cannot access USB devices. Open this page in Chrome, Edge or Opera on a desktop computer.</p>
+
+    <div class="work">
+      <section class="panel" aria-labelledby="games-title">
+        <h2 id="games-title">1. Choose a game</h2>
+        <div class="games" id="games" role="radiogroup" aria-labelledby="games-title"></div>
+      </section>
+
+      <section class="panel game" aria-live="polite" aria-labelledby="game-name">
+        <div class="game-head">
+          <div>
+            <h2 id="game-name">Game</h2>
+            <p class="game-meta" id="game-meta"></p>
+          </div>
+          <a class="game-src" id="game-src" href="#">Source code</a>
+        </div>
+        <p class="game-text" id="game-text"></p>
+        <p class="game-tip" id="game-tip" hidden></p>
+        <div class="shots" id="shots"></div>
+      </section>
+    </div>
+
+    <aside class="side">
+      <section class="panel" aria-labelledby="link-title">
+        <h2 id="link-title">2. Connect the WCH-Link</h2>
+        <p class="conn" id="conn"><span class="dot"></span><span id="conn-text">Not connected</span></p>
+        <p class="link-note" id="link-note"></p>
+        <div class="stack">
+          <button type="button" class="btn btn-wide" id="btn-connect">Connect WCH-Link</button>
+          <button type="button" class="btn btn-wide" id="btn-rvmode" hidden>Switch to RISC-V mode</button>
+        </div>
+        <table class="wiring" aria-label="Wiring">
+          <thead><tr><th>WCH-LinkE</th><th>Console (PROG)</th></tr></thead>
+          <tbody>
+            <tr><td>3V3</td><td>VCC</td></tr>
+            <tr><td>GND</td><td>GND</td></tr>
+            <tr><td>SWDIO</td><td>DIO</td></tr>
+          </tbody>
+        </table>
+        <p class="small">Take out the battery or switch the console off while it is powered by the WCH-LinkE.</p>
+        <details class="more">
+          <summary>Setup and link mode</summary>
+          <p class="small">The WCH-Link must be in RISC-V mode: its blue LED is off. If the blue LED is on, connect it and choose Switch to RISC-V mode, or hold the ModeS button while plugging it in.</p>
+          <p class="small"><strong>Windows:</strong> install the WinUSB driver for the WCH-Link's debug interface (not the serial port) with <a href="https://zadig.akeo.ie/">Zadig</a>.</p>
+          <p class="small"><strong>Linux:</strong> allow access to the device:</p>
+          <pre class="code">echo 'SUBSYSTEM=="usb", ATTR{idVendor}=="1a86", ATTR{idProduct}=="8010", MODE="666"' | sudo tee /etc/udev/rules.d/99-WCH-LinkE.rules
+echo 'SUBSYSTEM=="usb", ATTR{idVendor}=="1a86", ATTR{idProduct}=="8012", MODE="666"' | sudo tee -a /etc/udev/rules.d/99-WCH-LinkE.rules
+sudo udevadm control --reload-rules</pre>
+          <p class="small">For other WCH chips, erasing, unlocking or unbricking use the <a href="../rvprog/">WCH RISC-V Programmer</a>.</p>
+        </details>
+      </section>
+
+      <section class="panel" aria-labelledby="flash-title">
+        <h2 id="flash-title">3. Flash</h2>
+        <p class="flash-game" id="flash-game"></p>
+        <button type="button" class="btn btn-primary btn-big btn-wide" id="btn-flash" disabled>Flash game</button>
+        <div class="progress" id="progress" hidden><div id="progress-bar"></div></div>
+        <p class="hint">The game replaces the program on the console. It is downloaded from the game console repository, written and verified.</p>
+      </section>
+
+      <section class="panel log-panel" aria-labelledby="log-title">
+        <h2 id="log-title">Log</h2>
+        <ol class="log" id="log"></ol>
+      </section>
+    </aside>
+  </main>
+
+  <footer class="site-footer">
+    Game Console Flasher by <a href="https://github.com/wagiminator">wagiminator</a>. Games and screenshots from the <a href="https://github.com/wagiminator/CH32V003-GameConsole">CH32V003 Game Console</a> project (CC BY-SA 3.0; the ports of Tiny Invaders, Tris, Arkanoid and Pacman by Daniel Champagne and Tiny Lander by tscha70 are GPL 3.0). Flashing uses the <a href="../rvprog/">WCH RISC-V Programmer</a>, a port of <a href="https://github.com/wagiminator/MCU-Flash-Tools">rvprog</a>.
+  </footer>
+
+  <script src="../../assets/js/firmware.js"></script>
+  <script src="../rvprog/tables.js"></script>
+  <script src="../rvprog/rvprog.js"></script>
+  <script src="games.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

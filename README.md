@@ -19,6 +19,7 @@ apps/
   tap-transfer/         C64 Tape Transfer
   cart-builder/         C64 Cartridge Builder
   rvprog/               WCH RISC-V Programmer
+  gameconsole/          Game Console Flasher
   chprog/               WCH USB Programmer
   puyaisp/              PUYA ISP Programmer
   tinyupdi/             AVR Tiny UPDI Programmer
@@ -118,6 +119,17 @@ Flashes WCH RISC-V microcontrollers through a WCH-LinkE (also WCH-LinkW, WCH-Lin
 - Tested against a simulated WCH-Link: for all actions the USB traffic is byte-identical to rvprog.py.
 
 Code: `rvprog.js` is the programmer, `/assets/js/firmware.js` reads BIN and HEX files, `tables.js` holds the flash loaders and chip tables taken from rvprog.py, `app.js` is the user interface.
+
+### Game Console Flasher
+
+Flashes the games of the [CH32V003 Mini Game Console](https://github.com/wagiminator/CH32V003-GameConsole) through a WCH-LinkE (or compatible) connected to the console's PROG header (VCC, GND, DIO).
+
+- Games: Tiny Invaders, Lander, Tris, Arkanoid, Pacman, Doom, Boulder, Bubble, Karate, Run and Shooter, each with a short description and two screenshots. The selected game is kept in the address (`#tiny_run`), so a game can be linked directly.
+- The firmware binaries and screenshots are loaded from the game console repository (branch main) at raw.githubusercontent.com, with the jsDelivr mirror as fallback, so new versions of the games show up without changing this app.
+- The game is written and verified with the programmer of the WCH RISC-V Programmer; the app refuses to flash anything but a CH32V003. Needs Chrome, Edge or Opera on a desktop computer, with the same driver setup as the WCH RISC-V Programmer.
+- Tested against a simulated WCH-Link: the USB traffic is byte-identical to `rvprog -f <game>.bin`.
+
+Code: `games.js` holds the list of games and loads the binaries, `app.js` is the user interface; `../rvprog/rvprog.js`, `../rvprog/tables.js` and `/assets/js/firmware.js` are shared with the WCH RISC-V Programmer.
 
 ### WCH USB Programmer
 
