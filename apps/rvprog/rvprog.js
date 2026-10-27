@@ -77,6 +77,13 @@
     async close() {
       try { await this.dev.releaseInterface(this.itf); } catch (e) { /* ignore */ }
       try { await this.dev.close(); } catch (e) { /* ignore */ }
+      this.pending = {};
+    }
+
+    // Close and open again: drops USB reads still waiting from the last run
+    async reopen() {
+      await this.close();
+      await this.open();
     }
   }
 
@@ -98,6 +105,7 @@
 
     // Programmer info (Programmer.__init__)
     async init() {
+      this.used = false;
       await this.clearReply();
       const r = await this.command(bytes(0x81, 0x0d, 0x01, 0x01));
       this.linkDevice = r[5];
@@ -238,6 +246,17 @@
   async function runActions(prog, actions, log, progress) {
     const a = actions;
     log = log || (() => {});
+    // Every call works like a new run of rvprog.py: rvprog.py opens the USB
+    // device, clears the receive buffers and asks for the programmer info
+    // before it connects to the chip. A run ends with exit(), which detaches
+    // the chip; going on with the next run on the same connection without
+    // this start sequence made every run after the first one fail (until the
+    // WCH-Link was plugged in again, which reconnects the app).
+    if (prog.used) {
+      await prog.link.reopen();
+      await prog.init();
+    }
+    prog.used = true;
     try {
       if (a.unbrick) {
         log("Unbricking chip …");
