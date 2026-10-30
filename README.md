@@ -22,6 +22,7 @@ apps/
   rvprog/               WCH RISC-V Programmer
   chprog/               WCH USB Programmer
   puyaisp/              PUYA ISP Programmer
+  stm32isp/             STM32 ISP Programmer
   tinyupdi/             AVR Tiny UPDI Programmer
   avrisp/               AVR ISP Programmer
   mt3608-sepic/         MT3608 SEPIC Voltage Calculator
@@ -150,6 +151,19 @@ Flashes PUYA PY32 microcontrollers through a USB-to-serial converter and the UAR
 - Needs Chrome, Edge or Opera on a desktop computer.
 
 Code: `puyaisp.js` is the programmer, `app.js` is the user interface; `/assets/js/serial-link.js` and `/assets/js/firmware.js` are shared with other apps.
+
+### STM32 ISP Programmer
+
+Flashes STM32 microcontrollers through a USB-to-serial converter and the factory UART bootloader (protocol of ST's AN3155). A JavaScript port of [stm32isp](https://github.com/wagiminator/MCU-Flash-Tools) v0.8 (MIT License) using the Web Serial API (115200 baud by default, 8E1; the bootloader detects the rate).
+
+- Chips: the five lines of stm32isp (STM32C011, C031, F03xx4/6, G03x/G04x, L01x/L02x) and 20 more widely used lines with the same bootloader: STM32F030x8/F05x, F030xC/F09x, F04x/F070x6, F07x/F070xB, F10x low/medium/high density, F302/F303xB/C, F303x4-8/F334, F401xB/C, F401xD/E, F411, F405/407/415/417, F42x/F43x, F446, G07x/G08x, G0B0/G0B1/G0C1, G431/G441, G47x/G48x and L43x/L44x. The chip is recognized by the product ID of its bootloader, the flash size is read from the chip (on STM32F4 the largest member of the line is assumed if the register cannot be read).
+- Flash BIN and Intel HEX files to 0x08000000: a locked chip is unlocked first, the chip is erased (mass erase; page by page on STM32L0, which has no mass erase), written in blocks of 256 bytes, verified byte by byte and started. Optionally lock the chip afterwards. On STM32C0/G0 the BOOT0 pin is enabled in the option bytes (nBOOT_SEL = 0) after flashing as stm32isp does (can be switched off).
+- Chip actions: read chip info (bootloader version, product ID, commands, flash size, read protection, option bytes), erase, unlock (removes the read protection and erases the chip), lock (read protection level 1), read the flash into a BIN file, enable the BOOT0 pin (STM32C0/G0), remove the write protection.
+- Fixes of stm32isp v0.8: verify compares every byte (not only the set of byte values), the bootloader version shows the full minor number, page erase sends the page count correctly, the app synchronizes again after the chip resets, and STM32L0 erases all pages of the chip.
+- With a converter whose RTS and DTR lines are wired to nRST and BOOT0, the bootloader is started and the chip reset automatically.
+- Needs Chrome, Edge or Opera on a desktop computer.
+
+Code: `stm32isp.js` is the programmer with the chip table, `app.js` is the user interface; `/assets/js/serial-link.js` and `/assets/js/firmware.js` are shared with other apps.
 
 ### AVR Tiny UPDI Programmer
 
