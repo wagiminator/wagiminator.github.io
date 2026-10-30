@@ -3,7 +3,7 @@
  * -------------------------------------------------------------------
  * Reads BIN and Intel HEX files and turns them into a flash image
  * (offsets from the start of the code flash). Shared by the WCH RISC-V
- * Programmer and the WCH USB Programmer.
+ * Programmer, the WCH USB Programmer and the ISP programmers.
  * Global: FIRMWARE (browser) / module.exports (Node.js)
  * =================================================================== */
 (function (global) {
@@ -51,14 +51,15 @@
   // be absolute (0x08000000 + offset on CH32 chips) or start at 0.
   // base: address of the code flash, or null to take it from the file
   // (0x08000000 if the data lies there, else 0). flashSize: 0 if unknown.
-  function buildImage(fw, base, flashSize) {
+  // windowSize: size of the code flash area (default 1 MB).
+  function buildImage(fw, base, flashSize, windowSize) {
     const warnings = [];
     const lowest = Math.min(...fw.segs.map((x) => x.addr));
-    if (base === null || base === undefined) base = lowest >= 0x08000000 && lowest < 0x08100000 ? 0x08000000 : 0;
+    if (base === null || base === undefined) base = lowest >= 0x08000000 && lowest < 0x08000000 + (windowSize || 0x100000) ? 0x08000000 : 0;
     const parts = fw.segs.map((s) => ({ off: s.addr >= base && base ? s.addr - base : s.addr, data: s.data, addr: s.addr }));
-    // The code flash of all supported chips lies within the first MB; data
-    // beyond it (e.g. option bytes at 0x1FFFF800) is not part of the firmware.
-    const WINDOW = 0x100000;
+    // The code flash of the chips lies within the first MB (or windowSize);
+    // data beyond it (e.g. option bytes at 0x1FFFF800) is not part of the firmware.
+    const WINDOW = windowSize || 0x100000;
     const inside = parts.filter((p) => p.off < WINDOW);
     const outside = parts.filter((p) => p.off >= WINDOW);
     if (outside.length) warnings.push(`The file has data outside the code flash (from 0x${outside[0].addr.toString(16).padStart(8, "0")}, for example option bytes). It is not written.`);

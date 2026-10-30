@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>STM32 ISP Programmer</title>
+  <meta name="description" content="Flash STM32 microcontrollers (C0, F0, F1, F3, F4, G0, G4, L0, L4) through a USB-to-serial converter and their factory UART bootloader, straight from the browser.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chivo:wght@400;700&display=swap">
+  <link rel="stylesheet" href="../../assets/css/site.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav class="site-bar" aria-label="Breadcrumb">
+    <a href="../../">wagiminator</a><span class="sep">/</span><span>Apps</span><span class="sep">/</span><span>STM32 ISP Programmer</span>
+  </nav>
+
+  <main class="app">
+    <header class="app-head">
+      <h1>STM32 ISP Programmer</h1>
+      <p>Flash STM32 microcontrollers (C0, F0, F1, F3, F4, G0, G4, L0, L4) with a cheap USB-to-serial converter and the UART bootloader built into every chip. Write BIN and HEX files, erase, lock and unlock the chip.</p>
+    </header>
+
+    <p class="banner" id="unsupported" hidden>This browser cannot access serial ports. Open this page in Chrome, Edge or Opera on a desktop computer.</p>
+
+    <div class="work">
+      <section class="panel" aria-labelledby="fw-title">
+        <h2 id="fw-title">Firmware</h2>
+        <label class="drop" id="drop" for="file-input">
+          <strong id="fw-name">Drop a .bin or .hex file here or choose one</strong>
+          <span id="fw-info">BIN files are written to the start of the flash (0x08000000), HEX files to their addresses.</span>
+          <input type="file" id="file-input" accept=".bin,.hex,.ihx">
+        </label>
+        <div class="fit" id="fit" hidden>
+          <div class="fit-bar" aria-hidden="true"><div id="fit-used"></div></div>
+          <p class="fit-text" id="fit-text"></p>
+        </div>
+        <ul class="messages" id="fw-messages"></ul>
+        <div class="after" role="group" aria-label="After flashing">
+          <label><input type="checkbox" id="opt-bootpin" checked> Enable the BOOT0 pin (STM32C0/G0)</label>
+          <label><input type="checkbox" id="opt-lock"> Lock the chip afterwards</label>
+        </div>
+        <div class="flash-row">
+          <button type="button" class="btn btn-primary btn-big" id="btn-flash" disabled>Flash firmware</button>
+          <div class="progress-wrap" id="progress" hidden>
+            <div class="progress"><div id="progress-bar"></div></div>
+            <span class="progress-label" id="progress-label"></span>
+          </div>
+        </div>
+        <p class="hint">Put the chip into bootloader mode, choose Flash firmware and select the converter's serial port. A locked chip is unlocked first. The chip is erased, the firmware written and verified byte by byte, and the chip starts it.</p>
+      </section>
+
+      <section class="panel" aria-labelledby="chip-act-title">
+        <h2 id="chip-act-title">Chip</h2>
+        <div class="actions">
+          <div class="action">
+            <button type="button" class="btn" id="btn-info" disabled>Read chip info</button>
+            <p>Shows the chip, bootloader version, flash size, read protection and option bytes. The chip stays in bootloader mode.</p>
+          </div>
+          <div class="action">
+            <button type="button" class="btn" id="btn-erase" disabled>Erase chip</button>
+            <p>Erases the whole flash (mass erase, page by page on STM32L0).</p>
+          </div>
+          <div class="action">
+            <button type="button" class="btn" id="btn-unlock" disabled>Unlock chip</button>
+            <p>Removes the read protection. This erases the flash and resets the chip.</p>
+          </div>
+          <div class="action">
+            <button type="button" class="btn btn-danger" id="btn-lock" disabled>Lock chip</button>
+            <p>Sets read protection level 1. The flash can then not be read until the chip is unlocked (and erased).</p>
+          </div>
+        </div>
+        <details class="more">
+          <summary>More actions</summary>
+          <div class="actions">
+            <div class="action">
+              <button type="button" class="btn" id="btn-read" disabled>Read flash</button>
+              <p>Saves the whole flash of an unlocked chip as a BIN file.</p>
+            </div>
+            <div class="action">
+              <button type="button" class="btn" id="btn-bootpin" disabled>Enable BOOT0 pin</button>
+              <p>STM32C0/G0: clears nBOOT_SEL in the option bytes, so that the BOOT0 pin starts the bootloader again (new chips boot from an empty flash into the bootloader, but not once it has been written).</p>
+            </div>
+            <div class="action">
+              <button type="button" class="btn" id="btn-wunprot" disabled>Remove write protection</button>
+              <p>Clears the write protection of all flash pages or sectors. The chip resets.</p>
+            </div>
+          </div>
+        </details>
+      </section>
+
+      <section class="panel" aria-labelledby="boot-title">
+        <h2 id="boot-title">Wiring and bootloader mode</h2>
+        <p class="small">Connect the converter to the bootloader USART of the chip (3.3 V logic; USART1 on PA9/PA10 works on every supported chip, the other pins are listed below):</p>
+        <pre class="wiring">Converter   STM32
+   RXD  &lt;-- PA9  (USART1 TX)
+   TXD  --&gt; PA10 (USART1 RX)
+   3V3  --&gt; VDD
+   GND  --&gt; GND</pre>
+        <p class="small">Then start the bootloader in ONE of these ways:</p>
+        <ul class="ways">
+          <li><strong>With BOOT0:</strong> pull BOOT0 to VDD (hold the BOOT button), briefly pull nRST to GND or power-cycle the chip, then release BOOT0. STM32F1/F4 also need BOOT1 (PB2) at GND.</li>
+          <li><strong>New STM32C0/G0:</strong> a chip with an empty flash starts the bootloader by itself. After the first flashing the app enables the BOOT0 pin (option, on by default), otherwise the bootloader could only be reached again over SWD.</li>
+          <li><strong>Automatically:</strong> with a converter whose RTS line is wired to nRST and DTR to BOOT0, the app starts the bootloader by itself and resets the chip afterwards.</li>
+        </ul>
+        <p class="small">Many dev boards (Blue Pill, Black Pill, Nucleo with the ST-LINK as converter) have a BOOT0 jumper or button for this.</p>
+      </section>
+
+      <section class="panel" aria-labelledby="chips-title">
+        <h2 id="chips-title">Supported chips</h2>
+        <p class="small">The app recognizes the chip by the product ID its bootloader reports. Flash size: the largest chip of the line; the app reads the real size from the chip. <span class="tag">stm32isp</span> marks the chips of the Python tool.</p>
+        <div class="chips-wrap">
+          <table class="chips">
+            <thead><tr><th>Chip line</th><th>PID</th><th>Flash</th><th>Bootloader USART (TX/RX)</th></tr></thead>
+            <tbody id="chip-list"></tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+
+    <aside class="side">
+      <section class="panel" aria-labelledby="dev-title">
+        <h2 id="dev-title">Converter</h2>
+        <p class="conn" id="conn"><span class="dot"></span><span id="conn-text">No port chosen</span></p>
+        <p class="link-note" id="link-note">Every action asks for the serial port the first time.</p>
+        <button type="button" class="btn btn-wide" id="btn-port">Choose serial port</button>
+        <details class="more">
+          <summary>More options</summary>
+          <label class="field"><span>Baud rate</span>
+            <select id="baud">
+              <option>1200</option><option>2400</option><option>4800</option><option>9600</option><option>19200</option>
+              <option>38400</option><option>57600</option><option selected>115200</option>
+            </select>
+            <small>The bootloader detects the rate itself (up to 115200 baud, 8E1); 115200 is the default.</small>
+          </label>
+          <p class="small"><strong>Drivers:</strong> CH340, CP210x, FTDI and ST-LINK converters usually work without installing anything on current Windows, macOS and Linux versions; otherwise install the manufacturer's driver. On Linux the user must be in the <code>dialout</code> group.</p>
+        </details>
+      </section>
+
+      <section class="panel" aria-labelledby="chip-title">
+        <h2 id="chip-title">Connected chip</h2>
+        <dl class="facts" id="chip-facts"><dt>Chip</dt><dd>Not read yet</dd></dl>
+      </section>
+
+      <section class="panel log-panel" aria-labelledby="log-title">
+        <h2 id="log-title">Log</h2>
+        <ol class="log" id="log"></ol>
+      </section>
+    </aside>
+  </main>
+
+  <footer class="site-footer">
+    STM32 ISP Programmer by <a href="https://github.com/wagiminator">wagiminator</a>, a port of <a href="https://github.com/wagiminator/MCU-Flash-Tools">stm32isp</a> (MIT License).
+  </footer>
+
+  <script src="../../assets/js/firmware.js"></script>
+  <script src="../../assets/js/serial-link.js"></script>
+  <script src="stm32isp.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
