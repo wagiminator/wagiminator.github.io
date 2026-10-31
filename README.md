@@ -1,6 +1,6 @@
 # wagiminator.github.io
 
-Personal page of wagiminator with links and small browser apps, published with GitHub Pages at <https://wagiminator.github.io/>.
+Personal page of wagiminator with links and small browser apps, published with GitHub Pages at <https://wagiminator.github.io/>. Web Apps were built with Claude Opus 5.5.
 
 ## Structure
 
