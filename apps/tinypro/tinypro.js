@@ -815,7 +815,7 @@
   const ADAPTER_PKG = { 1: "TSOP48", 2: "SOP44", 3: "TSOP40", 4: "VSOP40", 5: "TSOP32", 6: "SOP56", 10: "LQFP128", 11: "TSOP56", 13: "TSOP32" };
 
   // How the chip goes into the 40-pin ZIF socket: { pins, direct, adapter, pkg }
-  //   pins: number of socket pins used (bottom of the socket, pin 1 towards the lever) or 0
+  //   pins: number of socket pins used (top of the socket: chip pin 1 in socket pin 1, the last pin in socket pin 40) or 0
   function placement(chip) {
     const suffix = chip.name.includes("@") ? chip.name.split("@")[1].toUpperCase() : "";
     const pkgName = suffix.replace(/[(-].*$/, "");
