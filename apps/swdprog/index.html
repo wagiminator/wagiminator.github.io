@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SWD Programmer</title>
+  <meta name="description" content="Flash STM32, PY32 and ATSAMD microcontrollers over SWD with a DAP-Link (CMSIS-DAP), ST-Link or J-Link, straight from the browser.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chivo:wght@400;700&display=swap">
+  <link rel="stylesheet" href="../../assets/css/site.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav class="site-bar" aria-label="Breadcrumb">
+    <a href="../../">wagiminator</a><span class="sep">/</span><span>Apps</span><span class="sep">/</span><span>SWD Programmer</span>
+  </nav>
+
+  <main class="app">
+    <header class="app-head">
+      <h1>SWD Programmer</h1>
+      <p>Flash STM32, PUYA PY32 and Microchip ATSAMD microcontrollers over SWD with a DAP-Link (CMSIS-DAP), ST-Link or J-Link. The programmer and the chip are detected automatically. Write BIN and HEX files, erase, lock and unlock the chip, enable the BOOT0 pin and set up the NRST pin.</p>
+    </header>
+
+    <p class="banner" id="unsupported" hidden>This browser cannot access USB devices. Open this page in Chrome, Edge or Opera on a desktop computer.</p>
+
+    <div class="work">
+      <section class="panel" aria-labelledby="fw-title">
+        <h2 id="fw-title">Firmware</h2>
+        <label class="drop" id="drop" for="file-input">
+          <strong id="fw-name">Drop a .bin or .hex file here or choose one</strong>
+          <span id="fw-info">BIN files are written to the start of the flash (0x08000000 on STM32 and PY32, 0x00000000 on ATSAMD), HEX files to their addresses.</span>
+          <input type="file" id="file-input" accept=".bin,.hex,.ihx">
+        </label>
+        <div class="fit" id="fit" hidden>
+          <div class="fit-bar" aria-hidden="true"><div id="fit-used"></div></div>
+          <p class="fit-text" id="fit-text"></p>
+        </div>
+        <ul class="messages" id="fw-messages"></ul>
+        <div class="after" role="group" aria-label="Flash options">
+          <label><input type="checkbox" id="opt-unlock" checked> Unlock a locked chip first</label>
+          <label><input type="checkbox" id="opt-bootpin"> Enable the BOOT0 pin afterwards</label>
+          <label><input type="checkbox" id="opt-lock"> Lock the chip afterwards</label>
+        </div>
+        <div class="flash-row">
+          <button type="button" class="btn btn-primary btn-big" id="btn-flash" disabled>Flash firmware</button>
+          <div class="progress-wrap" id="progress" hidden>
+            <div class="progress"><div id="progress-bar"></div></div>
+            <span class="progress-label" id="progress-label"></span>
+          </div>
+        </div>
+        <p class="hint">Connect the programmer first. The chip is halted, erased completely, the firmware is written by a small flash loader in the RAM of the chip and verified byte by byte, then the chip is reset and starts it.</p>
+      </section>
+
+      <section class="panel" aria-labelledby="chip-act-title">
+        <h2 id="chip-act-title">Chip</h2>
+        <div class="actions">
+          <div class="action">
+            <button type="button" class="btn" id="btn-info" disabled>Read chip info</button>
+            <p>Detects the chip and shows its flash size, read protection and pin options. The chip is reset afterwards.</p>
+          </div>
+          <div class="action">
+            <button type="button" class="btn" id="btn-erase" disabled>Erase chip</button>
+            <p>Erases the whole flash (mass erase). A locked chip is unlocked for this.</p>
+          </div>
+          <div class="action">
+            <button type="button" class="btn" id="btn-unlock" disabled>Unlock chip</button>
+            <p>Removes the read protection (or the security bit on ATSAMD). This erases the flash.</p>
+          </div>
+          <div class="action">
+            <button type="button" class="btn btn-danger" id="btn-lock" disabled>Lock chip</button>
+            <p>Sets read protection level 1 (security bit on ATSAMD). The flash can then not be read until the chip is unlocked and erased.</p>
+          </div>
+        </div>
+        <details class="more" id="more-actions">
+          <summary>More actions</summary>
+          <div class="actions">
+            <div class="action">
+              <button type="button" class="btn" id="btn-bootpin" disabled>Enable BOOT0 pin</button>
+              <p>Sets the option bytes so that the BOOT0 pin starts the embedded bootloader again (STM32C0/G0/U0: nBOOT_SEL = 0; G4/L4/L5/U5/WB/WL: nSWBOOT0 = 1; F0/F3/PY32: nBOOT1 = 1, plus BOOT_SEL = 1 on STM32F04x/F09x). Nothing to do on chips with a fixed BOOT0 pin.</p>
+            </div>
+            <div class="action">
+              <button type="button" class="btn" id="btn-read" disabled>Read flash</button>
+              <p>Saves the whole flash of an unlocked chip as a BIN file.</p>
+            </div>
+            <div class="action">
+              <button type="button" class="btn" id="btn-gpio" disabled>NRST pin as GPIO</button>
+              <p>STM32C0/G0/G4/U0 and PY32: makes the NRST pin a normal I/O pin. SWD still works; the app then connects without the reset line.</p>
+            </div>
+            <div class="action">
+              <button type="button" class="btn" id="btn-reset" disabled>NRST pin as reset</button>
+              <p>Makes the NRST pin a reset input again.</p>
+            </div>
+          </div>
+        </details>
+      </section>
+
+      <section class="panel" aria-labelledby="wire-title">
+        <h2 id="wire-title">Wiring and programmers</h2>
+        <p class="small">Connect the SWD lines of the programmer to the chip (3.3 V logic). NRST is optional, but it lets the app reach a chip whose firmware disables SWD or sleeps (connect under reset):</p>
+        <pre class="wiring">Programmer   Chip
+  SWDIO  &lt;-&gt; SWDIO (STM32/PY32: PA13, ATSAMD: PA31)
+  SWCLK  --&gt; SWCLK (STM32/PY32: PA14, ATSAMD: PA30)
+  GND    --- GND
+  NRST   --&gt; NRST / RESET (optional)
+  3V3    --- VDD (if the programmer powers the chip)</pre>
+        <p class="small">Supported programmers:</p>
+        <ul class="probes">
+          <li><strong>CMSIS-DAP v2</strong> (bulk): DAPLink, Raspberry Pi Debug Probe and Picoprobe, WCH-LinkE in DAP mode, MCU-Link and many others. Most work without a driver.</li>
+          <li><strong>CMSIS-DAP v1</strong> (HID only, older probes): choose <em>CMSIS-DAP v1 (HID)</em>.</li>
+          <li><strong>ST-Link V2, V2-1 and V3</strong>, also the ST-Link on Nucleo and Discovery boards. V2 needs firmware J24 or newer.</li>
+          <li><strong>SEGGER J-Link</strong> (also J-Link OB) with the WinUSB driver on Windows.</li>
+        </ul>
+        <p class="small">The programmer is detected from its USB descriptors, the chip from its debug and ID registers. If the browser shows no programmer, open <em>More options</em> next to the programmer and list all USB devices.</p>
+      </section>
+
+      <section class="panel" aria-labelledby="chips-title">
+        <h2 id="chips-title">Supported chips</h2>
+        <p class="small">ID: DEV_ID of STM32 chips (DBGMCU_IDCODE). Flash: the largest chip of the line; the app reads the real size from the chip. The list is the one of tinyOCD.</p>
+        <div class="filter">
+          <label for="chip-filter">Search</label>
+          <input type="search" id="chip-filter" placeholder="e.g. G0, F103, PY32, SAMD21">
+          <span class="small" id="chip-count"></span>
+        </div>
+        <div class="chips-wrap">
+          <table class="chips">
+            <thead><tr><th>Chip line</th><th>ID</th><th>Flash</th><th>BOOT0 pin</th><th>NRST pin</th></tr></thead>
+            <tbody id="chip-list"></tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+
+    <aside class="side">
+      <section class="panel" aria-labelledby="dev-title">
+        <h2 id="dev-title">Programmer</h2>
+        <p class="conn" id="conn"><span class="dot"></span><span id="conn-text">Not connected</span></p>
+        <p class="link-note" id="link-note">Plug in the programmer by USB and connect it.</p>
+        <div class="stack">
+          <button type="button" class="btn btn-primary btn-wide" id="btn-connect">Connect programmer</button>
+          <button type="button" class="btn btn-wide" id="btn-hid">CMSIS-DAP v1 (HID)</button>
+        </div>
+        <details class="more">
+          <summary>More options</summary>
+          <label class="field"><span>SWD clock</span>
+            <select id="speed">
+              <option value="100">100 kHz</option><option value="400">400 kHz</option><option value="1000" selected>1 MHz</option>
+              <option value="2000">2 MHz</option><option value="4000">4 MHz</option><option value="8000">8 MHz</option>
+            </select>
+            <small>1 MHz works with long wires; higher clocks are faster. The programmer uses the next clock it supports.</small>
+          </label>
+          <label class="check"><input type="checkbox" id="opt-all"> <span>List all USB devices when connecting (for CMSIS-DAP programmers with an unknown vendor ID)</span></label>
+          <p class="small"><strong>Windows:</strong> CMSIS-DAP v2 programmers normally work without a driver. A J-Link needs the WinUSB driver (J-Link Configurator: “Use WinUSB”, or <a href="https://zadig.akeo.ie/">Zadig</a>). If the browser cannot open an ST-Link, install the WinUSB driver for its debug interface with Zadig.</p>
+          <p class="small"><strong>Linux:</strong> allow access to the programmers:</p>
+          <pre class="code">echo 'SUBSYSTEM=="usb", ATTR{idVendor}=="0483", MODE="666"' | sudo tee /etc/udev/rules.d/99-swdprog.rules
+echo 'SUBSYSTEM=="usb", ATTR{idVendor}=="1366", MODE="666"' | sudo tee -a /etc/udev/rules.d/99-swdprog.rules
+echo 'SUBSYSTEM=="usb", ATTR{idVendor}=="0d28", MODE="666"' | sudo tee -a /etc/udev/rules.d/99-swdprog.rules
+echo 'KERNEL=="hidraw*", ATTRS{idVendor}=="0d28", MODE="666"' | sudo tee -a /etc/udev/rules.d/99-swdprog.rules
+sudo udevadm control --reload-rules</pre>
+          <p class="small">Add lines for other CMSIS-DAP vendor IDs, e.g. 2e8a (Raspberry Pi), c251 (Keil), 1a86 (WCH).</p>
+        </details>
+      </section>
+
+      <section class="panel" aria-labelledby="chip-title">
+        <h2 id="chip-title">Connected chip</h2>
+        <dl class="facts" id="chip-facts"><dt>Chip</dt><dd>Not read yet</dd></dl>
+      </section>
+
+      <section class="panel log-panel" aria-labelledby="log-title">
+        <h2 id="log-title">Log</h2>
+        <ol class="log" id="log"></ol>
+      </section>
+    </aside>
+  </main>
+
+  <footer class="site-footer">
+    SWD Programmer by <a href="https://github.com/wagiminator">wagiminator</a>, a port of <a href="https://github.com/wagiminator/MCU-Flash-Tools">tinyOCD</a> (MIT License).
+  </footer>
+
+  <script src="../../assets/js/firmware.js"></script>
+  <script src="swd.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
