@@ -1,6 +1,6 @@
 # wagiminator.github.io
 
-Personal page of wagiminator with links and small browser apps, published with GitHub Pages at <https://wagiminator.github.io/>. Web Apps were built with Claude Opus 5.5.
+Personal page of wagiminator with links and small browser apps, published with GitHub Pages at <https://wagiminator.github.io/>. Web apps were built with Claude Opus 5.5.
 
 ## Structure
 
@@ -24,10 +24,8 @@ apps/
   puyaisp/              PUYA ISP Programmer
   stm32isp/             STM32 ISP Programmer
   serialupdi/           AVR Serial UPDI Programmer
-  tinyupdi/             Redirect for the UPDI programmer's old address
   avrisp/               AVR ISP Programmer
   mt3608-sepic/         MT3608 SEPIC Voltage Calculator
-mt3608_sepic.html       Redirect for the calculator's old address
 ```
 
 Every app lives in its own folder under `apps/` and is reachable at `https://wagiminator.github.io/apps/<app-name>/`. Apps are plain HTML, CSS and JavaScript without a build step and run entirely in the browser.
@@ -168,7 +166,7 @@ Code: `stm32isp.js` is the programmer with the chip table, `app.js` is the user 
 
 ### AVR Serial UPDI Programmer
 
-Programs all AVR microcontrollers with UPDI through a USB-to-serial converter on their UPDI pin (TXD and RXD joined through a 470 Ω to 1 kΩ resistor). A JavaScript port of [megaupdi](https://github.com/wagiminator/MCU-Flash-Tools) v1.0 (MIT License, based on TinyUPDI, pyupdi, pymcuprog and the serialupdi programmer of AVRDUDE) using the Web Serial API: double break at 300 baud, then UPDI at 230400 baud 8E2 (lower rates selectable). It replaces the AVR Tiny UPDI Programmer; its old address `apps/tinyupdi/` forwards here.
+Programs all AVR microcontrollers with UPDI through a USB-to-serial converter on their UPDI pin (TXD and RXD joined through a 470 Ω to 1 kΩ resistor). A JavaScript port of [megaupdi](https://github.com/wagiminator/MCU-Flash-Tools) v1.0 (MIT License, based on TinyUPDI, pyupdi, pymcuprog and the serialupdi programmer of AVRDUDE) using the Web Serial API: double break at 300 baud, then UPDI at 230400 baud 8E2 (lower rates selectable).
 
 - Chips: the 133 AVRs of megaupdi's device table, detected by their signature: tinyAVR 0/1/2-series (ATtiny202 to ATtiny3227), megaAVR 0-series (ATmega808 to ATmega4809), AVR DA (also DA-S), DB, DD, DU, EA, EB, EC, LA and SD. The NVM controller variant is taken from the System Information Block (P:0 with 16-bit addresses, P:2 to P:6 with 24-bit addresses).
 - Flash BIN and Intel HEX files: chip erase, page or word writes as the NVM controller needs, verify. EEPROM and fuse sections in HEX files (0x810000 and up) are skipped with a note. EEPROM, user row, boot row and the lock bits of the AVR Dx/Ex/Lx/Sx are not programmed; high-voltage UPDI activation is not supported.
