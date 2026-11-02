@@ -23,6 +23,7 @@ apps/
   chprog/               WCH USB Programmer
   puyaisp/              PUYA ISP Programmer
   stm32isp/             STM32 ISP Programmer
+  swdprog/              SWD Programmer
   serialupdi/           AVR Serial UPDI Programmer
   avrisp/               AVR ISP Programmer
   mt3608-sepic/         MT3608 SEPIC Voltage Calculator
@@ -163,6 +164,18 @@ Flashes STM32 microcontrollers through a USB-to-serial converter and the factory
 - Needs Chrome, Edge or Opera on a desktop computer.
 
 Code: `stm32isp.js` is the programmer with the chip table, `app.js` is the user interface; `/assets/js/serial-link.js` and `/assets/js/firmware.js` are shared with other apps.
+
+### SWD Programmer
+
+Flashes STM32, PUYA PY32 and Microchip ATSAMD microcontrollers over SWD with a CMSIS-DAP (DAPLink, Raspberry Pi Debug Probe, WCH-LinkE in DAP mode …), ST-Link or SEGGER J-Link. A JavaScript port of [tinyOCD](https://github.com/wagiminator/MCU-Flash-Tools) v1.0 (MIT License) using the WebUSB API (CMSIS-DAP v2, ST-Link V2/V2-1/V3, J-Link) and the WebHID API (CMSIS-DAP v1). The flash memory is written by tinyOCD's generic flash loader, which runs in the RAM of the chip.
+
+- Chips: the 81 STM32 lines of tinyOCD (C0, F0, F1, F2, F3, F4, F7, G0, G4, H5, H7, L0, L1, L4, L4+, L5, U0, U3, U5, WB, WBA, WL), PY32F002A/F003/F030, PY32F002B, PY32F071/F072 (and compatible, e.g. AIR001), ATSAMD09/10/11/20/21, ATSAMDA1, ATSAML21/22, ATSAMC20/21, ATSAMD51 and ATSAME51/53/54. The programmer is recognized from its USB descriptors, the chip from CPUID, DBGMCU_IDCODE or DSU DID; the flash size is read from the chip.
+- Flash BIN and Intel HEX files (BIN files to 0x08000000 on STM32/PY32, to 0 on ATSAMD): a locked chip is unlocked first (can be switched off), the chip is erased, written, verified byte by byte, reset and started. Optionally enable the BOOT0 pin and lock the chip afterwards. Dual-bank chips (F1 XL, H7) are written bank by bank. A chip whose SWD pins are disabled is connected under reset (NRST).
+- Chip actions: read chip info, erase, unlock (removes the read protection or the ATSAMD security bit and erases the chip), lock, enable the BOOT0 pin (option bytes nBOOT_SEL/nSWBOOT0/nBOOT1/BOOT_SEL as tinyOCD's `-B`), NRST pin as GPIO or reset pin (`-G`/`-R`), read the flash into a BIN file, SWD clock from 100 kHz to 8 MHz.
+- In addition to tinyOCD: on ATSAMD chips with a bootloader protected by the BOOTPROT fuse (e.g. Arduino boards), firmware that starts after the bootloader (a HEX file, or a BIN file with the protected area empty) is written and verified around the bootloader instead of failing; the flash can be read into a file.
+- Needs Chrome, Edge or Opera on a desktop computer. On Windows a J-Link needs the WinUSB driver (J-Link Configurator or Zadig); on Linux the udev rules shown in the app.
+
+Code: `swd.js` holds the probes (CMSIS-DAP, ST-Link, J-Link), the target control, the flash drivers, the chip tables and the flash loader; `app.js` is the user interface; `/assets/js/firmware.js` is shared with other apps.
 
 ### AVR Serial UPDI Programmer
 
