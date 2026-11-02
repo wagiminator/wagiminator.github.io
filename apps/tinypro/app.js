@@ -179,6 +179,9 @@
 
   const PROTO = { 0x01: "I2C EEPROM", 0x02: "Microwire EEPROM", 0x03: "SPI flash", 0x04: "DataFlash" };
 
+  // A parallel chip that cannot be erased electrically is a UV-EPROM (serial EEPROMs are written directly)
+  const isUv = (c) => !c.canErase && !PROTO[c.protocolId & 0xff];
+
   function selectChip(c, quiet) {
     state.chip = c;
     if (!c) {
@@ -195,7 +198,7 @@
     if (c.dataSize) rows.push(["Data memory", size(c.dataSize)]);
     if (PROTO[c.protocolId & 0xff]) rows.push(["Type", PROTO[c.protocolId & 0xff]]);
     if (c.hasChipId) rows.push(["Chip ID", hex(c.chipId, c.chipIdBytes * 2)]);
-    rows.push(["Erase", c.canErase ? "electrically" : "UV light (not by the programmer)"]);
+    rows.push(["Erase", c.canErase ? "electrically" : isUv(c) ? "UV light (not by the programmer)" : "not needed (written directly)"]);
     if (c.protectAfter || c.offProtectBefore) rows.push(["Write protection", c.protectAfter ? "can be set after writing" : "removed before writing"]);
     if (c.blankValue !== 0xFF) rows.push(["Blank value", hex(c.blankValue)]);
     if (state.db === "INFOIC2PLUS" && c.availableStr() && c.availableStr() !== "TL866II+/T48/T56") rows.push(["Programmers", c.availableStr().replace("/T56", "").replace("T56", "–") || "–"]);
@@ -221,14 +224,14 @@
 
   function socketSvg(pins, label, adapter) {
     const W = 128, top = 44, pitch = 13, H = top + 20 * pitch + 14;
-    const rows = pins / 2, first = 20 - rows;                 // chip uses the lowest rows
+    const rows = pins / 2, first = 0;                         // chip uses the top rows (next to the lever)
     const xl = 30, xr = 98;
     let s = `<svg class="svg-socket" viewBox="0 0 ${W} ${H}" role="img" aria-label="${label}">`;
     s += `<rect x="12" y="${top - 16}" width="${W - 24}" height="${20 * pitch + 24}" rx="5" class="zif"/>`;
     s += `<rect x="4" y="2" width="8" height="${top - 4}" rx="3" fill="#7a7466"/><rect x="2" y="2" width="12" height="9" rx="3" fill="#5d584c"/>`;
     s += `<text x="18" y="${top - 6}" fill="#5d584c">1</text><text x="${W - 30}" y="${top - 6}" fill="#5d584c">40</text>`;
     for (let r = 0; r < 20; r++) {
-      const y = top + r * pitch + 4, used = r >= first;
+      const y = top + r * pitch + 4, used = r < rows;
       s += `<rect x="${xl - 10}" y="${y - 3}" width="20" height="6" rx="3" class="hole${used ? " used" : ""}"/>`;
       s += `<rect x="${xr - 10}" y="${y - 3}" width="20" height="6" rx="3" class="hole${used ? " used" : ""}"/>`;
     }
@@ -255,10 +258,10 @@
     if (!pins && p.dip && p.dip <= 40) pins = p.dip;
     if (pins) {
       const rows = pins / 2;
-      const where = `at the bottom of the ZIF socket, pin 1 (notch) towards the lever: chip pin 1 in socket pin ${21 - rows}, pin ${pins} in socket pin ${20 + rows} (the lowest ${rows} rows).`;
+      const where = `at the top of the ZIF socket, next to the lever, with pin 1 (notch) towards the lever: chip pin 1 in socket pin 1, pin ${pins} in socket pin 40 (the top ${rows} rows).`;
       if (p.direct) para(`Insert the ${p.pkg} chip ${where}`);
       else para(`Put the ${p.pkg} chip into a ${p.adapter} and insert the adapter like a DIP${pins} ${where}`);
-      $("socket").innerHTML = socketSvg(pins, `ZIF socket with ${p.direct ? "a " + p.pkg + " chip" : "an adapter"} in the lowest ${rows} rows`, !p.direct);
+      $("socket").innerHTML = socketSvg(pins, `ZIF socket with ${p.direct ? "a " + p.pkg + " chip" : "an adapter"} in the top ${rows} rows`, !p.direct);
       $("socket").hidden = false;
     } else {
       $("socket").innerHTML = "";
@@ -268,7 +271,7 @@
       else para("The package of this chip is not known; see Xgpro for how it is inserted.");
     }
     if (state.prog && !c.availableOn(state.prog)) para(`This chip is not supported by the ${state.prog.model} (only ${c.availableStr().replace("/T56", "")}).`, "warnline");
-    if (!c.canErase) para("UV-EPROM: it must be blank before writing; erase it with UV light.");
+    if (isUv(c)) para("UV-EPROM: it must be blank before writing; erase it with UV light.");
   }
 
   /* ---------- Connecting ---------- */
