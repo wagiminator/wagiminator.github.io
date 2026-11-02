@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>STM32 ISP Programmer</title>
-  <meta name="description" content="Flash STM32 microcontrollers (C0, F0, F1, F3, F4, G0, G4, L0, L4) through a USB-to-serial converter and their factory UART bootloader, straight from the browser.">
+  <meta name="description" content="Flash STM32 microcontrollers (C0, F0, F1, F2, F3, F4, F7, G0, G4, H5, H7, L0, L1, L4, L5, U5, WB, WL) through a USB-to-serial converter and their factory UART bootloader, straight from the browser.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chivo:wght@400;700&display=swap">
@@ -19,7 +19,7 @@
   <main class="app">
     <header class="app-head">
       <h1>STM32 ISP Programmer</h1>
-      <p>Flash STM32 microcontrollers (C0, F0, F1, F3, F4, G0, G4, L0, L4) with a cheap USB-to-serial converter and the UART bootloader built into every chip. Write BIN and HEX files, erase, lock and unlock the chip.</p>
+      <p>Flash STM32 microcontrollers (C0, F0, F1, F2, F3, F4, F7, G0, G4, H5, H7, L0, L1, L4, L5, U5, WB, WL) with a cheap USB-to-serial converter and the UART bootloader built into every chip. Write BIN and HEX files, erase, lock and unlock the chip.</p>
     </header>
 
     <p class="banner" id="unsupported" hidden>This browser cannot access serial ports. Open this page in Chrome, Edge or Opera on a desktop computer.</p>
@@ -60,7 +60,7 @@
           </div>
           <div class="action">
             <button type="button" class="btn" id="btn-erase" disabled>Erase chip</button>
-            <p>Erases the whole flash (mass erase, page by page on STM32L0).</p>
+            <p>Erases the whole flash (mass erase, page by page on STM32L0/L1).</p>
           </div>
           <div class="action">
             <button type="button" class="btn" id="btn-unlock" disabled>Unlock chip</button>
@@ -100,7 +100,7 @@
    GND  --&gt; GND</pre>
         <p class="small">Then start the bootloader in ONE of these ways:</p>
         <ul class="ways">
-          <li><strong>With BOOT0:</strong> pull BOOT0 to VDD (hold the BOOT button), briefly pull nRST to GND or power-cycle the chip, then release BOOT0. STM32F1/F4 also need BOOT1 (PB2) at GND.</li>
+          <li><strong>With BOOT0:</strong> pull BOOT0 to VDD (hold the BOOT button), briefly pull nRST to GND or power-cycle the chip, then release BOOT0. STM32F1/F2/F4 also need BOOT1 (PB2) at GND.</li>
           <li><strong>New STM32C0/G0:</strong> a chip with an empty flash starts the bootloader by itself. After the first flashing the app enables the BOOT0 pin (option, on by default), otherwise the bootloader could only be reached again over SWD.</li>
           <li><strong>Automatically:</strong> with a converter whose RTS line is wired to nRST and DTR to BOOT0, the app starts the bootloader by itself and resets the chip afterwards.</li>
         </ul>
@@ -109,7 +109,7 @@
 
       <section class="panel" aria-labelledby="chips-title">
         <h2 id="chips-title">Supported chips</h2>
-        <p class="small">The app recognizes the chip by the product ID its bootloader reports. Flash size: the largest chip of the line; the app reads the real size from the chip. <span class="tag">stm32isp</span> marks the chips of the Python tool.</p>
+        <p class="small">The app recognizes the chip by the product ID its bootloader reports. Flash size: the largest chip of the line; the app reads the real size from the chip. The list is the one of stm32isp.</p>
         <div class="chips-wrap">
           <table class="chips">
             <thead><tr><th>Chip line</th><th>PID</th><th>Flash</th><th>Bootloader USART (TX/RX)</th></tr></thead>

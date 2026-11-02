@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>PUYA ISP Programmer</title>
-  <meta name="description" content="Flash PUYA PY32 microcontrollers (PY32F002, PY32F003, PY32F030, PY32F07x) through a USB-to-serial converter and their UART bootloader, straight from the browser.">
+  <meta name="description" content="Flash PUYA PY32 microcontrollers (PY32F002A, PY32F003, PY32F030, PY32F07x, PY32F040, PY32F403, PY32F303) through a USB-to-serial converter and their UART bootloader, straight from the browser.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chivo:wght@400;700&display=swap">
@@ -19,7 +19,7 @@
   <main class="app">
     <header class="app-head">
       <h1>PUYA ISP Programmer</h1>
-      <p>Flash PUYA PY32 microcontrollers (PY32F002A/B, PY32F003, PY32F030, PY32F07x, PY32F040) with a cheap USB-to-serial converter and the bootloader built into every chip. Write BIN and HEX files, erase, lock and unlock the chip and set the nRST pin.</p>
+      <p>Flash PUYA PY32 microcontrollers (PY32F002A, PY32F003, PY32F030, PY32F07x, PY32F040, PY32F403, PY32F303) with a cheap USB-to-serial converter and the bootloader built into every chip. Write BIN and HEX files, erase, lock and unlock the chip and set the nRST pin.</p>
     </header>
 
     <p class="banner" id="unsupported" hidden>This browser cannot access serial ports. Open this page in Chrome, Edge or Opera on a desktop computer.</p>
@@ -82,7 +82,7 @@
             </div>
             <div class="action">
               <button type="button" class="btn" id="btn-gpio" disabled>nRST as GPIO</button>
-              <p>Uses the reset pin (PF2 on PY32F0xx) as a normal I/O pin.</p>
+              <p>Uses the reset pin (PF2 on PY32F002A/F003/F030) as a normal I/O pin. Not available on the PY32F403/F303.</p>
             </div>
             <div class="action">
               <button type="button" class="btn" id="btn-reset" disabled>nRST as RESET</button>
@@ -99,15 +99,16 @@
       <section class="panel" aria-labelledby="boot-title">
         <h2 id="boot-title">Wiring and bootloader mode</h2>
         <p class="small">Connect the converter to the chip (3.3 V or 5 V, as the chip is powered):</p>
-        <pre class="wiring">Converter   PY32F0xx
-   RXD  &lt;-- PA2 or PA9  or PA14
-   TXD  --&gt; PA3 or PA10 or PA15
-   VCC  --&gt; VCC
-   GND  --&gt; GND</pre>
+        <pre class="wiring">Converter   PY32F002A/F003/F030   PY32F07x/F040   PY32F403/F303
+   RXD  &lt;-- PA2 or PA9  or PA14     PA9  or PA14    PA9  or PB10
+   TXD  --&gt; PA3 or PA10 or PA15     PA10 or PA15    PA10 or PB11
+   VCC  --&gt; VCC                     VCC             VCC
+   GND  --&gt; GND                     GND             GND</pre>
+        <p class="small">Unused RX pins of the bootloader UARTs should not float (use pull-up resistors). The PY32F002B and PY32L020 have no UART bootloader and cannot be flashed this way.</p>
         <p class="small">Then start the bootloader in ONE of these ways:</p>
         <ul class="ways">
-          <li><strong>While powering up:</strong> unplug the converter, pull BOOT0 (PF4) to VCC or hold the BOOT button, plug the converter in and release BOOT0.</li>
-          <li><strong>With a reset:</strong> pull BOOT0 (PF4) to VCC, briefly pull nRST (PF2) to GND, release BOOT0 (or hold BOOT, press and release RESET, release BOOT).</li>
+          <li><strong>While powering up:</strong> unplug the converter, pull BOOT0 (PF4 on PY32F002A/F003/F030) to VCC or hold the BOOT button, plug the converter in and release BOOT0.</li>
+          <li><strong>With a reset:</strong> pull BOOT0 to VCC, briefly pull nRST to GND, release BOOT0 (or hold BOOT, press and release RESET, release BOOT).</li>
           <li><strong>Automatically:</strong> with a CH340X converter whose control lines are wired to nRST and BOOT0, the app starts the bootloader by itself and resets the chip afterwards.</li>
         </ul>
       </section>

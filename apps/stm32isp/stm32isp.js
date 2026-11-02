@@ -1,33 +1,21 @@
 /* ===================================================================
  * UART bootloader programmer for STM32 microcontrollers
  * -------------------------------------------------------------------
- * JavaScript port of stm32isp.py v0.8 by Stefan Wagner (MIT License),
+ * JavaScript port of stm32isp.py v1.0 by Stefan Wagner (MIT License),
  * https://github.com/wagiminator/MCU-Flash-Tools. Talks to the factory
  * USART bootloader of STM32 chips (protocol: ST application note
  * AN3155, chip data: AN2606) through a USB-to-serial converter
  * (Web Serial, 8E1, the bootloader detects the baud rate itself).
  *
- * Chips: the five lines of stm32isp.py (C011, C031, F03xx4/6, G03x/G04x,
- * L01x/L02x) plus 20 widely used STM32 lines with the same bootloader
- * protocol (F0, F1, F3, F4, G0, G4, L4). The chip is recognized by the
- * product ID the bootloader reports.
+ * Chips: all lines of stm32isp.py (STM32C0, F0, F1, F2, F3, F4, F7, G0,
+ * G4, H5, H7, L0, L1, L4, L5, U5, WB, WL), recognized by the product ID
+ * the bootloader reports.
  *
- * Differences to stm32isp.py:
- * - verify compares every byte (stm32isp.py compares the sets of byte
- *   values only: set(flash) != set(data))
- * - the bootloader version shows the low nibble in full (ver & 0x0f
- *   instead of ver & 7)
- * - after unlocking, the chip resets; the app waits for the bootloader
- *   and synchronizes again with the single byte 0x7F (stm32isp.py sends
- *   0x7F 0x80 as a command)
- * - page erase sends the page count high byte as count >> 8 (stm32isp.py
- *   uses >> 16) and erases all pages of the chip as read from its flash
- *   size register (stm32isp.py always erases 128 pages on STM32L01x/02x)
- * - data is padded to a multiple of 8 bytes (64-bit flash programming
- *   on C0/G0/G4/L4); blocks that are all 0xFF are not written after an
- *   erase
- * - unlocking a chip that is not locked does nothing (as stm32isp.py),
- *   erasing is a separate action
+ * Additions to stm32isp.py: read the flash, remove the write protection,
+ * enable the BOOT0 pin on its own, show the option bytes; an erase on a
+ * chip without mass erase (STM32L0/L1) erases all pages of the chip.
+ * As stm32isp.py, data is padded to the programming width of the family
+ * and blocks that are all 0xFF are not written after an erase.
  * Global: STM32ISP
  * =================================================================== */
 (function (global) {
@@ -41,55 +29,111 @@
   const BLOCK = 256, CODE_ADDR = 0x08000000;
   const T_NORMAL = 1000, T_WRITE = 2000, T_ERASE = 120000, T_BOOT = 4000;   // ms
 
-  // Chip families: option byte area, flash size register (F_SIZE, KB as
-  // 16-bit value), default page size for page-wise erase.
+  // Chip families (FAMILIES of stm32isp.py): option byte area (shown in
+  // the chip info; null: not read), flash size register (F_SIZE, KB as
+  // 16-bit value), page size for page-wise erase (0: sectors of different
+  // size, no page erase), align: data is padded to a multiple of this
+  // (flash programming width).
   //   bootSel: option bit nBOOT_SEL (STM32C0/G0) can switch the BOOT0 pin off
-  //   noMassErase: the bootloader has no mass erase (STM32L0, AN2606 4.4)
+  //   noMassErase: the bootloader has no mass erase (STM32L0/L1)
   const FAMILIES = {
-    C0: { name: "STM32C0", optAddr: 0x1fff7800, optLen: 8,  fsize: 0x1fff75a0, page: 2048, bootSel: true },
-    F0: { name: "STM32F0", optAddr: 0x1ffff800, optLen: 16, fsize: 0x1ffff7cc, page: 1024 },
-    F1: { name: "STM32F1", optAddr: 0x1ffff800, optLen: 16, fsize: 0x1ffff7e0, page: 1024 },
-    F3: { name: "STM32F3", optAddr: 0x1ffff800, optLen: 16, fsize: 0x1ffff7cc, page: 2048 },
-    F4: { name: "STM32F4", optAddr: 0x1fffc000, optLen: 16, fsize: 0x1fff7a22, page: 0 },
-    G0: { name: "STM32G0", optAddr: 0x1fff7800, optLen: 8,  fsize: 0x1fff75e0, page: 2048, bootSel: true },
-    G4: { name: "STM32G4", optAddr: 0x1fff7800, optLen: 8,  fsize: 0x1fff75e0, page: 2048 },
-    L0: { name: "STM32L0", optAddr: 0x1ff80000, optLen: 8,  fsize: 0x1ff8007c, page: 128, noMassErase: true },
-    L4: { name: "STM32L4", optAddr: 0x1fff7800, optLen: 8,  fsize: 0x1fff75e0, page: 2048 },
+    C0: { name: "STM32C0", optAddr: 0x1fff7800, optLen: 8, fsize: 0x1fff75a0, page: 2048, align: 8, bootSel: true },
+    F0: { name: "STM32F0", optAddr: 0x1ffff800, optLen: 16, fsize: 0x1ffff7cc, page: 1024, align: 8 },
+    F1: { name: "STM32F1", optAddr: 0x1ffff800, optLen: 16, fsize: 0x1ffff7e0, page: 1024, align: 8 },
+    F2: { name: "STM32F2", optAddr: 0x1fffc000, optLen: 16, fsize: 0x1fff7a22, page: 0, align: 8 },
+    F3: { name: "STM32F3", optAddr: 0x1ffff800, optLen: 16, fsize: 0x1ffff7cc, page: 2048, align: 8 },
+    F4: { name: "STM32F4", optAddr: 0x1fffc000, optLen: 16, fsize: 0x1fff7a22, page: 0, align: 8 },
+    F7: { name: "STM32F7", optAddr: 0x1fff0000, optLen: 16, fsize: null, page: 0, align: 8 },
+    G0: { name: "STM32G0", optAddr: 0x1fff7800, optLen: 8, fsize: 0x1fff75e0, page: 2048, align: 8, bootSel: true },
+    G4: { name: "STM32G4", optAddr: 0x1fff7800, optLen: 8, fsize: 0x1fff75e0, page: 2048, align: 8 },
+    H5: { name: "STM32H5", optAddr: null, optLen: 8, fsize: 0x08fff80c, page: 0, align: 16 },
+    H7: { name: "STM32H7", optAddr: null, optLen: 8, fsize: null, page: 0, align: 32 },
+    L0: { name: "STM32L0", optAddr: 0x1ff80000, optLen: 8, fsize: 0x1ff8007c, page: 128, align: 8, noMassErase: true },
+    L1: { name: "STM32L1", optAddr: 0x1ff80000, optLen: 8, fsize: 0x1ff800cc, page: 256, align: 8, noMassErase: true },
+    L4: { name: "STM32L4", optAddr: 0x1fff7800, optLen: 8, fsize: 0x1fff75e0, page: 2048, align: 8 },
+    L5: { name: "STM32L5", optAddr: null, optLen: 8, fsize: 0x0bfa05e0, page: 0, align: 8 },
+    U5: { name: "STM32U5", optAddr: null, optLen: 8, fsize: 0x0bfa07a0, page: 0, align: 16 },
+    WB: { name: "STM32WB", optAddr: 0x1fff8000, optLen: 8, fsize: 0x1fff75e0, page: 4096, align: 8 },
+    WL: { name: "STM32WL", optAddr: 0x1fff7800, optLen: 8, fsize: 0x1fff75e0, page: 2048, align: 8 },
   };
 
-  // Chip lines by bootloader product ID (AN2606 Rev 59, table 174 and the
-  // chapters of the devices). flash: largest member in KB (used if the
-  // F_SIZE register cannot be read); page: page size if it differs from
-  // the family; usart: bootloader USART pins (TX/RX of the chip);
-  // src: "stm32isp" = also supported by stm32isp.py.
+  // Chip lines by bootloader product ID (stm32isp.py v1.0, ST AN2606).
+  // flash: largest member in KB (used if the F_SIZE register cannot be
+  // read); page: page size if it differs from the family (0: sectors);
+  // fsize: flash size register if it differs from the family (null:
+  // none); usart: bootloader USART pins (TX/RX of the chip).
   const CHIPS = [
-    // the chips of stm32isp.py
-    { pid: 0x443, name: "STM32C011xx",                   fam: "C0", flash: 32,   usart: "PA9/PA10 (PA11/PA12 on small packages)", src: "stm32isp" },
-    { pid: 0x453, name: "STM32C031xx",                   fam: "C0", flash: 32,   usart: "PA9/PA10 (PA11/PA12 on small packages)", src: "stm32isp" },
-    { pid: 0x444, name: "STM32F03xx4/6",                 fam: "F0", flash: 32,   usart: "PA9/PA10 or PA14/PA15", src: "stm32isp" },
-    { pid: 0x466, name: "STM32G03x/G04x",                fam: "G0", flash: 64,   usart: "PA9/PA10 (PA11/PA12 on small packages) or PA2/PA3", src: "stm32isp" },
-    { pid: 0x457, name: "STM32L01x/L02x",                fam: "L0", flash: 32,   usart: "PA9/PA10 or PA2/PA3 (USART2)", src: "stm32isp" },
-    // 20 widely used lines with the same UART bootloader
-    { pid: 0x440, name: "STM32F030x8/F05x",              fam: "F0", flash: 64,   usart: "PA9/PA10 or PA14/PA15 (USART2)" },
-    { pid: 0x442, name: "STM32F030xC/F09x",              fam: "F0", flash: 256,  page: 2048, usart: "PA9/PA10, PA2/PA3 or PA14/PA15 (USART2)" },
-    { pid: 0x445, name: "STM32F04x/F070x6",              fam: "F0", flash: 32,   usart: "PA9/PA10 or PA14/PA15 (USART2)" },
-    { pid: 0x448, name: "STM32F07x/F070xB",              fam: "F0", flash: 128,  page: 2048, usart: "PA9/PA10 or PA14/PA15 (USART2)" },
-    { pid: 0x412, name: "STM32F10x low-density",         fam: "F1", flash: 32,   usart: "PA9/PA10" },
-    { pid: 0x410, name: "STM32F10x medium-density",      fam: "F1", flash: 128,  usart: "PA9/PA10" },
-    { pid: 0x414, name: "STM32F10x high-density",        fam: "F1", flash: 512,  page: 2048, usart: "PA9/PA10" },
-    { pid: 0x422, name: "STM32F302xB/C/F303xB/C",        fam: "F3", flash: 256,  usart: "PA9/PA10, PA2/PA3 or PD5/PD6 (USART2)" },
-    { pid: 0x438, name: "STM32F303x4/6/8/F334/F328",     fam: "F3", flash: 64,   usart: "PA9/PA10 or PA2/PA3 (USART2)" },
-    { pid: 0x423, name: "STM32F401xB/C",                 fam: "F4", flash: 256,  usart: "PA9/PA10 or PA2/PA3, PD5/PD6 (USART2)" },
-    { pid: 0x433, name: "STM32F401xD/E",                 fam: "F4", flash: 512,  usart: "PA9/PA10 or PA2/PA3, PD5/PD6 (USART2)" },
-    { pid: 0x431, name: "STM32F411xx",                   fam: "F4", flash: 512,  usart: "PA9/PA10 or PA2/PA3, PD5/PD6 (USART2)" },
-    { pid: 0x413, name: "STM32F405/407/415/417",         fam: "F4", flash: 1024, usart: "PA9/PA10 or PB10/PB11, PC10/PC11 (USART3)" },
-    { pid: 0x419, name: "STM32F42x/F43x",                fam: "F4", flash: 2048, usart: "PA9/PA10 or PB10/PB11, PC10/PC11 (USART3)" },
-    { pid: 0x421, name: "STM32F446xx",                   fam: "F4", flash: 512,  usart: "PA9/PA10 or PB10/PB11, PC10/PC11 (USART3)" },
-    { pid: 0x460, name: "STM32G07x/G08x",                fam: "G0", flash: 128,  usart: "PA9/PA10, PA2/PA3 (USART2) or PC10/PC11 (USART3)" },
-    { pid: 0x467, name: "STM32G0B0/G0B1/G0C1",           fam: "G0", flash: 512,  usart: "PA9/PA10, PA2/PA3 (USART2) or PC10/PC11 (USART3)" },
-    { pid: 0x468, name: "STM32G431/G441",                fam: "G4", flash: 128,  usart: "PA9/PA10, PA2/PA3 (USART2) or PC10/PC11 (USART3)" },
-    { pid: 0x469, name: "STM32G47x/G48x",                fam: "G4", flash: 512,  page: 0, usart: "PA9/PA10, PA2/PA3 (USART2) or PC10/PC11 (USART3)" },
-    { pid: 0x435, name: "STM32L43x/L44x",                fam: "L4", flash: 256,  usart: "PA9/PA10, PA2/PA3 (USART2) or PC10/PC11 (USART3)" },
+    { pid: 0x443, name: "STM32C011xx", fam: "C0", flash: 32, usart: "PA9/PA10 (PA11/PA12 on small packages)" },
+    { pid: 0x453, name: "STM32C031xx", fam: "C0", flash: 32, usart: "PA9/PA10 (PA11/PA12 on small packages)" },
+    { pid: 0x44c, name: "STM32C051xx", fam: "C0", flash: 64, usart: "PA9/PA10" },
+    { pid: 0x493, name: "STM32C071xx", fam: "C0", flash: 128, usart: "PA9/PA10" },
+    { pid: 0x44d, name: "STM32C091xx/092xx", fam: "C0", flash: 256, usart: "PA9/PA10" },
+    { pid: 0x444, name: "STM32F03xx4/6", fam: "F0", flash: 32, usart: "PA9/PA10 or PA14/PA15" },
+    { pid: 0x440, name: "STM32F030x8/05x", fam: "F0", flash: 64, usart: "PA9/PA10 or PA14/PA15 (USART2)" },
+    { pid: 0x445, name: "STM32F04x/070x6", fam: "F0", flash: 32, usart: "PA9/PA10 or PA14/PA15 (USART2)" },
+    { pid: 0x448, name: "STM32F07x/070xB", fam: "F0", flash: 128, page: 2048, usart: "PA9/PA10 or PA14/PA15 (USART2)" },
+    { pid: 0x442, name: "STM32F030xC/09x", fam: "F0", flash: 256, page: 2048, usart: "PA9/PA10, PA2/PA3 or PA14/PA15 (USART2)" },
+    { pid: 0x412, name: "STM32F10x low-density", fam: "F1", flash: 32, usart: "PA9/PA10" },
+    { pid: 0x410, name: "STM32F10x medium-density", fam: "F1", flash: 128, usart: "PA9/PA10" },
+    { pid: 0x414, name: "STM32F10x high-density", fam: "F1", flash: 512, page: 2048, usart: "PA9/PA10" },
+    { pid: 0x430, name: "STM32F10x XL-density", fam: "F1", flash: 1024, page: 2048, usart: "PA9/PA10" },
+    { pid: 0x420, name: "STM32F100 low/med-density", fam: "F1", flash: 128, usart: "PA9/PA10" },
+    { pid: 0x428, name: "STM32F100 high-density", fam: "F1", flash: 512, page: 2048, usart: "PA9/PA10" },
+    { pid: 0x418, name: "STM32F105/107", fam: "F1", flash: 256, page: 2048, usart: "PA9/PA10" },
+    { pid: 0x411, name: "STM32F2xx", fam: "F2", flash: 1024, usart: "PA9/PA10" },
+    { pid: 0x439, name: "STM32F301/302x4/6/8/318", fam: "F3", flash: 64, usart: "PA9/PA10" },
+    { pid: 0x422, name: "STM32F302/303xB/C/358", fam: "F3", flash: 256, usart: "PA9/PA10, PA2/PA3 or PD5/PD6 (USART2)" },
+    { pid: 0x446, name: "STM32F302/303xD/E/398", fam: "F3", flash: 512, usart: "PA9/PA10" },
+    { pid: 0x438, name: "STM32F303x4/6/8/328/334", fam: "F3", flash: 64, usart: "PA9/PA10 or PA2/PA3 (USART2)" },
+    { pid: 0x432, name: "STM32F373/378", fam: "F3", flash: 256, usart: "PA9/PA10" },
+    { pid: 0x423, name: "STM32F401xB/C", fam: "F4", flash: 256, usart: "PA9/PA10 or PA2/PA3, PD5/PD6 (USART2)" },
+    { pid: 0x433, name: "STM32F401xD/E", fam: "F4", flash: 512, usart: "PA9/PA10 or PA2/PA3, PD5/PD6 (USART2)" },
+    { pid: 0x413, name: "STM32F405/407/415/417", fam: "F4", flash: 1024, usart: "PA9/PA10 or PB10/PB11, PC10/PC11 (USART3)" },
+    { pid: 0x458, name: "STM32F410", fam: "F4", flash: 128, usart: "PA9/PA10" },
+    { pid: 0x431, name: "STM32F411", fam: "F4", flash: 512, usart: "PA9/PA10 or PA2/PA3, PD5/PD6 (USART2)" },
+    { pid: 0x441, name: "STM32F412", fam: "F4", flash: 1024, usart: "PA9/PA10" },
+    { pid: 0x463, name: "STM32F413/423", fam: "F4", flash: 1536, usart: "PA9/PA10" },
+    { pid: 0x419, name: "STM32F42x/43x", fam: "F4", flash: 2048, usart: "PA9/PA10 or PB10/PB11, PC10/PC11 (USART3)" },
+    { pid: 0x421, name: "STM32F446", fam: "F4", flash: 512, usart: "PA9/PA10 or PB10/PB11, PC10/PC11 (USART3)" },
+    { pid: 0x434, name: "STM32F469/479", fam: "F4", flash: 2048, usart: "PA9/PA10" },
+    { pid: 0x452, name: "STM32F72x/73x", fam: "F7", flash: 512, usart: "PA9/PA10" },
+    { pid: 0x449, name: "STM32F74x/75x", fam: "F7", flash: 1024, usart: "PA9/PA10" },
+    { pid: 0x451, name: "STM32F76x/77x", fam: "F7", flash: 2048, usart: "PA9/PA10" },
+    { pid: 0x466, name: "STM32G03x/04x", fam: "G0", flash: 64, usart: "PA9/PA10 (PA11/PA12 on small packages) or PA2/PA3" },
+    { pid: 0x456, name: "STM32G05x/061", fam: "G0", flash: 64, usart: "PA9/PA10" },
+    { pid: 0x460, name: "STM32G07x/08x", fam: "G0", flash: 128, usart: "PA9/PA10, PA2/PA3 (USART2) or PC10/PC11 (USART3)" },
+    { pid: 0x467, name: "STM32G0B0/0B1/0C1", fam: "G0", flash: 512, usart: "PA9/PA10, PA2/PA3 (USART2) or PC10/PC11 (USART3)" },
+    { pid: 0x468, name: "STM32G431/441", fam: "G4", flash: 128, usart: "PA9/PA10, PA2/PA3 (USART2) or PC10/PC11 (USART3)" },
+    { pid: 0x469, name: "STM32G47x/48x", fam: "G4", flash: 512, page: 0, usart: "PA9/PA10, PA2/PA3 (USART2) or PC10/PC11 (USART3)" },
+    { pid: 0x479, name: "STM32G491/4A1", fam: "G4", flash: 512, usart: "PA9/PA10" },
+    { pid: 0x474, name: "STM32H503", fam: "H5", flash: 128, usart: "PA9/PA10" },
+    { pid: 0x484, name: "STM32H563/573", fam: "H5", flash: 2048, usart: "PA9/PA10" },
+    { pid: 0x483, name: "STM32H72x/73x", fam: "H7", flash: 1024, usart: "PA9/PA10" },
+    { pid: 0x450, name: "STM32H74x/75x", fam: "H7", flash: 2048, usart: "PA9/PA10" },
+    { pid: 0x480, name: "STM32H7A3/7B3", fam: "H7", flash: 2048, usart: "PA9/PA10" },
+    { pid: 0x457, name: "STM32L01x/02x", fam: "L0", flash: 16, usart: "PA9/PA10 or PA2/PA3 (USART2)" },
+    { pid: 0x425, name: "STM32L031/041", fam: "L0", flash: 32, usart: "PA9/PA10" },
+    { pid: 0x417, name: "STM32L05x/06x", fam: "L0", flash: 64, usart: "PA9/PA10" },
+    { pid: 0x447, name: "STM32L07x/08x", fam: "L0", flash: 192, usart: "PA9/PA10" },
+    { pid: 0x416, name: "STM32L1 Cat.1", fam: "L1", flash: 128, fsize: 0x1ff8004c, usart: "PA9/PA10" },
+    { pid: 0x429, name: "STM32L1 Cat.2", fam: "L1", flash: 128, fsize: 0x1ff8004c, usart: "PA9/PA10" },
+    { pid: 0x427, name: "STM32L1 Cat.3", fam: "L1", flash: 256, usart: "PA9/PA10" },
+    { pid: 0x436, name: "STM32L1 Cat.4/Cat.3", fam: "L1", flash: 384, fsize: null, usart: "PA9/PA10" },
+    { pid: 0x437, name: "STM32L1 Cat.5/Cat.6", fam: "L1", flash: 512, usart: "PA9/PA10" },
+    { pid: 0x464, name: "STM32L412/422", fam: "L4", flash: 128, usart: "PA9/PA10" },
+    { pid: 0x435, name: "STM32L43x/44x", fam: "L4", flash: 256, usart: "PA9/PA10, PA2/PA3 (USART2) or PC10/PC11 (USART3)" },
+    { pid: 0x462, name: "STM32L45x/46x", fam: "L4", flash: 512, usart: "PA9/PA10" },
+    { pid: 0x415, name: "STM32L47x/48x", fam: "L4", flash: 1024, page: 0, usart: "PA9/PA10" },
+    { pid: 0x461, name: "STM32L496/4A6", fam: "L4", flash: 1024, page: 0, usart: "PA9/PA10" },
+    { pid: 0x470, name: "STM32L4Rx/4Sx", fam: "L4", flash: 2048, page: 0, usart: "PA9/PA10" },
+    { pid: 0x471, name: "STM32L4P5/4Q5", fam: "L4", flash: 1024, page: 0, usart: "PA9/PA10" },
+    { pid: 0x472, name: "STM32L552/562", fam: "L5", flash: 512, usart: "PA9/PA10" },
+    { pid: 0x455, name: "STM32U535/545", fam: "U5", flash: 512, usart: "PA9/PA10" },
+    { pid: 0x482, name: "STM32U575/585", fam: "U5", flash: 2048, usart: "PA9/PA10" },
+    { pid: 0x481, name: "STM32U595/599/5A9", fam: "U5", flash: 4096, usart: "PA9/PA10" },
+    { pid: 0x494, name: "STM32WB10/15", fam: "WB", flash: 320, page: 2048, usart: "PA9/PA10" },
+    { pid: 0x495, name: "STM32WB30/35/50/55", fam: "WB", flash: 1024, usart: "PA9/PA10" },
+    { pid: 0x497, name: "STM32WLE5/WL55", fam: "WL", flash: 256, usart: "PA9/PA10" },
   ];
 
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -243,15 +287,19 @@
     async readDetails() {
       this.option = null;
       if (!this.fam || this.locked) return;
-      try { this.option = Array.from(await this.readFlash(this.fam.optAddr, this.fam.optLen)); } catch (e) { if (!e.nack) throw e; }
+      if (this.fam.optAddr !== null) {
+        try { this.option = Array.from(await this.readFlash(this.fam.optAddr, this.fam.optLen)); } catch (e) { if (!e.nack) throw e; }
+      }
       if (this.option && this.fam.bootSel) {
         // OPTR byte 3: bit 0 nBOOT_SEL, bit 1 nBOOT1, bit 2 nBOOT0
         this.bootPinOff = (this.option[3] & 0x01) === 0x01;
       }
+      const fsize = this.chip.fsize !== undefined ? this.chip.fsize : this.fam.fsize;
+      if (fsize === null) return;                 // no flash size register: value from the table
       try {
-        const b = await this.readFlash(this.fam.fsize, 2);
+        const b = await this.readFlash(fsize, 2);
         const kb = b[0] | (b[1] << 8);
-        if (kb > 0 && kb <= 2048) { this.flashSize = kb * 1024; this.flashFromChip = true; }
+        if (kb >= 4 && kb <= 4096) { this.flashSize = kb * 1024; this.flashFromChip = true; }
       } catch (e) { if (!e.nack) throw e; }       // keep the value from the table
     }
 
@@ -305,7 +353,7 @@
     }
 
     // Erase the whole flash (mass erase). If the bootloader has none
-    // (STM32L0) or refuses it, the pages are erased one by one.
+    // (STM32L0/L1) or refuses it, the pages are erased one by one.
     async eraseChip(log) {
       if (!(this.fam && this.fam.noMassErase)) {
         let r;
@@ -408,10 +456,11 @@
     async close(reset) { await this.t.disconnect(reset); }
   }
 
-  // Pad to a multiple of 8 bytes (writes must be a multiple of 4 bytes,
-  // C0/G0/G4/L4 program 64 bits at a time)
-  function pad(data) {
-    const n = Math.ceil(data.length / 8) * 8;
+  // Pad to a multiple of the flash programming width (8 bytes on most
+  // families, 16 on H5/U5, 32 on H7)
+  function pad(data, align) {
+    align = align || 8;
+    const n = Math.ceil(data.length / align) * align;
     if (n === data.length) return data;
     const out = new Uint8Array(n).fill(0xff);
     out.set(data);
@@ -428,7 +477,10 @@
     const done = async (reset) => { if (open) { open = false; await prog.close(reset); } };
     const again = async (what) => {
       if (!(await prog.reconnect())) throw new IspError(`The chip did not return to the bootloader after ${what}. Put it into bootloader mode again and repeat the action`);
+      const size = prog.flashSize, exact = prog.flashFromChip, pid = prog.pid;
       await prog.readInfo();
+      // keep the flash size read from the chip (readInfo sets the table value)
+      if (exact && prog.pid === pid) { prog.flashSize = size; prog.flashFromChip = true; }
     };
     try {
       log("Getting chip info …");
@@ -494,7 +546,7 @@
       }
 
       if (a.flash) {
-        const data = pad(a.flash);
+        const data = pad(a.flash, prog.fam.align);
         log(`Writing ${a.flash.length.toLocaleString("en")} bytes …`);
         let n = 0;
         const written = await prog.writeFlash(CODE_ADDR, data, (k) => { n += k; if (progress) progress("write", n / data.length); }, true);

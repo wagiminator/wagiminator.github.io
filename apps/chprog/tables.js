@@ -1,9 +1,10 @@
 /* ===================================================================
  * Chip table for WCH microcontrollers with USB bootloader
  * -------------------------------------------------------------------
- * Taken from chprog.py v2.5.3 by Stefan Wagner (MIT License),
+ * Taken from chprog.py v2.6 by Stefan Wagner (MIT License),
  * https://github.com/wagiminator/MCU-Flash-Tools.
- * id = (family << 8) + type as reported by the bootloader.
+ * id = (family << 8) + type as reported by the bootloader. An id with
+ * type 0xff is the default for unknown types of this family.
  * Generated file: do not edit by hand.
  * =================================================================== */
 (function (global) {
@@ -22,8 +23,18 @@
     {"name": "CH555", "id": 4437, "codeSize": 61440, "dataSize": 1024},
     {"name": "CH556", "id": 4438, "codeSize": 61440, "dataSize": 1024},
     {"name": "CH557", "id": 4439, "codeSize": 61440, "dataSize": 1024},
-    {"name": "CH558", "id": 4440, "codeSize": 61440, "dataSize": 1024},
+    {"name": "CH558", "id": 4440, "codeSize": 32768, "dataSize": 5120},
     {"name": "CH559", "id": 4441, "codeSize": 61440, "dataSize": 1024},
+    {"name": "CH563", "id": 4195, "codeSize": 229376, "dataSize": 28672},
+    {"name": "CH563", "id": 4162, "codeSize": 229376, "dataSize": 28672},
+    {"name": "CH563", "id": 4163, "codeSize": 229376, "dataSize": 28672},
+    {"name": "CH563", "id": 4164, "codeSize": 229376, "dataSize": 28672},
+    {"name": "CH563", "id": 4165, "codeSize": 229376, "dataSize": 28672},
+    {"name": "CH565", "id": 4197, "codeSize": 458752, "dataSize": 32768},
+    {"name": "CH566", "id": 4198, "codeSize": 65536, "dataSize": 32768},
+    {"name": "CH567", "id": 4199, "codeSize": 196608, "dataSize": 32768},
+    {"name": "CH568", "id": 4200, "codeSize": 196608, "dataSize": 32768},
+    {"name": "CH569", "id": 4201, "codeSize": 458752, "dataSize": 32768},
     {"name": "CH563", "id": 4451, "codeSize": 229376, "dataSize": 28672},
     {"name": "CH565", "id": 4453, "codeSize": 458752, "dataSize": 32768},
     {"name": "CH567", "id": 4455, "codeSize": 196608, "dataSize": 32768},
@@ -34,25 +45,33 @@
     {"name": "CH572", "id": 4978, "codeSize": 245760, "dataSize": 0},
     {"name": "CH573", "id": 4979, "codeSize": 458752, "dataSize": 32768},
     {"name": "CH577", "id": 4983, "codeSize": 131072, "dataSize": 2048},
+    {"name": "CH578", "id": 4952, "codeSize": 163840, "dataSize": 2048},
     {"name": "CH578", "id": 4984, "codeSize": 163840, "dataSize": 2048},
     {"name": "CH579", "id": 4985, "codeSize": 256000, "dataSize": 2048},
     {"name": "CH581", "id": 5761, "codeSize": 196608, "dataSize": 32768},
     {"name": "CH582", "id": 5762, "codeSize": 458752, "dataSize": 32768},
     {"name": "CH583", "id": 5763, "codeSize": 458752, "dataSize": 32768},
+    {"name": "CH584", "id": 5764, "codeSize": 458752, "dataSize": 32768},
+    {"name": "CH585", "id": 5765, "codeSize": 458752, "dataSize": 32768},
     {"name": "CH591", "id": 8849, "codeSize": 196608, "dataSize": 32768},
     {"name": "CH592", "id": 8850, "codeSize": 458752, "dataSize": 32768},
     {"name": "CH643W", "id": 9264, "codeSize": 63488, "dataSize": 0},
     {"name": "CH643Q", "id": 9265, "codeSize": 63488, "dataSize": 0},
     {"name": "CH643L", "id": 9267, "codeSize": 63488, "dataSize": 0},
     {"name": "CH643U", "id": 9268, "codeSize": 63488, "dataSize": 0},
+    {"name": "CH643", "id": 9471, "codeSize": 63488, "dataSize": 0},
     {"name": "CH32F103x6", "id": 5170, "codeSize": 32768, "dataSize": 0},
+    {"name": "CH32F103x8", "id": 5171, "codeSize": 65536, "dataSize": 0},
     {"name": "CH32F103x8", "id": 5183, "codeSize": 65536, "dataSize": 0},
+    {"name": "CH32F103x8", "id": 5375, "codeSize": 65536, "dataSize": 0},
     {"name": "CH32F203VCT6", "id": 6192, "codeSize": 262144, "dataSize": 0},
     {"name": "CH32F203RCT6", "id": 6193, "codeSize": 262144, "dataSize": 0},
     {"name": "CH32F203CBT6", "id": 6194, "codeSize": 131072, "dataSize": 0},
     {"name": "CH32F203RBT6", "id": 6195, "codeSize": 131072, "dataSize": 0},
     {"name": "CH32F205RBT6", "id": 6224, "codeSize": 131072, "dataSize": 0},
     {"name": "CH32F207VCT6", "id": 6256, "codeSize": 262144, "dataSize": 0},
+    {"name": "CH32F208WBU6", "id": 6272, "codeSize": 491520, "dataSize": 0},
+    {"name": "CH32F208RBT6", "id": 6273, "codeSize": 131072, "dataSize": 0},
     {"name": "CH32F203C8U6", "id": 8240, "codeSize": 65536, "dataSize": 0},
     {"name": "CH32F203C8T6", "id": 8241, "codeSize": 65536, "dataSize": 0},
     {"name": "CH32F203K8T6", "id": 8242, "codeSize": 65536, "dataSize": 0},
@@ -60,7 +79,9 @@
     {"name": "CH32F208WBU6", "id": 8320, "codeSize": 491520, "dataSize": 0},
     {"name": "CH32F208RBT6", "id": 8321, "codeSize": 131072, "dataSize": 0},
     {"name": "CH32V103x6", "id": 5426, "codeSize": 32768, "dataSize": 0},
+    {"name": "CH32V103x8", "id": 5427, "codeSize": 65536, "dataSize": 0},
     {"name": "CH32V103x8", "id": 5439, "codeSize": 65536, "dataSize": 0},
+    {"name": "CH32V103x8", "id": 5631, "codeSize": 65536, "dataSize": 0},
     {"name": "CH32V203C8U6", "id": 6448, "codeSize": 65536, "dataSize": 0},
     {"name": "CH32V203C8T6", "id": 6449, "codeSize": 65536, "dataSize": 0},
     {"name": "CH32V203K8T6", "id": 6450, "codeSize": 65536, "dataSize": 0},
@@ -69,6 +90,7 @@
     {"name": "CH32V203K6T6", "id": 6453, "codeSize": 32768, "dataSize": 0},
     {"name": "CH32V203G6U6", "id": 6454, "codeSize": 32768, "dataSize": 0},
     {"name": "CH32V203F6P6", "id": 6455, "codeSize": 32768, "dataSize": 0},
+    {"name": "CH32V203F6P6", "id": 6457, "codeSize": 32768, "dataSize": 0},
     {"name": "CH32V203F8P6", "id": 6458, "codeSize": 65536, "dataSize": 0},
     {"name": "CH32V203G8R6", "id": 6459, "codeSize": 65536, "dataSize": 0},
     {"name": "CH32V203F8U6", "id": 6462, "codeSize": 65536, "dataSize": 0},
@@ -86,6 +108,8 @@
     {"name": "CH32V307VCT6", "id": 6000, "codeSize": 262144, "dataSize": 0},
     {"name": "CH32V307RCT6", "id": 6001, "codeSize": 262144, "dataSize": 0},
     {"name": "CH32V307WCU6", "id": 6003, "codeSize": 262144, "dataSize": 0},
+    {"name": "CH32V317VCT6", "id": 9840, "codeSize": 262144, "dataSize": 0},
+    {"name": "CH32V317WCU6", "id": 9843, "codeSize": 262144, "dataSize": 0},
     {"name": "CH32X033F8P6", "id": 9050, "codeSize": 63488, "dataSize": 0},
     {"name": "CH32X035R8T6", "id": 9040, "codeSize": 63488, "dataSize": 0},
     {"name": "CH32X035C8T6", "id": 9041, "codeSize": 63488, "dataSize": 0},
@@ -101,8 +125,10 @@
     {"name": "CH32L103G8R6", "id": 9531, "codeSize": 65536, "dataSize": 0},
     {"name": "CH32L103F8U6", "id": 9533, "codeSize": 65536, "dataSize": 0},
   ];
-  // families that need a last empty write / whose read protection is removed
-  const LASTWRITE = [18, 20, 21, 22, 23, 24, 25, 32, 34, 35, 36, 37];
-  const WPREMOVE = [20, 21, 22, 23, 24, 25, 32, 34, 35, 36, 37];
-  global.CH_TABLES = { DEVICES, LASTWRITE, WPREMOVE };
+  // family parameters
+  const UID4 = [17];        // 4-byte UID for the encryption key (all others: 8 bytes)
+  const MINERASE4 = [16];   // minimum code flash erase of 4 KB (all others: 8 KB)
+  const LASTWRITE = [16, 18, 20, 21, 22, 23, 24, 25, 32, 34, 35, 36, 37, 38];   // families that need a last empty write
+  const WPREMOVE = [20, 21, 23, 24, 25, 32, 35, 36, 37, 38];    // families whose read protection is removed
+  global.CH_TABLES = { DEVICES, UID4, MINERASE4, LASTWRITE, WPREMOVE };
 })(typeof window !== "undefined" ? window : globalThis);

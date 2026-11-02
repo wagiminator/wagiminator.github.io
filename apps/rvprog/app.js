@@ -34,9 +34,9 @@
     const rv = state.mode === "rv" && !!state.prog;
     const idle = rv && !state.busy;
     for (const id of ["btn-info", "btn-erase", "btn-unlock", "btn-unbrick", "btn-lock", "btn-armmode"]) $(id).disabled = !idle;
-    const v00x = !state.chip || state.chip.series === 0x00;
-    $("btn-gpio").disabled = !idle || !v00x;
-    $("btn-reset").disabled = !idle || !v00x;
+    const nrst = !state.chip || state.chip.nrst;     // nRST pin configurable (CH32V00x, CH32M007)
+    $("btn-gpio").disabled = !idle || !nrst;
+    $("btn-reset").disabled = !idle || !nrst;
     $("btn-flash").disabled = !idle || !state.fw || fwErrors().length > 0;
     $("btn-connect").disabled = state.busy || !navigator.usb;
     $("btn-connect").textContent = state.device ? "Disconnect" : "Connect WCH-Link";
@@ -204,7 +204,7 @@
   }
 
   function showChip(p) {
-    state.chip = { name: p.chipName, id: p.chipId, family: p.family, flashSize: p.flashSize, series: p.chipSeries };
+    state.chip = { name: p.chipName, id: p.chipId, family: p.family, flashSize: p.flashSize, series: p.chipSeries, nrst: !!p.family.nrst };
     const dl = $("chip-facts");
     dl.textContent = "";
     const rows = [
@@ -214,6 +214,7 @@
       ["Flash", `${p.flashSize.toLocaleString("en")} bytes (${Math.round(p.flashSize / 1024)} KB)`],
       ["Code flash at", hex(p.family.codeBase, 8)],
       ["Write block", `${p.family.blockSize} bytes`],
+      ["Read protection", p.family.protect === null ? "not supported" : "supported"],
     ];
     for (const [k, v] of rows) {
       const dt = document.createElement("dt"); dt.textContent = k;

@@ -169,3 +169,11 @@ select { font: inherit; font-size: 0.9375rem; padding: 0.35rem 0.5rem; border: 1
   .fuses td, .fuses th { padding: 0.3rem 0.3rem; }
   .fuses td.meaning { min-width: 7rem; }
 }
+
+/* Supported chips */
+.chips-wrap { overflow-x: auto; margin-top: 0.4rem; }
+.chips { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
+.chips th, .chips td { text-align: left; padding: 0.3rem 0.5rem; border-bottom: 1px solid var(--line); vertical-align: top; }
+.chips th { color: var(--ink-soft); font-weight: 700; white-space: nowrap; }
+.chips td:first-child { white-space: nowrap; font-weight: 700; }
+.chips tr.found td { background: #edf4fb; }

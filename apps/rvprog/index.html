@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>WCH RISC-V Programmer</title>
-  <meta name="description" content="Flash WCH RISC-V microcontrollers (CH32V, CH32X, CH32L, CH5xx) from the browser with a WCH-LinkE: write BIN and HEX files, erase, unlock and unbrick chips.">
+  <meta name="description" content="Flash WCH RISC-V microcontrollers (CH32V, CH32X, CH32L, CH32M, CH32H, CH64x, CH5xx) from the browser with a WCH-LinkE: write BIN and HEX files, erase, unlock and unbrick chips.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chivo:wght@400;700&display=swap">
@@ -19,7 +19,7 @@
   <main class="app">
     <header class="app-head">
       <h1>WCH RISC-V Programmer</h1>
-      <p>Flash WCH RISC-V microcontrollers with a WCH-LinkE (or WCH-LinkW/-LinkB) straight from the browser: write BIN and HEX files, erase, unlock and unbrick chips. Supports the CH32V00x, CH32V103, CH32V20x, CH32V30x, CH32X03x, CH32L103 and CH57x/58x/59x.</p>
+      <p>Flash WCH RISC-V microcontrollers with a WCH-LinkE (or WCH-LinkW/-LinkB) straight from the browser: write BIN and HEX files, erase, unlock and unbrick chips. Supports the CH32V00x, CH32M007, CH32V103, CH32V20x, CH32V30x, CH32V317, CH32V4xx, CH32H41x, CH32X03x, CH32X3x5, CH32L103, CH32M103, CH32M030, CH641/643/645 and CH565/569, CH57x/58x/59x.</p>
     </header>
 
     <p class="banner" id="unsupported" hidden>This browser cannot access USB devices. Open this page in Chrome, Edge or Opera on a desktop computer.</p>
@@ -73,11 +73,11 @@
             </div>
             <div class="action">
               <button type="button" class="btn" id="btn-gpio" disabled>PD7 as GPIO</button>
-              <p>CH32V00x only: use the reset pin PD7 as a normal I/O pin.</p>
+              <p>CH32V00x and CH32M007 only: use the reset pin PD7 as a normal I/O pin.</p>
             </div>
             <div class="action">
               <button type="button" class="btn" id="btn-reset" disabled>PD7 as reset</button>
-              <p>CH32V00x only: make PD7 the reset pin again.</p>
+              <p>CH32V00x and CH32M007 only: make PD7 the reset pin again.</p>
             </div>
           </div>
         </details>
@@ -118,7 +118,7 @@ sudo udevadm control --reload-rules</pre>
   </main>
 
   <footer class="site-footer">
-    WCH RISC-V Programmer by <a href="https://github.com/wagiminator">wagiminator</a>, a port of <a href="https://github.com/wagiminator/MCU-Flash-Tools">rvprog</a> (MIT License). Protocol based on <a href="https://github.com/cnlohr/ch32v003fun/tree/master/minichlink">minichlink</a> by CNLohr.
+    WCH RISC-V Programmer by <a href="https://github.com/wagiminator">wagiminator</a>, a port of <a href="https://github.com/wagiminator/MCU-Flash-Tools">rvprog</a> (MIT License). Protocol based on <a href="https://github.com/cnlohr/ch32fun/tree/master/minichlink">minichlink</a> by CNLohr and <a href="https://github.com/ch32-rs/wlink">wlink</a>.
   </footer>
 
   <script src="../../assets/js/firmware.js"></script>
