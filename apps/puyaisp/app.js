@@ -5,7 +5,7 @@
   const $ = (id) => document.getElementById(id);
   const P = window.PUYA, FW = window.FIRMWARE;
   const hex = (v, n) => "0x" + v.toString(16).padStart(n || 4, "0");
-  const FLASH_SIZE = { 0x440: 0x10000, 0x448: 0x20000 };   // largest family member
+  const FLASH_SIZE = Object.fromEntries(Object.entries(P.CHIPS).map(([pid, c]) => [pid, c.flashSize]));   // largest family member
 
   const state = {
     port: null,         // SerialPort
@@ -147,6 +147,7 @@
       pid: prog.pid, known: prog.known, ver: prog.verStr,
       name: prog.known ? prog.chip.name : `Unknown chip (PID ${hex(prog.pid)})`,
       option: prog.option || null, words: prog.option ? prog.decodeOption() : null,
+      protected: prog.option ? prog.readProtected() : null, nrstGpio: prog.option ? prog.nrstIsGpio() : null,
     };
     // Unlocking resets the option bytes; the old ones read before are stale
     if (prog.unlocked) c.option = null;
@@ -155,10 +156,9 @@
     dl.textContent = "";
     const rows = [["Chip", c.name], ["Bootloader PID", hex(c.pid)], ["Bootloader", `v${c.ver}`]];
     if (c.option && c.known) {
-      const o = c.option, chip = P.CHIPS[c.pid];
-      rows.push(["Read protection", o[0] === 0xaa ? "off" : "on"]);
-      rows.push(["nRST pin", o[1] & chip.optionNrst ? "GPIO" : "RESET"]);
-      for (const k of ["OPTR", "SDKR", "WRPR"]) rows.push([k, hex(c.words[k])]);
+      rows.push(["Read protection", c.protected ? "on" : "off"]);
+      rows.push(["nRST pin", c.nrstGpio === null ? "RESET (not configurable)" : c.nrstGpio ? "GPIO" : "RESET"]);
+      for (const [k, v] of Object.entries(c.words)) rows.push([k, hex(v, 4)]);
     } else if (prog.lockedRead) {
       rows.push(["Read protection", "on (option bytes cannot be read)"]);
     }

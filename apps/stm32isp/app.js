@@ -5,7 +5,7 @@
   const $ = (id) => document.getElementById(id);
   const S = window.STM32ISP, FW = window.FIRMWARE;
   const hex = (v, n) => "0x" + v.toString(16).padStart(n || 3, "0");
-  const WINDOW = 0x200000;            // largest code flash: 2 MB (STM32F42x/F43x)
+  const WINDOW = 0x400000;            // largest code flash: 4 MB (STM32U59x/5Ax)
 
   const state = {
     port: null,         // SerialPort
@@ -43,7 +43,6 @@
       tr.dataset.pid = c.pid;
       const name = document.createElement("td");
       name.textContent = c.name;
-      if (c.src === "stm32isp") { const t = document.createElement("span"); t.className = "tag"; t.textContent = "stm32isp"; name.append(t); }
       const pid = document.createElement("td"); pid.textContent = hex(c.pid);
       const fl = document.createElement("td"); fl.textContent = c.flash >= 1024 ? `${c.flash / 1024} MB` : `${c.flash} KB`;
       const us = document.createElement("td"); us.textContent = c.usart;

@@ -1,7 +1,7 @@
 /* ===================================================================
  * WCH-Link programmer for WCH RISC-V microcontrollers (WebUSB)
  * -------------------------------------------------------------------
- * JavaScript port of rvprog.py v1.11 by Stefan Wagner (MIT License),
+ * JavaScript port of rvprog.py v1.12 by Stefan Wagner (MIT License),
  * https://github.com/wagiminator/MCU-Flash-Tools, using the WebUSB API.
  * Commands go to endpoint 1 and are answered on endpoint 0x81; flash
  * loader and firmware are sent as raw data to endpoint 2, the result
@@ -19,7 +19,7 @@
   const PACKET = 1024, TIMEOUT = 5000;
   const FILTERS = [{ vendorId: VENDOR, productId: PID_RV }, { vendorId: VENDOR, productId: PID_ARM }];
 
-  const LINK_NAMES = { 0x01: "WCH-Link based on CH549", 0x02: "WCH-Link based on CH32V307", 0x03: "WCH-Link based on CH32V203", 0x04: "WCH-LinkB", 0x05: "WCH-LinkW", 0x12: "WCH-LinkE" };
+  const LINK_NAMES = T.LINK_NAMES;
 
   const b64 = (s) => (typeof atob === "function" ? Uint8Array.from(atob(s), (c) => c.charCodeAt(0)) : new Uint8Array(Buffer.from(s, "base64")));
   const bytes = (...parts) => Uint8Array.from(parts.flatMap((p) => (typeof p === "number" ? [p] : Array.from(p))));
@@ -108,10 +108,13 @@
       this.used = false;
       await this.clearReply();
       const r = await this.command(bytes(0x81, 0x0d, 0x01, 0x01));
-      this.linkDevice = r[5];
-      this.linkName = LINK_NAMES[r[5]] || `Unknown WCH programmer (code: ${r[5]})`;
+      if (r.length < 5 || r[0] !== 0x82) throw new ProgError("Failed to get the WCH-Link info");
+      this.linkDevice = r.length > 5 ? r[5] : 0x01;
+      this.linkName = LINK_NAMES[this.linkDevice] || `Unknown WCH programmer (code: ${this.linkDevice})`;
       this.linkVerCode = r[3] * 100 + r[4];
-      this.linkVersion = `${r[3]}.${r[4]}`;
+      const packed = (r[3] << 4) + r[4];       // firmware v3.0 and later reports e.g. 2.22 for v3.6
+      this.linkVersion = packed >= 0x30 ? `${packed >> 4}.${packed & 0x0f}` : `${r[3]}.${r[4]}`;
+      this.nrstGpio = null;
       return this;
     }
 
@@ -128,69 +131,95 @@
     // Connect to the target MCU and identify it
     async connect() {
       this.chipId = null;
-      let ok = false;
+      this.family = null;
       for (let i = 0; i < 3; i++) {
         if (i > 0) {
-          this.log("Failed to connect, trying to unbrick the chip …");
-          await this.command(bytes(0x81, 0x0d, 0x01, 0x0f, 0x09));
+          this.log("Failed to connect, retrying …");
+          await sleep(200);
         }
         const r = await this.command(bytes(0x81, 0x0d, 0x01, 0x02));
-        if (r.length < 8 || (r[0] === 0x81 && r[1] === 0x55 && r[2] === 0x01 && r[3] === 0x01)) {
-          await sleep(200);
-          continue;
-        }
+        if (r.length < 8 || r[0] !== 0x82) continue;
         this.chipMark = r[3];
         this.chipSeries = r[4];
         this.chipType = r[5];
         this.chipId = (r[4] << 8) + r[5];
         this.chipFamily = this.chipId >> 4;
-        this.family = T.FAMILIES.find((f) => f.id === this.chipFamily) || null;
-        if (!this.family) continue;
-        this.device = T.DEVICES.find((d) => d.id === this.chipId) || null;
-        if (!this.device) {
-          if (this.family.optBytes === null) continue;
-          this.device = { name: `${this.family.name} (ID ${hex4(this.chipId)})` };
-        }
-        this.chipName = this.device.name;
-        ok = true;
         break;
       }
-      if (!ok) {
-        if (this.chipId === null) throw new ProgError("Failed to identify the chip. Check the wiring (SWDIO, GND, power) and try Unbrick.");
-        throw new ProgError(`Unsupported chip (ID: ${hex4(this.chipId)})`);
-      }
-      if (this.family.optBytes !== null) {
+      if (this.chipId === null) throw new ProgError("Failed to identify the chip. Check the wiring (SWDIO, GND, power) and try Unbrick.");
+      this.family = T.FAMILIES.find((f) => f.id === this.chipFamily) || null;
+      if (!this.family) throw new ProgError(`Unsupported chip (ID: ${hex4(this.chipId)}, type: 0x${this.chipMark.toString(16).padStart(2, "0")})`);
+      // Unknown package/variant of a known family: use the family settings
+      this.device = T.DEVICES.find((d) => d.id === this.chipId) || { name: `${this.family.name} (ID ${hex4(this.chipId)})` };
+      this.chipName = this.device.name;
+      this.flashSize = this.device.codeSize || this.family.codeSize || 0;
+      if (this.family.esig) {
         const r = await this.command(bytes(0x81, 0x11, 0x01, this.chipMark));
-        this.flashSize = ((r[2] << 8) | r[3]) * 1024;
-        if (this.flashSize === 0) this.flashSize = this.device.codeSize || this.family.codeSize || 0;
-      } else {
-        this.flashSize = this.device.codeSize;
+        if (r.length >= 4) {
+          const size = (r[2] << 8) | r[3];
+          if (![0x0000, 0xffff, 0xe339].includes(size)) this.flashSize = size * 1024;   // not programmed
+        }
       }
     }
 
     async unbrick() { await this.command(bytes(0x81, 0x0d, 0x01, 0x0f, 0x09)); }
 
+    // Reattach the MCU (required after changing the read protection)
+    async reattach() {
+      await this.command(bytes(0x81, 0x0d, 0x01, 0xff));
+      await this.command(bytes(0x81, 0x0d, 0x01, 0x02));
+    }
+
+    checkProtect() {
+      if (this.family.protect === null) throw new ProgError("Read protection is not supported for this MCU");
+    }
+
+    // Option bytes for the read protection commands (keep the nRST setting)
+    optionBytes() {
+      let opt = this.family.protect;
+      if (opt && opt.length && this.family.nrst && this.nrstGpio !== null) {
+        opt = [this.nrstGpio ? (opt[0] | 0x18) : ((opt[0] & 0xe7) | 0x10), ...opt.slice(1)];
+      }
+      return opt;
+    }
+
+    // Set read protection
     async lock() {
-      if (this.family.optBytes !== null) await this.command(bytes(0x81, 0x06, 0x08, 0x03, this.family.optBytes));
+      this.checkProtect();
+      const opt = this.optionBytes();
+      if (opt.length) await this.command(bytes(0x81, 0x06, 0x08, 0x03, opt));
+      else await this.command(bytes(0x81, 0x06, 0x01, 0x03));
+      await this.reattach();
+    }
+
+    async isLocked() {
+      if (this.family.protect === null) return false;
+      const r = await this.command(bytes(0x81, 0x06, 0x01, 0x01));
+      return r.length >= 4 && r[3] === 0x01;
     }
 
     // Remove read protection (erases the chip)
     async unlock() {
-      if (this.family.optBytes !== null) {
-        const r = await this.command(bytes(0x81, 0x06, 0x01, 0x01));
-        if (r[3] === 0x01) await this.command(bytes(0x81, 0x06, 0x08, 0x02, this.family.optBytes));
+      this.checkProtect();
+      if (await this.isLocked()) {
+        const opt = this.optionBytes();
+        if (opt.length) await this.command(bytes(0x81, 0x06, 0x08, 0x02, opt));
+        else await this.command(bytes(0x81, 0x06, 0x01, 0x02));
+        await this.reattach();
       }
     }
 
     async erase() {
+      if (await this.isLocked()) await this.unlock();
       await this.command(bytes(0x81, 0x02, 0x01, 0x01));
       await this.command(bytes(0x81, 0x0d, 0x01, 0x02));
     }
 
-    // PD7 as GPIO (true) or reset pin (false), CH32V00x only
+    // nRST pin (PD7) as GPIO (true) or reset pin (false)
     async setNrstAsGpio(gpio) {
-      if (this.chipSeries !== 0x00) throw new ProgError("The reset pin option is only available for CH32V00x chips");
+      if (!this.family.nrst) throw new ProgError("The reset pin option is not available for this MCU");
       await this.command(bytes(0x81, 0x06, 0x08, 0x02, gpio ? 0xff : 0xf7, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff));
+      this.nrstGpio = gpio;
     }
 
     async exit() {
@@ -215,27 +244,37 @@
       return out;
     }
 
-    async writeBinaryBlob(addr, blockSize, loader, data, progress) {
+    async writeBinaryBlob(addr, blockSize, loader, data, progress, packSize) {
+      packSize = packSize || 4096;
       if (addr & (blockSize - 1)) throw new ProgError(`Blob is not ${blockSize} byte aligned`);
-      await this.unlock();
+      if (this.family.protect !== null) await this.unlock();
       const padded = Math.ceil(data.length / blockSize) * blockSize;
       await this.command(bytes(0x81, 0x01, 0x08, be32(addr), be32(padded)));
       await this.command(bytes(0x81, 0x02, 0x01, 0x05));
       for (const page of Programmer.pages(loader, 128)) await this.link.write(EP_RAW, page);
-      await this.command(bytes(0x81, 0x02, 0x01, 0x07));
+      let loaded = false;
+      for (let i = 0; i < 10 && !loaded; i++) {
+        const r = await this.command(bytes(0x81, 0x02, 0x01, 0x07));
+        loaded = r[0] === 0x82 && r[1] === 0x02 && r[2] === 0x01 && r[3] === 0x07;
+      }
+      if (!loaded) throw new ProgError("Failed to load the flash loader");
       await this.command(bytes(0x81, 0x02, 0x01, 0x04));
       const pages = Programmer.pages(data, blockSize);
-      for (let i = 0; i < pages.length; i++) {
-        await this.link.write(EP_RAW, pages[i]);
-        if (progress) progress((i + 1) / pages.length);
+      const perPack = Math.max(1, Math.floor(packSize / blockSize));
+      for (let off = 0; off < pages.length; off += perPack) {
+        for (const page of pages.slice(off, off + perPack)) await this.link.write(EP_RAW, page);
+        const r = await this.link.read(EP_RAW);
+        if (!(r[0] === 0x41 && r[1] === 0x01 && r[2] === 0x01 && r[3] === 0x04)) {
+          throw new ProgError(`Failed writing/verifying the data at address 0x${(addr + off * blockSize).toString(16).padStart(8, "0")}`);
+        }
+        if (progress) progress(Math.min(pages.length, off + perPack) / pages.length);
       }
-      const r = await this.link.read(EP_RAW);
-      if (!(r[0] === 0x41 && r[1] === 0x01 && r[2] === 0x01 && r[3] === 0x04)) throw new ProgError("Failed writing/verifying the data");
+      try { await this.command(bytes(0x81, 0x02, 0x01, 0x08)); } catch (e) { /* older WCH-Links do not answer */ }
     }
 
     async flashData(data, progress) {
       if (this.flashSize > 0 && data.length > this.flashSize) throw new ProgError(`Not enough memory: the firmware has ${data.length.toLocaleString("en")} bytes, the chip ${this.flashSize.toLocaleString("en")} bytes of flash`);
-      await this.writeBinaryBlob(this.family.codeBase, this.family.blockSize, b64(T.LOADERS[this.family.loader]), data, progress);
+      await this.writeBinaryBlob(this.family.codeBase, this.family.blockSize, b64(T.LOADERS[this.family.loader]), data, progress, this.family.packSize);
     }
   }
 
@@ -267,6 +306,7 @@
         log("Connecting to MCU …");
         await prog.connect();
         log(`Connected to ${prog.chipName} with ${prog.flashSize.toLocaleString("en")} bytes of flash.`);
+        if ((prog.family.minLink || 0) > prog.linkVerCode) log("Warning: the WCH-Link firmware may be too old for this MCU; update it with the WCH-LinkUtility.");
       }
       if (a.unlock) {
         log("Unlocking chip …");

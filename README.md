@@ -23,7 +23,8 @@ apps/
   chprog/               WCH USB Programmer
   puyaisp/              PUYA ISP Programmer
   stm32isp/             STM32 ISP Programmer
-  tinyupdi/             AVR Tiny UPDI Programmer
+  serialupdi/           AVR Serial UPDI Programmer
+  tinyupdi/             Redirect for the UPDI programmer's old address
   avrisp/               AVR ISP Programmer
   mt3608-sepic/         MT3608 SEPIC Voltage Calculator
 mt3608_sepic.html       Redirect for the calculator's old address
@@ -121,32 +122,32 @@ Code: `games.js` holds the list of games and loads the binaries, `app.js` is the
 
 ### WCH RISC-V Programmer
 
-Flashes WCH RISC-V microcontrollers through a WCH-LinkE (also WCH-LinkW, WCH-LinkB and compatible programmers). A JavaScript port of [rvprog](https://github.com/wagiminator/MCU-Flash-Tools) (MIT License) using the WebUSB API.
+Flashes WCH RISC-V microcontrollers through a WCH-LinkE (also WCH-LinkW, WCH-LinkB and compatible programmers). A JavaScript port of [rvprog](https://github.com/wagiminator/MCU-Flash-Tools) v1.12 (MIT License) using the WebUSB API.
 
-- Chips: CH32V002-V007, CH32V103, CH32V203/205/208, CH32V303/305/307/317, CH32X033/035, CH32L103, CH571/573, CH581/582/583, CH591/592.
-- Flash BIN and Intel HEX files (written and verified), read chip info, erase, unlock (remove read protection), unbrick (power-cycle erase), lock, PD7 as GPIO or reset pin (CH32V00x), and switch the WCH-Link between RISC-V and ARM mode.
+- Chips: CH32V002-V007, CH32M007, CH32V103, CH32V203/205/208, CH32V303/305/307/317, CH32V406/407/467, CH32H415/416/417, CH32X033/035, CH32X305/315, CH32L103, CH32M103, CH32M030, CH641, CH643, CH645, CH565/569, CH571/573, CH581-585, CH591/592. Unknown packages of a known family are flashed with the family settings.
+- Flash BIN and Intel HEX files (written and verified), read chip info, erase, unlock (remove read protection), unbrick (power-cycle erase), lock, PD7 as GPIO or reset pin (CH32V00x, CH32M007; the setting is kept when the read protection changes), and switch the WCH-Link between RISC-V and ARM mode.
 - Needs Chrome, Edge or Opera on a desktop computer. Same driver setup as rvprog: WinUSB via Zadig on Windows, udev rules on Linux. After switching from ARM to RISC-V mode the browser asks once more for the device, as it appears with a new USB id.
 
 Code: `rvprog.js` is the programmer, `/assets/js/firmware.js` reads BIN and HEX files, `tables.js` holds the flash loaders and chip tables taken from rvprog.py, `app.js` is the user interface.
 
 ### WCH USB Programmer
 
-Flashes WCH microcontrollers over USB with their factory bootloader (version 2.x), without a programmer. A JavaScript port of [chprog](https://github.com/wagiminator/MCU-Flash-Tools) (MIT License) using the WebUSB API.
+Flashes WCH microcontrollers over USB with their factory bootloader (version 2.x), without a programmer. A JavaScript port of [chprog](https://github.com/wagiminator/MCU-Flash-Tools) v2.6 (MIT License) using the WebUSB API.
 
-- Chips: CH543-CH549, CH551-CH559, CH563-CH569, CH570-CH579, CH581-CH583, CH591/592, CH643, CH32F103/203/205/207/208, CH32V103/203/208/303/305/307, CH32X033/035, CH32L103.
+- Chips: CH543-CH549, CH551-CH559, CH563-CH569, CH570-CH579, CH581-CH585, CH591/592, CH643, CH32F103/203/205/207/208, CH32V103/203/208/303/305/307/317, CH32X033/035, CH32L103. Unknown types of a known family are flashed with the family's default settings, as chprog does.
 - Flash BIN and Intel HEX files: the code flash is erased, written and verified, then the chip restarts. Read-protected chips are unlocked first (as chprog does), which erases them. Connect and read chip info shows type, bootloader version, flash sizes and unique ID without changing anything.
 - Needs Chrome, Edge or Opera on a desktop computer. Windows needs the WinUSB driver (Zadig; the libusb-win32 driver used by chprog does not work in browsers), Linux the udev rules from chprog.
-- Firmware whose length is not a multiple of 8 is padded with 0xFF bytes.
+- Firmware whose length is not a multiple of 8 is padded with 0xFF bytes (as chprog does).
 
 Code: `chprog.js` is the programmer, `tables.js` holds the chip table taken from chprog.py, `app.js` is the user interface.
 
 ### PUYA ISP Programmer
 
-Flashes PUYA PY32 microcontrollers through a USB-to-serial converter and the UART bootloader built into the chip. A JavaScript port of [puyaisp](https://github.com/wagiminator/MCU-Flash-Tools) v1.4 (MIT License) using the Web Serial API (115200 baud by default, 8E1) and, for chips with a USB HID bootloader, the WebHID API.
+Flashes PUYA PY32 microcontrollers through a USB-to-serial converter and the UART bootloader built into the chip. A JavaScript port of [puyaisp](https://github.com/wagiminator/MCU-Flash-Tools) v1.5 (MIT License) using the Web Serial API (115200 baud by default, 8E1) and, for chips with a USB HID bootloader, the WebHID API.
 
-- Chips: PY32F0xx (PY32F002A/B, PY32F003, PY32F030, bootloader PID 0x440) and PY32F07x/F040 (PID 0x448); other PIDs can be flashed, but their option bytes are not changed.
+- Chips: PY32F002A/F003/F030 (bootloader PID 0x440), PY32F07x/F040 (PID 0x448) and PY32F403/F303 (PID 0x413); other PIDs can be flashed, but their option bytes are not read or changed. The PY32F002B and PY32L020 have no UART bootloader.
 - Flash BIN and Intel HEX files to 0x08000000: the chip is erased, written, verified byte by byte and started. Optionally lock the chip and set the nRST pin as GPIO or RESET afterwards.
-- Chip actions: read chip info (bootloader version, option bytes OPTR/SDKR/WRPR, read protection, nRST mode), erase, unlock (removes the read protection and erases the chip), lock, nRST as GPIO or RESET, reset the option bytes.
+- Chip actions: read chip info (bootloader version, option bytes OPTR/SDKR/WRPR, read protection, nRST mode; the PY32F403/F303 has no configurable nRST pin), erase, unlock (removes the read protection and erases the chip), lock, nRST as GPIO or RESET, reset the option bytes.
 - With a CH340X converter whose DTR and RTS lines are wired to BOOT0 and nRST, the bootloader is started and the chip reset automatically, using the same control-line sequence as puyaisp.
 - Needs Chrome, Edge or Opera on a desktop computer.
 
@@ -154,29 +155,29 @@ Code: `puyaisp.js` is the programmer, `app.js` is the user interface; `/assets/j
 
 ### STM32 ISP Programmer
 
-Flashes STM32 microcontrollers through a USB-to-serial converter and the factory UART bootloader (protocol of ST's AN3155). A JavaScript port of [stm32isp](https://github.com/wagiminator/MCU-Flash-Tools) v0.8 (MIT License) using the Web Serial API (115200 baud by default, 8E1; the bootloader detects the rate).
+Flashes STM32 microcontrollers through a USB-to-serial converter and the factory UART bootloader (protocol of ST's AN3155). A JavaScript port of [stm32isp](https://github.com/wagiminator/MCU-Flash-Tools) v1.0 (MIT License) using the Web Serial API (115200 baud by default, 8E1; the bootloader detects the rate).
 
-- Chips: the five lines of stm32isp (STM32C011, C031, F03xx4/6, G03x/G04x, L01x/L02x) and 20 more widely used lines with the same bootloader: STM32F030x8/F05x, F030xC/F09x, F04x/F070x6, F07x/F070xB, F10x low/medium/high density, F302/F303xB/C, F303x4-8/F334, F401xB/C, F401xD/E, F411, F405/407/415/417, F42x/F43x, F446, G07x/G08x, G0B0/G0B1/G0C1, G431/G441, G47x/G48x and L43x/L44x. The chip is recognized by the product ID of its bootloader, the flash size is read from the chip (on STM32F4 the largest member of the line is assumed if the register cannot be read).
-- Flash BIN and Intel HEX files to 0x08000000: a locked chip is unlocked first, the chip is erased (mass erase; page by page on STM32L0, which has no mass erase), written in blocks of 256 bytes, verified byte by byte and started. Optionally lock the chip afterwards. On STM32C0/G0 the BOOT0 pin is enabled in the option bytes (nBOOT_SEL = 0) after flashing as stm32isp does (can be switched off).
+- Chips: the 71 lines of stm32isp: STM32C0 (C011/031/051/071/091/092), F0, F1 (low/medium/high/XL density, value and connectivity line), F2, F3, F4 (F401 to F479), F7, G0, G4, H5 (H503/563/573), H7 (H72x to H7B3), L0, L1 (all categories), L4 (L41x to L4Sx), L5, U5 (U535 to U5A9), WB and WL. The chip is recognized by the product ID of its bootloader, the flash size is read from the chip (if the register cannot be read, or the family has none, the largest member of the line is assumed).
+- Flash BIN and Intel HEX files to 0x08000000: a locked chip is unlocked first, the chip is erased (mass erase; page by page on STM32L0/L1, which have no mass erase), padded to the programming width (8 bytes, 16 on H5/U5, 32 on H7), written in blocks of 256 bytes, verified byte by byte and started. Optionally lock the chip afterwards. On STM32C0/G0 the BOOT0 pin is enabled in the option bytes (nBOOT_SEL = 0) after flashing as stm32isp does (can be switched off).
 - Chip actions: read chip info (bootloader version, product ID, commands, flash size, read protection, option bytes), erase, unlock (removes the read protection and erases the chip), lock (read protection level 1), read the flash into a BIN file, enable the BOOT0 pin (STM32C0/G0), remove the write protection.
-- Fixes of stm32isp v0.8: verify compares every byte (not only the set of byte values), the bootloader version shows the full minor number, page erase sends the page count correctly, the app synchronizes again after the chip resets, and STM32L0 erases all pages of the chip.
+- In addition to stm32isp, the Erase action on STM32L0/L1 erases all pages of the chip as read from its flash size register.
 - With a converter whose RTS and DTR lines are wired to nRST and BOOT0, the bootloader is started and the chip reset automatically.
 - Needs Chrome, Edge or Opera on a desktop computer.
 
 Code: `stm32isp.js` is the programmer with the chip table, `app.js` is the user interface; `/assets/js/serial-link.js` and `/assets/js/firmware.js` are shared with other apps.
 
-### AVR Tiny UPDI Programmer
+### AVR Serial UPDI Programmer
 
-Programs tinyAVR 0-, 1- and 2-series microcontrollers through a USB-to-serial converter on their UPDI pin (TXD and RXD joined through a 470 Ω to 1 kΩ resistor). A JavaScript port of [tinyupdi](https://github.com/wagiminator/MCU-Flash-Tools) v1.5 (MIT License, based on pyupdi and pymcuprog) using the Web Serial API: double break at 300 baud, then UPDI at 230400 baud 8E2 (lower rates selectable).
+Programs all AVR microcontrollers with UPDI through a USB-to-serial converter on their UPDI pin (TXD and RXD joined through a 470 Ω to 1 kΩ resistor). A JavaScript port of [megaupdi](https://github.com/wagiminator/MCU-Flash-Tools) v1.0 (MIT License, based on TinyUPDI, pyupdi, pymcuprog and the serialupdi programmer of AVRDUDE) using the Web Serial API: double break at 300 baud, then UPDI at 230400 baud 8E2 (lower rates selectable). It replaces the AVR Tiny UPDI Programmer; its old address `apps/tinyupdi/` forwards here.
 
-- Chips: the 37 tinyAVRs of tinyupdi's device table, ATtiny202 to ATtiny3227, detected by their signature.
-- Flash BIN and Intel HEX files: chip erase, page writes, verify. EEPROM and fuse sections in HEX files (0x810000 and up) are skipped with a note.
-- Clock: chooses the 16 or 20 MHz oscillator (fuse OSCCFG) for every frequency tinyupdi's `-t` accepts (oscillator divided by 1, 2, 4, 6, 8, 10, 12, 16, 24, 32, 48 or 64).
-- Fuses: reads and shows all fuses with their meaning, writes and verifies the changed ones. Settings that turn the UPDI pin into GPIO/RESET (SYSCFG0) or lock the chip (LOCKBIT) need a confirmation. Fuses and clock can be written together with the firmware.
-- Read chip info shows type, series, signature, flash and page size, revision and serial number. Erase chip also unlocks a locked chip.
+- Chips: the 133 AVRs of megaupdi's device table, detected by their signature: tinyAVR 0/1/2-series (ATtiny202 to ATtiny3227), megaAVR 0-series (ATmega808 to ATmega4809), AVR DA (also DA-S), DB, DD, DU, EA, EB, EC, LA and SD. The NVM controller variant is taken from the System Information Block (P:0 with 16-bit addresses, P:2 to P:6 with 24-bit addresses).
+- Flash BIN and Intel HEX files: chip erase, page or word writes as the NVM controller needs, verify. EEPROM and fuse sections in HEX files (0x810000 and up) are skipped with a note. EEPROM, user row, boot row and the lock bits of the AVR Dx/Ex/Lx/Sx are not programmed; high-voltage UPDI activation is not supported.
+- Clock: chooses the 16 or 20 MHz oscillator (fuse OSCCFG) for every frequency megaupdi's `-t` accepts (oscillator divided by 1, 2, 4, 6, 8, 10, 12, 16, 24, 32, 48 or 64) on the families that select it by fuse (tinyAVR, megaAVR 0, AVR EA, EB, LA); only the oscillator bits of the fuse are changed.
+- Fuses: reads and shows the fuses of the detected family with their meaning, writes and verifies the changed ones. Settings that turn the UPDI pin into a normal pin, lock the chip (LOCKBIT) or change PDICFG need a confirmation. Fuses and clock can be written together with the firmware.
+- Read chip info shows type, family, signature, flash and page size, NVM controller, revision and (tinyAVR, megaAVR 0) serial number. Erase chip also unlocks a locked chip.
 - Needs Chrome, Edge or Opera on a desktop computer.
 
-Code: `updi.js` is the programmer, `app.js` is the user interface; `/assets/js/serial-link.js` and `/assets/js/firmware.js` are shared with other apps.
+Code: `updi.js` is the programmer with the device table, `app.js` is the user interface; `/assets/js/serial-link.js` and `/assets/js/firmware.js` are shared with other apps.
 
 ### AVR ISP Programmer
 
