@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>XGecu Memory Programmer</title>
+  <meta name="description" content="Read, write and verify EPROMs, EEPROMs and flash memory with an XGecu TL866A, TL866CS, TL866II+ or T48, straight from the browser.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chivo:wght@400;700&display=swap">
+  <link rel="stylesheet" href="../../assets/css/site.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav class="site-bar" aria-label="Breadcrumb">
+    <a href="../../">wagiminator</a><span class="sep">/</span><span>Apps</span><span class="sep">/</span><span>XGecu Memory Programmer</span>
+  </nav>
+
+  <main class="app">
+    <header class="app-head">
+      <h1>XGecu Memory Programmer</h1>
+      <p>Read, write and verify EPROMs, EEPROMs and flash memory (parallel, SPI, I2C, Microwire, DataFlash, FWH/LPC) with an XGecu TL866A, TL866CS, TL866II+ or T48. Choose the chip from over 22,000 names, or let the app detect an SPI flash by itself.</p>
+    </header>
+
+    <p class="banner" id="unsupported" hidden>This browser cannot access USB devices. Open this page in Chrome, Edge or Opera on a desktop computer.</p>
+
+    <div class="work">
+      <section class="panel" aria-labelledby="chip-title">
+        <h2 id="chip-title">Chip</h2>
+        <div class="picker">
+          <input type="search" id="chip-search" placeholder="Type a chip name, e.g. 27C512, AT28C256, W25Q32" autocomplete="off" spellcheck="false"
+                 role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="suggest" aria-label="Chip name">
+          <button type="button" class="btn" id="btn-detect" disabled>Detect SPI flash</button>
+          <ul class="suggest" id="suggest" role="listbox" hidden></ul>
+        </div>
+        <p class="search-note" id="search-note">Loading the chip database …</p>
+        <div class="chip-info" id="chip-info" hidden>
+          <dl class="facts" id="chip-facts"></dl>
+          <div class="socket-box">
+            <div id="socket"></div>
+            <div class="place" id="place"></div>
+          </div>
+        </div>
+        <div class="compat" id="compat" hidden></div>
+        <div class="mem-choice" id="mem-choice" hidden role="group" aria-label="Memory">
+          <label><input type="radio" name="memory" value="code" checked> Code memory</label>
+          <label><input type="radio" name="memory" value="data"> Data memory <span id="data-size"></span></label>
+        </div>
+        <label class="check" style="margin-top: 0.9rem"><input type="checkbox" id="opt-ignoreid"> <span>Ignore chip ID mismatch (at your own risk)</span></label>
+      </section>
+
+      <section class="panel" aria-labelledby="fw-title">
+        <h2 id="fw-title">Write and verify</h2>
+        <label class="drop" id="drop" for="file-input">
+          <strong id="fw-name">Drop a .bin or .hex file here or choose one</strong>
+          <span id="fw-info">BIN files are written from address 0, HEX files to their addresses.</span>
+          <input type="file" id="file-input" accept=".bin,.rom,.hex,.ihx,.img">
+        </label>
+        <div class="fit" id="fit" hidden>
+          <div class="fit-bar" aria-hidden="true"><div id="fit-used"></div></div>
+          <p class="fit-text" id="fit-text"></p>
+        </div>
+        <ul class="messages" id="fw-messages"></ul>
+        <div class="after" role="group" aria-label="Write options">
+          <label><input type="checkbox" id="opt-protect" disabled> Write-protect the chip after writing</label>
+        </div>
+        <div class="flash-row">
+          <div class="btn-row">
+            <button type="button" class="btn btn-primary btn-big" id="btn-write" disabled>Write</button>
+            <button type="button" class="btn" id="btn-verify" disabled>Verify</button>
+          </div>
+          <div class="progress-wrap" id="progress" hidden>
+            <div class="progress"><div id="progress-bar"></div></div>
+            <span class="progress-label" id="progress-label"></span>
+          </div>
+        </div>
+        <p class="hint">Write erases an electrically erasable chip first (code memory), writes the file (rounded up to whole blocks and padded with the blank value) and verifies it. UV-EPROMs must be blank. Verify compares the chip with the file.</p>
+      </section>
+
+      <section class="panel" aria-labelledby="act-title">
+        <h2 id="act-title">Read and erase</h2>
+        <div class="actions">
+          <div class="action">
+            <button type="button" class="btn" id="btn-read" disabled>Read chip</button>
+            <p>Reads the whole memory and saves it as a BIN file.</p>
+          </div>
+          <div class="action">
+            <button type="button" class="btn" id="btn-blank" disabled>Blank check</button>
+            <p>Checks that every byte has the blank value (0xFF on most chips).</p>
+          </div>
+          <div class="action">
+            <button type="button" class="btn btn-danger" id="btn-erase" disabled>Erase chip</button>
+            <p>Erases an electrically erasable chip (EEPROM, flash). UV-EPROMs are erased with UV light.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel" aria-labelledby="sock-title">
+        <h2 id="sock-title">Inserting the chip</h2>
+        <p class="small">Pin 1 of the ZIF socket is at the top left, next to the lever. A DIP chip sits at the <strong>bottom</strong> of the socket with its notch and pin 1 pointing up towards the lever, as Xgpro shows it: a DIP8 uses the lowest four rows, a DIP28 the lowest 14 rows, a DIP40 the whole socket. Close the lever before any action.</p>
+        <p class="small">Chips in other packages need an adapter. SOIC, SOP, TSSOP, WSON and similar packages go into a package-to-DIP adapter (or a test clip), which is inserted like a DIP chip of the same pin count. PLCC chips need a PLCC to DIP adapter. TSOP32/40/48, SOP44 and SOP56 chips need the matching XGecu adapter. The TL866A/CS and TL866II+ check that a TSOP48, SOP44 or SOP56 adapter is there.</p>
+        <p class="small">A chip inserted the wrong way round can be damaged. The programmer switches off and reports overcurrent if it detects a short.</p>
+      </section>
+    </div>
+
+    <aside class="side">
+      <section class="panel" aria-labelledby="dev-title">
+        <h2 id="dev-title">Programmer</h2>
+        <p class="conn" id="conn"><span class="dot"></span><span id="conn-text">Not connected</span></p>
+        <p class="link-note" id="link-note">Plug in the programmer by USB and connect it.</p>
+        <button type="button" class="btn btn-primary btn-wide" id="btn-connect">Connect programmer</button>
+        <details class="more">
+          <summary>More options</summary>
+          <label class="field"><span>Chip list for</span>
+            <select id="db-select">
+              <option value="INFOIC2PLUS">TL866II+ and T48</option>
+              <option value="INFOIC">TL866A and TL866CS</option>
+            </select>
+            <small>Chosen automatically when a programmer is connected.</small>
+          </label>
+          <p class="small"><strong>Windows:</strong> the TL866II+ and T48 work with the XGecu driver that comes with Xgpro. The TL866A/CS needs the WinUSB driver, which you can install with <a href="https://zadig.akeo.ie/">Zadig</a> (Xgpro then no longer finds it).</p>
+          <p class="small"><strong>Linux:</strong> allow access to the programmer:</p>
+          <pre class="code">echo 'SUBSYSTEM=="usb", ATTR{idVendor}=="04d8", ATTR{idProduct}=="e11c", MODE="666"' | sudo tee /etc/udev/rules.d/99-tinypro.rules
+echo 'SUBSYSTEM=="usb", ATTR{idVendor}=="a466", ATTR{idProduct}=="0a53", MODE="666"' | sudo tee -a /etc/udev/rules.d/99-tinypro.rules
+sudo udevadm control --reload-rules</pre>
+          <p class="small">The T56 is not supported here (it needs FPGA algorithm files); use tinypro.py or minipro for it.</p>
+        </details>
+      </section>
+
+      <section class="panel log-panel" aria-labelledby="log-title">
+        <h2 id="log-title">Log</h2>
+        <ol class="log" id="log"></ol>
+      </section>
+    </aside>
+  </main>
+
+  <footer class="site-footer">
+    XGecu Memory Programmer by <a href="https://github.com/wagiminator">wagiminator</a>, a port of <a href="https://github.com/wagiminator/MCU-Flash-Tools">tinyPro</a>, based on <a href="https://gitlab.com/DavidGriffith/minipro">minipro</a> (GNU GPL v3.0 or later). XGecu, TL866 and T48 are names of their owner; this app is not affiliated with XGecu.
+  </footer>
+
+  <script src="../../assets/js/firmware.js"></script>
+  <script src="chips.js"></script>
+  <script src="tinypro.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

@@ -26,6 +26,7 @@ apps/
   swdprog/              SWD Programmer
   serialupdi/           AVR Serial UPDI Programmer
   avrisp/               AVR ISP Programmer
+  tinypro/              XGecu Memory Programmer
   mt3608-sepic/         MT3608 SEPIC Voltage Calculator
 ```
 
@@ -202,3 +203,15 @@ Programs classic AVR microcontrollers over ISP with a USBasp or a USBtinyISP. A 
 - Needs Chrome, Edge or Opera on a desktop computer; on Windows the programmer needs the WinUSB driver (Zadig), on Linux a udev rule.
 
 Code: `avrisp.js` is the programmer, `parts.js` holds the part data generated from avrdude.conf, `fusebits.js` the fuse fields generated from avrintel.c, `app.js` is the user interface.
+
+### XGecu Memory Programmer
+
+Reads, writes and verifies EPROMs, EEPROMs and flash memory with the XGecu TL866A, TL866CS, TL866II+ and T48 universal programmers. A JavaScript port of [tinyPro](https://github.com/wagiminator/MCU-Flash-Tools) v1.0, itself a port of the relevant parts of [minipro](https://gitlab.com/DavidGriffith/minipro) (programmer protocols of `tl866a.c`, `tl866iiplus.c` and `t48.c`, memory algorithms of `main.c`), using the WebUSB API. Because it is derived from minipro, the files of this app (`apps/tinypro/`) are licensed under the GNU General Public License v3.0 or later.
+
+- Chips: all memory chips of minipro's infoic.xml (22,183 names for the TL866II+/T48, 12,735 for the TL866A/CS): parallel EPROMs, EEPROMs and flash, SPI flash, I2C and Microwire EEPROMs, DataFlash, FWH/LPC flash. Chips only supported by some programmers are marked. Not supported: MCUs, PLDs/GALs, logic tests, SRAM tests, NAND, ICSP and the T56 (which needs FPGA algorithm files).
+- The programmer is detected from its system info (model, firmware with an update warning, T48 supply voltage). The chip is chosen with a search field with suggestions (part of the name, or `*`/`?` wildcards); an SPI flash is detected by its JEDEC ID (8 pin, then 16 pin), with the compatible names to choose from. The chip ID is checked when the chip has one (can be ignored).
+- Shows how the chip goes into the ZIF socket: DIP chips at the bottom of the socket with pin 1 towards the lever (drawing with the socket pins used), package-to-DIP adapters for SOIC/SOP/TSSOP/WSON… and PLCC, and the XGecu adapter for TSOP/SOP44/SOP56 chips (checked on the TL866A/CS and TL866II+, as minipro does).
+- Read (BIN file), write BIN or Intel HEX files (erase first if electrically erasable, padding to the write block with the blank value, verify-while-write status, then verify), verify, blank check, erase, write protection off before / on after writing, code or data memory.
+- Needs Chrome, Edge or Opera on a desktop computer. On Windows the TL866II+ and T48 work with the XGecu driver, the TL866A/CS needs WinUSB (Zadig); on Linux the udev rules shown in the app.
+
+Code: `tinypro.js` holds the programmer protocols, the memory operations and the chip database functions, `chips.js` the chip database (gzip and base64, generated from minipro's infoic.xml as in tinypro.py), `app.js` is the user interface; `/assets/js/firmware.js` is shared with other apps.
