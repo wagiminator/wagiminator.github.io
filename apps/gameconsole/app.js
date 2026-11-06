@@ -71,7 +71,8 @@
       b.tabIndex = on ? 0 : -1;
     }
     $("game-name").textContent = g.name;
-    $("game-meta").textContent = g.genre + (g.by ? ` · originally by ${g.by} for the ATtiny85` : "");
+    $("game-meta").textContent = g.genre + (g.by ? ` · originally by ${g.by} for the ATtiny85` : "")
+      + (g.author ? ` · by ${g.author}` : "");
     $("game-text").textContent = g.text;
     $("game-tip").hidden = !g.tip;
     $("game-tip").textContent = g.tip || "";

@@ -3,7 +3,9 @@
  * -------------------------------------------------------------------
  * Descriptions after the README of the game console project. The
  * firmware binaries and screenshots are loaded from the repository
- * https://github.com/wagiminator/CH32V003-GameConsole (branch main).
+ * https://github.com/wagiminator/CH32V003-GameConsole (branch main);
+ * games from other repositories give their own repo, binary and
+ * screenshot paths.
  * Global: GAMECONSOLE
  * =================================================================== */
 (function (global) {
@@ -13,8 +15,8 @@
   const BRANCH = "main";
   // raw.githubusercontent.com first, the jsDelivr mirror if it can't be reached
   const SOURCES = [
-    (path) => `https://raw.githubusercontent.com/${REPO}/${BRANCH}/${path}`,
-    (path) => `https://cdn.jsdelivr.net/gh/${REPO}@${BRANCH}/${path}`,
+    (repo, branch, path) => `https://raw.githubusercontent.com/${repo}/${branch}/${path}`,
+    (repo, branch, path) => `https://cdn.jsdelivr.net/gh/${repo}@${branch}/${path}`,
   ];
 
   const GAMES = [
@@ -46,12 +48,26 @@
       text: "A small Out Run-like racing game. Race along the coast, through the desert, the mountains and the city, and reach each checkpoint before the time runs out. At every fork, the road you take decides the next stage." },
     { id: "tiny_shooter", name: "Tiny Shooter", genre: "Shoot'em up", shots: ["shooter_1", "shooter_3"],
       text: "A small horizontally scrolling shoot'em up. Fly through space, over hills and through caves, shoot down waves of enemies, collect power capsules and defeat the guardian at the end of each stage." },
+    { id: "tiny_rpg", name: "Tiny RPG", genre: "Action RPG", author: "Sergey Smirnov",
+      repo: "fatalists/CH32V003-TinyRPG", bin: "bin/tiny_rpg.bin",
+      shotFiles: ["documentation/TinyRPG_title.png", "documentation/TinyRPG_meadow.png"],
+      text: "A small open-world action RPG inspired by Dark Souls, Elden Ring, Ragnarok Online and Dota 2. Play as a warrior or a mage, explore six zones from the meadow town to the boss caves, level up, spend stat points, collect gear and trade in the shop. Defeat Malenia at the far end of Valhalla. Death is final: if you die, your save is erased.",
+      tip: "Hold ACT to open the character screen; SAVE AND EXIT there is the only way to save the game." },
   ];
 
   for (const g of GAMES) {
-    g.binPath = `software/${g.id}/bin/${g.id}.bin`;
-    g.srcUrl = `https://github.com/${REPO}/tree/${BRANCH}/software/${g.id}`;
-    g.shotUrls = g.shots.map((s) => SOURCES[0](`documentation/GameConsole_${s}.png`));
+    if (g.repo) {                       // game from its own repository
+      g.branch = g.branch || "main";
+      g.binPath = g.bin;
+      g.srcUrl = `https://github.com/${g.repo}`;
+      g.shotUrls = g.shotFiles.map((f) => SOURCES[0](g.repo, g.branch, f));
+    } else {                            // game from the game console repository
+      g.repo = REPO;
+      g.branch = BRANCH;
+      g.binPath = `software/${g.id}/bin/${g.id}.bin`;
+      g.srcUrl = `https://github.com/${REPO}/tree/${BRANCH}/software/${g.id}`;
+      g.shotUrls = g.shots.map((s) => SOURCES[0](REPO, BRANCH, `documentation/GameConsole_${s}.png`));
+    }
   }
 
   // Load the firmware binary of a game (tries the sources one after another)
@@ -59,7 +75,7 @@
     let last = null;
     for (const src of SOURCES) {
       try {
-        const res = await fetch(src(game.binPath), { cache: "no-cache" });
+        const res = await fetch(src(game.repo, game.branch, game.binPath), { cache: "no-cache" });
         if (!res.ok) { last = new Error(`HTTP ${res.status}`); continue; }
         const data = new Uint8Array(await res.arrayBuffer());
         if (!data.length) { last = new Error("empty file"); continue; }

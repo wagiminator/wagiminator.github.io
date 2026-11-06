@@ -114,8 +114,8 @@ Code: `cartgen.js` creates the image (no dependencies, also runs in Node.js), `m
 
 Flashes the games of the [CH32V003 Mini Game Console](https://github.com/wagiminator/CH32V003-GameConsole) through a WCH-LinkE (or compatible) connected to the console's PROG header (VCC, GND, DIO).
 
-- Games: Tiny Invaders, Lander, Tris, Arkanoid, Pacman, Doom, Boulder, Bubble, Karate, Run and Shooter, each with a short description and two screenshots. The selected game is kept in the address (`#tiny_run`), so a game can be linked directly.
-- The firmware binaries and screenshots are loaded from the game console repository (branch main) at raw.githubusercontent.com, with the jsDelivr mirror as fallback, so new versions of the games show up without changing this app.
+- Games: Tiny Invaders, Lander, Tris, Arkanoid, Pacman, Doom, Boulder, Bubble, Karate, Run and Shooter from the game console repository, and Tiny RPG by Sergey Smirnov ([CH32V003-TinyRPG](https://github.com/fatalists/CH32V003-TinyRPG)), each with a short description and two screenshots. The selected game is kept in the address (`#tiny_run`), so a game can be linked directly.
+- The firmware binaries and screenshots are loaded from the repository of each game (branch main) at raw.githubusercontent.com, with the jsDelivr mirror as fallback, so new versions of the games show up without changing this app.
 - The game is written and verified with the programmer of the WCH RISC-V Programmer; the app refuses to flash anything but a CH32V003. Needs Chrome, Edge or Opera on a desktop computer, with the same driver setup as the WCH RISC-V Programmer.
 
 Code: `games.js` holds the list of games and loads the binaries, `app.js` is the user interface; `../rvprog/rvprog.js`, `../rvprog/tables.js` and `/assets/js/firmware.js` are shared with the WCH RISC-V Programmer.
