@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Serial Terminal</title>
+  <meta name="description" content="Talk to a microcontroller through a USB-to-serial converter or a USB CDC device, straight from the browser: baud rate, data format, DTR/RTS, text or hex view, timestamps.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chivo:wght@400;700&display=swap">
+  <link rel="stylesheet" href="../../assets/css/site.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav class="site-bar" aria-label="Breadcrumb">
+    <a href="../../">wagiminator</a><span class="sep">/</span><span>Apps</span><span class="sep">/</span><span>Serial Terminal</span>
+  </nav>
+
+  <main class="app">
+    <header class="app-head">
+      <h1>Serial Terminal</h1>
+      <p>Talk to a microcontroller through a USB-to-serial converter (CH340, CP210x, FTDI, PL2303) or a USB CDC device, straight from the browser.</p>
+    </header>
+
+    <p class="banner" id="unsupported" hidden>This browser cannot access serial ports. Open this page in Chrome, Edge or Opera on a desktop computer.</p>
+
+    <section class="panel term-panel" aria-labelledby="term-title">
+      <div class="term-head">
+        <h2 id="term-title">Terminal</h2>
+        <span class="counts" id="counts" aria-live="off">RX 0 · TX 0</span>
+        <div class="term-tools">
+          <button type="button" class="btn btn-small" id="btn-save" title="Save the terminal content as a text file">Save</button>
+          <button type="button" class="btn btn-small" id="btn-clear" title="Clear the terminal (Ctrl+L)">Clear</button>
+        </div>
+      </div>
+      <div class="term-wrap">
+        <div class="term" id="term" role="log" aria-label="Received data" tabindex="0"></div>
+        <button type="button" class="btn btn-small to-end" id="btn-end" hidden>↓ Newest</button>
+      </div>
+      <form class="send" id="send-form" autocomplete="off">
+        <input type="text" id="send-input" class="send-input" placeholder="Text to send, Enter sends, ↑/↓ for history" aria-label="Text to send" spellcheck="false" disabled>
+        <select id="send-eol" aria-label="Line ending" title="Line ending appended to the text" disabled>
+          <option value="">No line ending</option>
+          <option value="\n" selected>LF (\n)</option>
+          <option value="\r">CR (\r)</option>
+          <option value="\r\n">CR+LF</option>
+        </select>
+        <label class="check" title="Send hex bytes, e.g. 01 A0 FF"><input type="checkbox" id="send-hex" disabled> Hex</label>
+        <button type="submit" class="btn btn-primary" id="btn-send" disabled>Send</button>
+      </form>
+      <p class="send-error" id="send-error" hidden></p>
+    </section>
+
+    <aside class="side">
+      <section class="panel" aria-labelledby="port-title">
+        <h2 id="port-title">Connection</h2>
+        <p class="conn" id="conn"><span class="dot"></span><span id="conn-text">Not connected</span></p>
+        <p class="link-note" id="link-note">Choose the settings, then connect and select the serial port.</p>
+
+        <label class="field"><span>Baud rate</span>
+          <input type="number" id="baud" list="baud-list" min="50" max="4000000" step="1" value="115200" inputmode="numeric">
+          <datalist id="baud-list">
+            <option value="1200"></option><option value="2400"></option><option value="4800"></option>
+            <option value="9600"></option><option value="19200"></option><option value="38400"></option>
+            <option value="57600"></option><option value="115200"></option><option value="230400"></option>
+            <option value="250000"></option><option value="460800"></option><option value="500000"></option>
+            <option value="921600"></option><option value="1000000"></option><option value="2000000"></option>
+          </datalist>
+        </label>
+        <div class="format" role="group" aria-label="Data format">
+          <label class="field"><span>Data bits</span>
+            <select id="data-bits"><option>8</option><option>7</option></select>
+          </label>
+          <label class="field"><span>Parity</span>
+            <select id="parity"><option value="none">none</option><option value="even">even</option><option value="odd">odd</option></select>
+          </label>
+          <label class="field"><span>Stop bits</span>
+            <select id="stop-bits"><option>1</option><option>2</option></select>
+          </label>
+        </div>
+        <label class="field"><span>Flow control</span>
+          <select id="flow"><option value="none">none</option><option value="hardware">hardware (RTS/CTS)</option></select>
+        </label>
+        <button type="button" class="btn btn-primary btn-wide" id="btn-connect">Connect</button>
+
+        <div class="signals" role="group" aria-label="Control lines">
+          <label class="check" title="Data Terminal Ready, often wired to the reset of a board"><input type="checkbox" id="sig-dtr" checked disabled> DTR</label>
+          <label class="check" title="Request To Send"><input type="checkbox" id="sig-rts" checked disabled> RTS</label>
+          <button type="button" class="btn btn-small" id="btn-reset" title="Pulses DTR and RTS to reset an Arduino-style board" disabled>Reset pulse</button>
+        </div>
+      </section>
+
+      <section class="panel" aria-labelledby="view-title">
+        <h2 id="view-title">Display</h2>
+        <div class="radio" role="radiogroup" aria-label="View">
+          <label><input type="radio" name="view" value="text" checked> Text (UTF-8)</label>
+          <label><input type="radio" name="view" value="hex"> Hex dump</label>
+        </div>
+        <div class="checks">
+          <label class="check"><input type="checkbox" id="opt-time"> Timestamps</label>
+          <label class="check"><input type="checkbox" id="opt-echo" checked> Show sent data</label>
+        </div>
+        <details class="more">
+          <summary>Help</summary>
+          <p class="small">Received line breaks (CR, LF or CR+LF) start a new line, other control characters are shown by name (e.g. &lt;BEL&gt;) and ANSI color codes are removed. Changing a setting while connected reopens the port.</p>
+          <p class="small"><strong>Drivers:</strong> CH340, CP210x, FTDI and CDC devices usually work without installing anything on current Windows, macOS and Linux versions; otherwise install the manufacturer's driver. On Linux the user must be in the <code>dialout</code> group.</p>
+          <p class="small">A port can only be used by one program at a time: close other terminals and serial monitors first.</p>
+        </details>
+      </section>
+    </aside>
+  </main>
+
+  <footer class="site-footer">
+    Serial Terminal by <a href="https://github.com/wagiminator">wagiminator</a>. Uses the Web Serial API; nothing is sent anywhere but to the serial port.
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>

@@ -27,6 +27,7 @@ apps/
   serialupdi/           AVR Serial UPDI Programmer
   avrisp/               AVR ISP Programmer
   tinypro/              XGecu Memory Programmer
+  serial-terminal/      Serial Terminal
   mt3608-sepic/         MT3608 SEPIC Voltage Calculator
 ```
 
@@ -215,3 +216,15 @@ Reads, writes and verifies EPROMs, EEPROMs and flash memory with the XGecu TL866
 - Needs Chrome, Edge or Opera on a desktop computer. On Windows the TL866II+ and T48 work with the XGecu driver, the TL866A/CS needs WinUSB (Zadig); on Linux the udev rules shown in the app.
 
 Code: `tinypro.js` holds the programmer protocols, the memory operations and the chip database functions, `chips.js` the chip database (gzip and base64, generated from minipro's infoic.xml as in tinypro.py), `app.js` is the user interface; `/assets/js/firmware.js` is shared with other apps.
+
+### Serial Terminal
+
+Talks to a microcontroller through a USB-to-serial converter (CH340, CP210x, FTDI, PL2303) or a USB CDC device using the Web Serial API.
+
+- Connection: baud rate (common rates to choose from or any value from 50 to 4,000,000), data bits, parity, stop bits and RTS/CTS flow control. Changing a setting while connected reopens the port. Known converters are named by their USB IDs.
+- Control lines: DTR and RTS switches and a reset pulse for Arduino-style (DTR) and ESP32-style (RTS/DTR) auto reset circuits.
+- Display: UTF-8 text (CR, LF and CR+LF start a new line, other control characters are shown by name, ANSI color codes are removed) or hex dump with ASCII column, optional timestamps, sent data in a different color. Switching the view redraws the received data. Keeps the last 10,000 lines; Save downloads them as a text file, Clear (Ctrl+L) empties the terminal.
+- Send line: text with a selectable line ending (none, LF, CR, CR+LF) or hex bytes, Enter sends, ↑/↓ recall the last 50 sent lines.
+- Settings and the send history are remembered in the browser. Needs Chrome, Edge or Opera on a desktop computer.
+
+Code: `app.js` (no dependencies).
