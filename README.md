@@ -32,6 +32,7 @@ apps/
   gerber-viewer/        Gerber Viewer
 games/
   x-abyss/              X-Abyss (underwater shoot'em-up)
+  primordia/            Primordia (vertical shoot'em-up)
 ```
 
 Every app lives in its own folder under `apps/` and is reachable at `https://wagiminator.github.io/apps/<app-name>/`. Apps are plain HTML, CSS and JavaScript without a build step and run entirely in the browser. Browser games live in the same way under `games/<game-name>/` and are listed under "Games" on the start page.
@@ -255,3 +256,15 @@ Underwater shoot'em-up as a homage to the Amiga classic X-Out (Rainbow Arts, 199
 - Top 10 highscore list stored in the browser; entering a name is optional.
 
 Code: `js/world.js` (stages, weapons, enemies, bosses), `js/gfx.js` (sprites, backgrounds, particles), `js/audio.js` (music and sound), `js/ui.js` (screens, shipyard, HUD), `js/main.js` (main loop); see `games/x-abyss/README.md`.
+
+### Primordia
+
+Vertical shoot'em-up as a homage to the Amiga classic Xenon 2 (The Bitmap Brothers, 1989). All graphics are drawn by code, music and sound effects are synthesized with the Web Audio API.
+
+- Four stages through the ages of evolution (Primeval Ocean, Fossil Depths, Spore Jungle, Bio Core), each in two halves with a trading post in between and a boss at the end.
+- Many add-ons that fire at the same time: blaster with five levels, side and rear shots, cannon, laser, homing missiles, electro balls, drones, mines, zapper, rapid fire, speed and armour; plus health, smart bombs, overdrive and extra lives. Add-ons can be sold back for half the price.
+- Parallax scrolling with detailed backgrounds and walls, large particle explosions; breakbeat-style soundtrack.
+- Keyboard, mouse and gamepad controls, fullscreen mode (F).
+- Top 10 highscore list stored in the browser; entering a name is optional.
+
+Code: `js/world.js` (stages, ship, add-ons, enemies, bosses), `js/gfx.js` (sprites, parallax layers, particles), `js/audio.js` (music and sound), `js/ui.js` (screens, trading post, HUD), `js/main.js` (main loop); see `games/primordia/README.md`.
