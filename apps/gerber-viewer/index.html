@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gerber Viewer</title>
+  <meta name="description" content="See the top and bottom side of a PCB from its Gerber and drill files, with the solder mask color, silkscreen and surface finish of your choice. Runs entirely in your browser.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chivo:wght@400;700&display=swap">
+  <link rel="stylesheet" href="../../assets/css/site.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav class="site-bar" aria-label="Breadcrumb">
+    <a href="../../">wagiminator</a><span class="sep">/</span><span>Apps</span><span class="sep">/</span><span>Gerber Viewer</span>
+  </nav>
+
+  <main class="app">
+    <header class="app-head">
+      <h1>Gerber Viewer</h1>
+      <p>Shows the top and bottom side of a printed circuit board from its Gerber and drill files, with the solder mask color, silkscreen and surface finish of your choice. Your files stay on your computer; nothing is uploaded.</p>
+    </header>
+
+    <section class="stage" id="stage">
+      <!-- Empty state: drop zone -->
+      <label class="dropzone" id="dropzone" for="file-input">
+        <svg class="dropzone-pcb" viewBox="0 0 120 80" aria-hidden="true">
+          <rect x="2" y="2" width="116" height="76" rx="5" class="board" />
+          <path d="M20 20 H52 L64 32 H98" class="trace" />
+          <path d="M20 60 H44 L56 48 H98" class="trace" />
+          <circle cx="20" cy="20" r="6" class="pad" /><circle cx="20" cy="20" r="2.6" class="hole" />
+          <circle cx="20" cy="60" r="6" class="pad" /><circle cx="20" cy="60" r="2.6" class="hole" />
+          <rect x="92" y="25" width="12" height="14" class="pad" />
+          <rect x="92" y="41" width="12" height="14" class="pad" />
+        </svg>
+        <strong>Drop a Gerber ZIP file here</strong>
+        <span>or <span class="link-like">choose files</span>: a ZIP archive or the Gerber and drill files themselves</span>
+        <input type="file" id="file-input" multiple>
+      </label>
+
+      <!-- Loaded state: both sides of the board -->
+      <div class="preview" id="preview" hidden>
+        <div class="preview-bar">
+          <span class="file-name" id="file-name"></span>
+          <button type="button" class="btn btn-quiet" id="open-other">Open other files</button>
+        </div>
+        <div class="sides">
+          <figure class="side-view">
+            <figcaption>
+              <span>Top side</span>
+              <button type="button" class="btn btn-quiet" id="download-top">Download PNG</button>
+            </figcaption>
+            <div class="canvas-wrap" id="wrap-top"><div class="busy" id="busy-top" hidden>Drawing…</div></div>
+          </figure>
+          <figure class="side-view">
+            <figcaption>
+              <span>Bottom side <small>(seen from below)</small></span>
+              <button type="button" class="btn btn-quiet" id="download-bottom">Download PNG</button>
+            </figcaption>
+            <div class="canvas-wrap" id="wrap-bottom"><div class="busy" id="busy-bottom" hidden>Drawing…</div></div>
+          </figure>
+        </div>
+      </div>
+
+      <p class="error" id="error" role="alert" hidden></p>
+    </section>
+
+    <aside class="side" id="side" hidden>
+      <section class="panel">
+        <h2>PCB</h2>
+        <fieldset class="field">
+          <legend>Solder mask color</legend>
+          <div class="swatches" id="opt-mask"></div>
+        </fieldset>
+        <fieldset class="field">
+          <legend>Silkscreen</legend>
+          <label class="choice"><input type="radio" name="opt-silk" value="white" checked> White</label>
+          <label class="choice"><input type="radio" name="opt-silk" value="black"> Black</label>
+        </fieldset>
+        <fieldset class="field">
+          <legend>Surface finish</legend>
+          <label class="choice block"><input type="radio" name="opt-finish" value="tin" checked> HASL (tin)</label>
+          <label class="choice block"><input type="radio" name="opt-finish" value="gold"> ENIG (gold)</label>
+          <label class="choice block"><input type="radio" name="opt-finish" value="copper"> Bare copper</label>
+        </fieldset>
+        <p class="hint">Solder mask and silkscreen colors as offered by JLCPCB.</p>
+      </section>
+
+      <section class="panel">
+        <h2>Image</h2>
+        <div class="field">
+          <label for="opt-dpi">Resolution</label>
+          <select id="opt-dpi">
+            <option value="300">300 dpi</option>
+            <option value="600" selected>600 dpi</option>
+            <option value="1200">1200 dpi</option>
+          </select>
+        </div>
+        <p class="hint" id="image-size"></p>
+      </section>
+
+      <section class="panel">
+        <h2>Layers</h2>
+        <p class="hint">Recognized from the file names. Correct the assignment if a layer is missing or wrong.</p>
+        <ul class="layers" id="layers"></ul>
+      </section>
+
+      <section class="panel">
+        <h2>Board</h2>
+        <dl class="facts" id="facts"></dl>
+        <ul class="warnings" id="warnings" hidden></ul>
+      </section>
+    </aside>
+  </main>
+
+  <footer class="site-footer">
+    Gerber Viewer by <a href="https://github.com/wagiminator">wagiminator</a>. Reads Gerber RS-274X and Excellon drill files.
+  </footer>
+
+  <script src="gerber.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

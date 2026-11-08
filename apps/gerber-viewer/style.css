@@ -1,0 +1,208 @@
+/* Gerber Viewer: app-specific styles (shared styles: /assets/css/site.css) */
+
+:root {
+  --pcb: #145c2c;            /* solder mask green */
+  --pcb-dark: #0e4320;
+  --stage: #2b2f36;
+}
+
+.app {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 1.5rem 1.25rem 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1.5rem;
+}
+.app.loaded { grid-template-columns: minmax(0, 1fr) 340px; }
+.app-head { grid-column: 1 / -1; max-width: 70ch; }
+.app-head h1 { margin: 0 0 0.35rem; font-size: 2rem; color: var(--brand); }
+.app-head p { margin: 0; color: var(--ink-soft); }
+
+/* ---------- Drop zone ---------- */
+
+.dropzone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  min-height: 360px;
+  padding: 2rem;
+  text-align: center;
+  background: var(--surface);
+  border: 2px dashed #b9bccb;
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: border-color 0.15s, background-color 0.15s;
+}
+.dropzone:hover, .dropzone.dragging { border-color: var(--pcb); background: #eef6f0; }
+.dropzone:focus-within { outline: 3px solid var(--focus); outline-offset: 2px; }
+.dropzone strong { font-size: 1.25rem; }
+.dropzone span { color: var(--ink-soft); }
+.dropzone .link-like { color: var(--link); text-decoration: underline; }
+.dropzone input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+.dropzone-pcb { width: 150px; height: 100px; margin-bottom: 0.75rem; }
+.dropzone-pcb .board { fill: var(--pcb); }
+.dropzone-pcb .trace { fill: none; stroke: #2c8a46; stroke-width: 4; stroke-linejoin: round; }
+.dropzone-pcb .pad { fill: #c4c6cc; }
+.dropzone-pcb .hole { fill: var(--surface); }
+
+/* Drag over the whole page while files are loaded */
+body.dragging .sides { outline: 3px dashed var(--pcb); outline-offset: 4px; border-radius: var(--radius); }
+
+/* ---------- Preview ---------- */
+
+.preview-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.75rem;
+}
+.file-name { font-weight: 700; overflow-wrap: anywhere; }
+
+.sides { display: grid; gap: 1.25rem; }
+.side-view { margin: 0; }
+.side-view figcaption {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.5rem;
+  font-weight: 700;
+}
+.side-view small { font-weight: 400; color: var(--ink-soft); }
+
+.canvas-wrap {
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-height: 160px;
+  background: var(--stage);
+  border-radius: var(--radius);
+  padding: clamp(0.75rem, 3vw, 2rem);
+  line-height: 0;
+}
+.canvas-wrap canvas {
+  display: block;
+  max-width: 100%;
+  max-height: 70vh;
+  width: auto;
+  height: auto;
+  filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.45));
+}
+.busy {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  line-height: 1.5;
+  color: #fff;
+  background: rgba(0, 0, 0, 0.55);
+  border-radius: var(--radius);
+  font-weight: 700;
+}
+.busy[hidden] { display: none; }
+
+.error {
+  margin: 1rem 0 0;
+  padding: 0.75rem 1rem;
+  background: #fdecea;
+  border-left: 4px solid #c62828;
+  border-radius: 4px;
+  color: #7a1c1c;
+}
+
+/* ---------- Side panels ---------- */
+
+.side { display: flex; flex-direction: column; gap: 1rem; }
+.panel {
+  background: var(--surface);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 1rem 1.1rem 1.1rem;
+}
+.panel h2 { margin: 0 0 0.75rem; font-size: 1.0625rem; color: var(--brand); }
+
+.field { margin: 0 0 0.85rem; padding: 0; border: 0; }
+.field > label, .field > legend { display: block; margin-bottom: 0.3rem; font-size: 0.875rem; font-weight: 700; padding: 0; }
+.field select {
+  width: 100%;
+  padding: 0.5rem 0.6rem;
+  font: inherit;
+  color: inherit;
+  background: #fff;
+  border: 1px solid #c5c8d4;
+  border-radius: 5px;
+}
+.choice { display: inline-flex; align-items: center; gap: 0.4rem; margin-right: 1rem; font-size: 0.9375rem; cursor: pointer; }
+.choice.block { display: flex; margin: 0 0 0.2rem; }
+
+/* Solder mask color swatches */
+.swatches { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.45rem; }
+.swatch {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+  font-size: 0.75rem;
+  color: var(--ink-soft);
+  cursor: pointer;
+}
+.swatch input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.swatch .chip {
+  width: 100%;
+  height: 1.9rem;
+  border-radius: 5px;
+  border: 1px solid rgba(0, 0, 0, 0.18);
+  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.15);
+}
+.swatch input:checked + .chip { outline: 3px solid var(--brand); outline-offset: 2px; }
+.swatch input:focus-visible + .chip { outline: 3px solid var(--focus); outline-offset: 2px; }
+.swatch input:checked ~ .label { color: var(--ink); font-weight: 700; }
+
+.btn {
+  font: inherit;
+  font-weight: 700;
+  border-radius: 5px;
+  cursor: pointer;
+  padding: 0.6rem 1rem;
+}
+.btn-quiet { color: var(--brand); background: transparent; border: 1px solid var(--line); padding: 0.4rem 0.8rem; font-size: 0.9375rem; }
+.btn-quiet:hover { border-color: var(--brand); }
+.btn-quiet:disabled { opacity: 0.6; cursor: progress; }
+
+.hint { margin: -0.25rem 0 0.75rem; font-size: 0.875rem; color: var(--ink-soft); }
+.panel > .hint:last-child { margin-bottom: 0; }
+
+/* Layer list */
+.layers { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.55rem; }
+.layers li { display: grid; gap: 0.2rem; }
+.layers .fname { font-size: 0.875rem; overflow-wrap: anywhere; }
+.layers select {
+  width: 100%;
+  padding: 0.3rem 0.45rem;
+  font: inherit;
+  font-size: 0.875rem;
+  color: inherit;
+  background: #fff;
+  border: 1px solid #c5c8d4;
+  border-radius: 5px;
+}
+.layers li.unused .fname { color: var(--ink-soft); }
+
+/* Board facts */
+.facts { display: grid; grid-template-columns: auto 1fr; gap: 0.25rem 1rem; margin: 0; font-size: 0.9375rem; }
+.facts dt { color: var(--ink-soft); }
+.facts dd { margin: 0; overflow-wrap: anywhere; }
+.warnings { margin: 0.75rem 0 0; padding-left: 1.1rem; font-size: 0.8125rem; color: #8a5a00; }
+
+/* ---------- Small screens ---------- */
+
+@media (max-width: 900px) {
+  .app.loaded { grid-template-columns: minmax(0, 1fr); }
+  .app-head h1 { font-size: 1.6rem; }
+  .dropzone { min-height: 260px; }
+}
