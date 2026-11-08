@@ -5,7 +5,7 @@ Personal page of wagiminator with links and small browser apps, published with G
 ## Structure
 
 ```
-index.html              Start page (links and the "Web Apps" list)
+index.html              Start page (links, the "Web Apps" and the "Games" list)
 assets/css/site.css     Shared styles and color tokens for all pages
 assets/js/d64edit.js    Shared D64 disk library (editor and transfer app)
 assets/js/serial-link.js  Shared Web Serial connection with timeouts (transfer apps)
@@ -30,9 +30,11 @@ apps/
   serial-terminal/      Serial Terminal
   mt3608-sepic/         MT3608 SEPIC Voltage Calculator
   gerber-viewer/        Gerber Viewer
+games/
+  x-abyss/              X-Abyss (underwater shoot'em-up)
 ```
 
-Every app lives in its own folder under `apps/` and is reachable at `https://wagiminator.github.io/apps/<app-name>/`. Apps are plain HTML, CSS and JavaScript without a build step and run entirely in the browser.
+Every app lives in its own folder under `apps/` and is reachable at `https://wagiminator.github.io/apps/<app-name>/`. Apps are plain HTML, CSS and JavaScript without a build step and run entirely in the browser. Browser games live in the same way under `games/<game-name>/` and are listed under "Games" on the start page.
 
 ## Adding a new app
 
@@ -240,3 +242,16 @@ Shows the top and bottom side of a printed circuit board from its Gerber and dri
 - Download: each side as a PNG with a transparent background at 300, 600 or 1200 dpi (limited to about 50 megapixels).
 
 Code: `gerber.js` reads ZIP archives, recognizes layers, parses Gerber and Excellon files and draws the board, `app.js` is the user interface (no dependencies).
+
+## Games
+
+### X-Abyss
+
+Underwater shoot'em-up as a homage to the Amiga classic X-Out (Rainbow Arts, 1990). All graphics are drawn by code, music and sound effects are synthesized with the Web Audio API.
+
+- Four stages (Coral Shelf, Wreck Graveyard, Magma Vents, The Hive), each with its own boss, and a shipyard between the stages: four main weapons with four power levels, satellites with five formations, homing missiles, depth charges, rear and side guns, shield, armour, turbo engine, nova bombs, repairs and extra ships.
+- Large particle explosions with shock waves, debris, smoke and bubbles; tracker-style soundtrack.
+- Keyboard, mouse and gamepad controls, fullscreen mode (F).
+- Top 10 highscore list stored in the browser; entering a name is optional.
+
+Code: `js/world.js` (stages, weapons, enemies, bosses), `js/gfx.js` (sprites, backgrounds, particles), `js/audio.js` (music and sound), `js/ui.js` (screens, shipyard, HUD), `js/main.js` (main loop); see `games/x-abyss/README.md`.
