@@ -29,6 +29,7 @@ apps/
   tinypro/              XGecu Memory Programmer
   serial-terminal/      Serial Terminal
   mt3608-sepic/         MT3608 SEPIC Voltage Calculator
+  gerber-viewer/        Gerber Viewer
 ```
 
 Every app lives in its own folder under `apps/` and is reachable at `https://wagiminator.github.io/apps/<app-name>/`. Apps are plain HTML, CSS and JavaScript without a build step and run entirely in the browser.
@@ -228,3 +229,14 @@ Talks to a microcontroller through a USB-to-serial converter (CH340, CP210x, FTD
 - Settings and the send history are remembered in the browser. Needs Chrome, Edge or Opera on a desktop computer.
 
 Code: `app.js` (no dependencies).
+
+### Gerber Viewer
+
+Shows the top and bottom side of a printed circuit board from its Gerber and drill files. Everything runs in the browser; no file is uploaded.
+
+- Input: a ZIP archive (as exported by EasyEDA, KiCad, Eagle, Altium and others) or the single Gerber and drill files, by file dialog or drag and drop. Layers are recognized by Gerber X2 file attributes, by the usual file extensions (GTL, GBL, GTS, GBS, GTO, GBO, GKO, GM1, DRL, …) and by common file names; the assignment of every file can be corrected by hand.
+- Reads Gerber RS-274X (standard and macro apertures, arcs, regions, polarity, step and repeat) and Excellon drill files (inch and metric, zero suppression, slots). The board shape comes from the outline layer; without one, the extents of all layers are used.
+- Looks: solder mask color as offered by JLCPCB (green, purple, red, yellow, blue, white, black), silkscreen white or black (chosen to match the mask color automatically), surface finish HASL (tin), ENIG (gold) or bare copper. Copper under the solder mask shows as lighter traces, holes are see-through, the bottom side is shown as seen from below.
+- Download: each side as a PNG with a transparent background at 300, 600 or 1200 dpi (limited to about 50 megapixels).
+
+Code: `gerber.js` reads ZIP archives, recognizes layers, parses Gerber and Excellon files and draws the board, `app.js` is the user interface (no dependencies).
