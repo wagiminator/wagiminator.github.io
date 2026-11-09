@@ -8,7 +8,7 @@
 
   const G = (XA.G = {
     PW, PH, cheat: false, run: null, enemies: [], pb: [], eb: [], pickups: [], mines: [], bolts: [], drones: [], queue: [],
-    dist: 0, speed: 70, t: 0, phase: "intro", phaseT: 0, mouseMode: false, boss: null, autopilot: null, over: 0,
+    dist: 0, speed: 70, t: 0, phase: "intro", phaseT: 0, mouseMode: false, boss: null, autopilot: null, over: 0, obstacles: [], warns: [],
   });
 
   /* ---------- Levels ---------- */
@@ -89,7 +89,7 @@
     G.theme = L.theme;
     G.walls = makeWalls(L);
     G.dist = half * 6000; G.speed = L.speed; G.t = 0;
-    G.enemies = []; G.pb = []; G.eb = []; G.pickups = []; G.mines = []; G.bolts = []; G.drones = []; G.queue = []; G.groups = {};
+    G.enemies = []; G.pb = []; G.eb = []; G.pickups = []; G.mines = []; G.bolts = []; G.drones = []; G.queue = []; G.groups = {}; G.obstacles = []; G.warns = [];
     G.boss = null; G.seq = L.halves[half]; G.seqIndex = 0; G.nextPattern = 2.5; G.gameOverT = 0;
     G.stats = { spawned: 0, killed: 0 };
     G.player = newPlayer();
@@ -161,10 +161,51 @@
     const lx = G.leftAt(p.y), rx = G.rightAt(p.y);
     if (p.x < lx + 22) { p.x = lx + 22; p.vx = 150; wallHit(lx, p.y); }
     if (p.x > rx - 22) { p.x = rx - 22; p.vx = -150; wallHit(rx, p.y); }
+    if (G.obstacles.length) obstaclePush(p);
     p.hist.unshift(p.x, p.y);
     if (p.hist.length > 100) p.hist.length = 100;
     if (!p.entering && !p.exiting && G.phase !== "clear" && G.phase !== "sectionclear") fire(dt);
   }
+  /* ---------- Fixed obstacles (stages 5–8): indestructible, block the ship and all shots ---------- */
+  // from "L"/"R": a spur growing out of a wall, len = how far it reaches into the corridor; "free": a floating block
+  G.obstRect = (o) => { const yb = PH - (o.wb - G.dist); return { x: o.x, y: yb - o.h, w: o.w, h: o.h }; };
+  G.addObstacle = function (o) {
+    const h = o.h || 40, wb = G.dist + PH + 20 + (o.ahead || 0);
+    let maxL = 0, minR = PW;
+    for (let w = wb; w <= wb + h; w += 6) { maxL = Math.max(maxL, G.walls.L(w)); minR = Math.min(minR, PW - G.walls.R(w)); }
+    const gap = o.gap ?? 170, ob = { kind: o.kind || "machine", from: o.from || "free", wb, h };
+    if (ob.from === "L") { const x1 = Math.min(o.x1 !== undefined ? o.x1 : maxL + (o.len || 200), minR - gap); ob.x = -20; ob.w = Math.max(maxL + 30, x1) + 20; }
+    else if (ob.from === "R") { const x0 = Math.max(o.x0 !== undefined ? o.x0 : minR - (o.len || 200), maxL + gap); ob.x = Math.min(minR - 30, x0); ob.w = PW + 20 - ob.x; }
+    else { const w = Math.min(o.w || 160, minR - maxL - gap * 2); ob.w = Math.max(40, w); ob.x = U.clamp((o.cx !== undefined ? o.cx : PW / 2) - ob.w / 2, maxL + gap, minR - gap - ob.w); }
+    G.obstacles.push(ob);
+    return ob;
+  };
+  G.obstHit = function (x, y, r) {
+    for (const o of G.obstacles) { const R = G.obstRect(o); if (x + r > R.x && x - r < R.x + R.w && y + r > R.y && y - r < R.y + R.h) return o; }
+    return null;
+  };
+  function obstaclePush(p) {
+    const RR = 16;
+    for (const o of G.obstacles) {
+      const R = G.obstRect(o);
+      if (!(p.x + RR > R.x && p.x - RR < R.x + R.w && p.y + RR > R.y && p.y - RR < R.y + R.h)) continue;
+      const opts = [[R.x - RR - p.x, 0], [R.x + R.w + RR - p.x, 0], [0, R.y - RR - p.y], [0, R.y + R.h + RR - p.y]]
+        .filter(([dx, dy]) => p.x + dx >= Math.max(26, G.leftAt(p.y + dy) + 20) && p.x + dx <= Math.min(PW - 26, G.rightAt(p.y + dy) - 20) && p.y + dy >= 40 && p.y + dy <= PH - 36);
+      if (!opts.length) continue;
+      opts.sort((a, b) => Math.abs(a[0]) + Math.abs(a[1]) - Math.abs(b[0]) - Math.abs(b[1]));
+      const [dx, dy] = opts[0];
+      p.x += dx; p.y += dy;
+      if (dx) p.vx = Math.sign(dx) * 140; else p.vy = Math.sign(dy) * 140;
+      Fx.hitSpark(p.x - Math.sign(dx) * RR, p.y - Math.sign(dy) * RR, "255,220,160", 3);
+      G.hurt(22);
+    }
+  }
+  // red arrows at the playfield edge before an enemy arrives from there
+  G.edgeWarn = function (x, y) {
+    const cx = U.clamp(x, 26, PW - 26), cy = U.clamp(y, 26, PH - 26);
+    G.warns.push({ x: cx, y: cy, a: Math.atan2(y - cy, x - cx) + Math.PI, t: 0, life: 0.9 });
+  };
+
   function wallHit(x, y) { Fx.hitSpark(x, y, "255,220,160", 3); G.hurt(16); }
 
   G.hurt = function (dmg) {
@@ -477,7 +518,7 @@
     e.rx = d.rx; e.ry = d.ry;
     e.hp = d.hp * (d.noScale ? 1 : G.hpMul());
     e.score = d.score;
-    if (!d.anchored && o.x !== undefined && type !== "sporelet" && type !== "fly" && type !== "guard" && type !== "arm") e.x = safeX(o.x, e.rx + 16, e.y);
+    if (!d.anchored && !d.free && o.x !== undefined && type !== "sporelet" && type !== "fly" && type !== "guard" && type !== "arm") e.x = safeX(o.x, e.rx + 16, e.y);
     if (d.init) d.init(e);
     G.enemies.push(e);
     if (!o.noStat) G.stats.spawned++;
@@ -528,10 +569,11 @@
   function giveRandomWeapon(x, y) {
     const r = G.run;
     const opts = ["side", "rear", "cannon", "laser", "homing", "electro", "drone", "mines", "zapper", "rapid"].filter((k) => r.w[k] < G.WMAX[k]);
-    if (!opts.length) { G.addScore(3000, x, y); return; }
+    if (!opts.length) { G.addScore(3000, x, y); return "Bonus"; }
     const k = U.pick(opts);
     r.w[k]++;
     Fx.text(x, y - 24, G.WNAME[k].toUpperCase() + (r.w[k] > 1 ? " " + r.w[k] : ""), "255,150,240", 16);
+    return G.WNAME[k] + (r.w[k] > 1 ? " level " + r.w[k] : "");
   }
 
   function pickupsUpdate(dt) {
@@ -547,13 +589,13 @@
         G.pickups.splice(i, 1);
         switch (k.kind) {
           case "coin": r.credits += 150; G.addScore(50); A.sfx("credit"); break;
-          case "power": if (r.w.main < 5) { r.w.main++; Fx.text(k.x, k.y - 20, "POWER UP", "255,190,90", 16); } else G.addScore(2000, k.x, k.y); A.sfx("power"); break;
-          case "weapon": giveRandomWeapon(k.x, k.y); A.sfx("power"); break;
-          case "health": r.energy = Math.min(G.maxEnergy(), r.energy + 40); Fx.text(k.x, k.y - 20, "HEALTH", "120,255,160", 14); A.sfx("pickup"); break;
-          case "speed": if (r.w.speed < 3) { r.w.speed++; Fx.text(k.x, k.y - 20, "SPEED UP", "120,220,255", 14); } else G.addScore(1000, k.x, k.y); A.sfx("pickup"); break;
-          case "over": G.over = Math.max(G.over, 15); Fx.text(k.x, k.y - 20, "OVERDRIVE!", "255,240,120", 20); A.sfx("overdrive"); break;
-          case "bomb": if (r.bombs < 5) r.bombs++; Fx.text(k.x, k.y - 20, "BOMB", "220,220,255", 14); A.sfx("pickup"); break;
-          case "life": if (r.lives < 9) r.lives++; A.sfx("extra"); break;
+          case "power": if (r.w.main < 5) { r.w.main++; Fx.text(k.x, k.y - 20, "POWER UP", "255,190,90", 16); A.say(r.w.main === 5 ? "Maximum power!" : "Power up!"); } else { G.addScore(2000, k.x, k.y); A.say("Bonus"); } A.sfx("power"); break;
+          case "weapon": A.say(giveRandomWeapon(k.x, k.y)); A.sfx("power"); break;
+          case "health": r.energy = Math.min(G.maxEnergy(), r.energy + 40); Fx.text(k.x, k.y - 20, "HEALTH", "120,255,160", 14); A.sfx("pickup"); A.say("Health"); break;
+          case "speed": if (r.w.speed < 3) { r.w.speed++; Fx.text(k.x, k.y - 20, "SPEED UP", "120,220,255", 14); A.say("Speed up!"); } else { G.addScore(1000, k.x, k.y); A.say("Bonus"); } A.sfx("pickup"); break;
+          case "over": G.over = Math.max(G.over, 15); Fx.text(k.x, k.y - 20, "OVERDRIVE!", "255,240,120", 20); A.sfx("overdrive"); A.say("Overdrive!", { pitch: 0.8 }); break;
+          case "bomb": if (r.bombs < 5) r.bombs++; Fx.text(k.x, k.y - 20, "BOMB", "220,220,255", 14); A.sfx("pickup"); A.say("Smart bomb"); break;
+          case "life": if (r.lives < 9) r.lives++; A.sfx("extra"); A.say("Extra life!"); break;
         }
         continue;
       }
@@ -907,7 +949,7 @@
       }
       b.x += b.vx * dt; b.y += b.vy * dt;
       let gone = b.life <= 0 || b.y < -60 || b.y > PH + 60 || b.x < -40 || b.x > PW + 40;
-      if (!gone && (b.x < G.leftAt(b.y) || b.x > G.rightAt(b.y))) { gone = true; if (b.k === "missile") blast(b.x, b.y, 40, b.dmg); else Fx.hitSpark(b.x, b.y, "220,230,255", 2); }
+      if (!gone && (b.x < G.leftAt(b.y) || b.x > G.rightAt(b.y) || (G.obstacles.length && G.obstHit(b.x, b.y, 2)))) { gone = true; if (b.k === "missile") blast(b.x, b.y, 40, b.dmg); else Fx.hitSpark(b.x, b.y, "220,230,255", 2); }
       if (!gone) {
         for (const e of G.enemies) {
           if (e.dead || e.hidden) continue;
@@ -951,9 +993,16 @@
     for (let i = G.eb.length - 1; i >= 0; i--) {
       const b = G.eb[i];
       b.t += dt;
+      if (b.home > 0 && !p.dead) {
+        b.home -= dt;
+        const sp = Math.hypot(b.vx, b.vy);
+        let cur = Math.atan2(b.vy, b.vx);
+        cur += U.clamp(U.angDiff(Math.atan2(p.y - b.y, p.x - b.x), cur), -2.2 * dt, 2.2 * dt);
+        b.vx = Math.cos(cur) * sp; b.vy = Math.sin(cur) * sp;
+      }
       b.x += b.vx * dt; b.y += b.vy * dt;
       let gone = b.x < -30 || b.x > PW + 30 || b.y < -40 || b.y > PH + 30 || b.t > 9;
-      if (!gone && (b.x < G.leftAt(b.y) - 6 || b.x > G.rightAt(b.y) + 6)) { gone = true; Fx.glow(b.x, b.y, 6, 16, "255,160,120", 0.2); }
+      if (!gone && (b.x < G.leftAt(b.y) - 6 || b.x > G.rightAt(b.y) + 6 || (G.obstacles.length && G.obstHit(b.x, b.y, 0)))) { gone = true; Fx.glow(b.x, b.y, 6, 16, "255,160,120", 0.2); }
       if (!gone && !p.dead && U.dist2(b.x, b.y, p.x, p.y) < (b.r + p.r) ** 2) { G.hurt(b.dmg); gone = true; Fx.hitSpark(b.x, b.y, "255,120,120", 4); }
       if (gone) G.eb.splice(i, 1);
     }
@@ -965,7 +1014,7 @@
       e.t += dt;
       if (e.flash > 0) e.flash -= dt;
       ED[e.type].update(e, dt);
-      if (!e.dead && !e.hidden && !p.dead && hitE(e, p.x, p.y, p.r + 4)) { G.hurt(30); damageEnemy(e, 50, p.x, p.y); }
+      if (!e.dead && !e.hidden && !p.dead && hitE(e, p.x, p.y, p.r + 4)) { const d = ED[e.type]; G.hurt(d.touch || 30); damageEnemy(e, d.fragile ? 999 : 50, p.x, p.y); }
       if (e.y > PH + 120 || e.y < -400 || e.x < -200 || e.x > PW + 200) e.dead = true;
     }
     G.enemies = G.enemies.filter((e) => !e.dead);
@@ -982,13 +1031,17 @@
       case "fight":
         if (G.seqIndex < G.seq.length) {
           if (G.t >= G.nextPattern) { const pat = PAT[G.seq[G.seqIndex++]]; pat.run(); G.nextPattern = G.t + pat.dur; }
-        } else if (!G.queue.length && (G.enemies.length === 0 || G.t > G.nextPattern + 6)) {
-          if (G.run.half === 0) { setPhase("sectionclear"); A.jingle("clear"); }
+        } else if (!G.queue.length && (G.enemies.length === 0 || G.t > G.nextPattern + 6) &&
+          (G.obstacles.every((o) => G.obstRect(o).y > PH) || G.t > G.nextPattern + 16)) {
+          if (G.run.half === 0) { setPhase("sectionclear"); A.jingle("clear"); A.say("Section clear. Trading post ahead."); }
           else { setPhase("warning"); A.stopMusic(); A.sfx("alarm"); }
         }
         break;
       case "warning":
-        if (G.phaseT > 3) { G.boss = BOSSES[L.boss](); setPhase("boss"); A.playSong("boss"); }
+        if (G.phaseT > 3) {
+          G.boss = BOSSES[L.boss](); setPhase("boss"); A.playSong(L.bossSong || "boss");
+          A.say(G.boss.call || "Warning! " + G.boss.name.toLowerCase() + " approaching!", { rate: 0.95, pitch: 0.75 });
+        }
         break;
       case "boss":
         G.speed = U.lerp(G.speed, 30, Math.min(1, dt));
@@ -1017,7 +1070,10 @@
         break;
       }
       case "clear":
-        if (G.phaseT > 1.2 && !G.jingled) { G.jingled = true; A.jingle("clear"); }
+        if (G.phaseT > 1.2 && !G.jingled) {
+          G.jingled = true; A.jingle("clear");
+          A.say(G.run.level >= G.LEVELS.length - 1 ? "Mission accomplished! Evolution is safe." : U.pick(["Stage clear. Well done, pilot!", "Stage clear! Excellent work.", "Stage clear. Next age ahead."]), { rate: 0.95 });
+        }
         if (G.phaseT > 3 && !G.player.dead) G.player.exiting = true;
         break;
       case "sectionclear":
@@ -1026,6 +1082,9 @@
     }
     if (G.phase !== "clear") G.jingled = false;
     for (let i = G.queue.length - 1; i >= 0; i--) if (G.t >= G.queue[i].at) { const f = G.queue[i].fn; G.queue.splice(i, 1); f(); }
+    if (G.obstacles.length) G.obstacles = G.obstacles.filter((o) => G.obstRect(o).y < PH + 40);
+    for (const w of G.warns) w.t += dt;
+    if (G.warns.length) G.warns = G.warns.filter((w) => w.t < w.life);
     playerUpdate(dt);
     dronesUpdate(dt);
     pbUpdate(dt);
@@ -1036,6 +1095,9 @@
     Fx.update(dt);
     if (G.gameOverT > 0) { G.gameOverT -= dt; if (G.gameOverT <= 0 && G.onGameOver) G.onGameOver(); }
   };
+
+  // building blocks for stages 5–8 (deep.js)
+  G.lib = { spawn, eshot, ring, aim, canShoot, safeX, q, group, killEnemy, damageEnemy, drop, endAtk, startAtk, enter, circHit, ellHit, bossBase, hitE, PAT, BOSSES, ED, bossDamage, setPhase };
 
   G.progress = () => {
     const base = G.run.half * 0.5;
@@ -1105,6 +1167,7 @@
     // ground objects below the walls
     for (const e of G.enemies) if (e.type === "egg") Gfx.draw(ctx, "egg", e.x, e.y, 0, 1, e.flash > 0);
     Gfx.drawWalls(ctx, G.theme, G.dist, G.walls, G.t);
+    for (const o of G.obstacles) { const R = G.obstRect(o); if (R.y < PH + 10 && R.y + R.h > -10) Gfx.drawObstacle(ctx, o, R.x, R.y, R.w, R.h, G.t); }
     for (const m of G.mines) { Gfx.draw(ctx, "mine", m.x, m.y, m.t * 2); if (Math.floor(m.t * 6) % 2) { ctx.globalCompositeOperation = "lighter"; Gfx.glowAt(ctx, "255,200,60", m.x, m.y, 12, 0.7); ctx.globalCompositeOperation = "source-over"; } }
     for (const k of G.pickups) {
       if (k.t > 15 && Math.floor(k.t * 10) % 2) continue;
@@ -1130,9 +1193,10 @@
       ctx.globalCompositeOperation = "source-over";
     }
     ctx.globalCompositeOperation = "lighter";
-    for (const b of G.eb) Gfx.draw(ctx, b.k, b.x, b.y, b.spin ? b.t * 10 : 0, b.k === "e_bone" ? 1 : b.r / 6.5);
+    for (const b of G.eb) Gfx.draw(ctx, b.k, b.x, b.y, b.spin ? b.t * 10 : b.rot ? Math.atan2(b.vy, b.vx) : 0, b.k === "e_bone" ? 1 : b.r / 6.5);
     ctx.globalCompositeOperation = "source-over";
     Fx.draw(ctx);
+    for (const w of G.warns) Gfx.drawWarn(ctx, w);
     Gfx.drawForeground(ctx, G.theme, G.dist, G.t);
   };
 })(window.XA);
