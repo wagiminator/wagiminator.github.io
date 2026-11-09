@@ -33,6 +33,7 @@ apps/
 games/
   x-abyss/              X-Abyss (underwater shoot'em-up)
   primordia/            Primordia (vertical shoot'em-up)
+  sunset-highway/       Sunset Highway (arcade road racer)
 ```
 
 Every app lives in its own folder under `apps/` and is reachable at `https://wagiminator.github.io/apps/<app-name>/`. Apps are plain HTML, CSS and JavaScript without a build step and run entirely in the browser. Browser games live in the same way under `games/<game-name>/` and are listed under "Games" on the start page.
@@ -268,3 +269,16 @@ Vertical shoot'em-up as a homage to the Amiga classic Xenon 2 (The Bitmap Brothe
 - Top 10 highscore list stored in the browser; entering a name is optional.
 
 Code: `js/world.js` (stages, ship, add-ons, enemies, bosses), `js/gfx.js` (sprites, parallax layers, particles), `js/audio.js` (music and sound), `js/ui.js` (screens, trading post, HUD), `js/main.js` (main loop); see `games/primordia/README.md`.
+
+### Sunset Highway
+
+Pseudo-3D arcade road racer as a homage to the 1986 arcade classic Out Run. All graphics are drawn by code, music and sound effects are synthesized with the Web Audio API.
+
+- Five rows of stages with a fork at the end of each: keep left or right to choose the next landscape. 15 stages in ten landscapes at day, sunset or night, and five different goals with their own little ending.
+- Curves, hills, traffic, checkpoints with extended time, a time limit and a route map.
+- Two gears with automatic or manual gearbox; three radio stations to choose from.
+- A driver and a passenger who comment on the drive and get thrown out of the car in a crash.
+- Keyboard, mouse and gamepad controls (analog steering and triggers), fullscreen mode (F).
+- Top 10 highscore list stored in the browser; entering a name is optional.
+
+Code: `js/race.js` (route, track, pseudo-3D renderer, physics, traffic), `js/gfx.js` (sprites, landscapes, sky), `js/audio.js` (radio, engine and sound effects), `js/ui.js` (screens, HUD, route map, goal scenes), `js/main.js` (main loop); see `games/sunset-highway/README.md`.
