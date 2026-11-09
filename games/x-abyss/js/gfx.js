@@ -439,6 +439,10 @@
     ],
   };
 
+  // Shared with the deep-zone add-on (deepgfx.js), which adds its sprites before init()
+  Gfx.DEF = DEF; Gfx.DECO = DECO;
+  Gfx.tools = { mk, lin, rad, ell, circ, poly, lamp };
+
   Gfx.init = function () {
     for (const k in DEF) { Gfx.spr[k] = DEF[k](); Gfx.white[k] = whiteOf(Gfx.spr[k]); }
     Gfx.deco = {};
@@ -530,8 +534,11 @@
       gr.addColorStop(0, "rgba(255,80,20,0)"); gr.addColorStop(1, `rgba(255,90,20,${0.22 + 0.06 * Math.sin(t * 2)})`);
       ctx.fillStyle = gr; ctx.fillRect(0, H * 0.45, W, H * 0.55);
     }
-    silhouette(ctx, th.far, camX, 0.12, H * 0.92, H * 0.55, 380, th.seed, t);
-    silhouette(ctx, th.far2, camX, 0.25, H * 1.02, H * 0.45, 260, th.seed + 50, t);
+    if (th.layers) th.layers(ctx, camX, t); // multi-layer parallax of the deep zone
+    else {
+      silhouette(ctx, th.far, camX, 0.12, H * 0.92, H * 0.55, 380, th.seed, t);
+      silhouette(ctx, th.far2, camX, 0.25, H * 1.02, H * 0.45, 260, th.seed + 50, t);
+    }
     // kelp / tendrils in the middle layer
     if (th.kelp) {
       ctx.strokeStyle = th.kelp; ctx.lineWidth = 5;
@@ -609,7 +616,9 @@
     }
   };
 
-  Gfx.drawOverlay = function (ctx, th) {
+  Gfx.silhouette = silhouette;
+  Gfx.drawOverlay = function (ctx, th, camX = 0, t = 0) {
+    if (th.fore) th.fore(ctx, camX, t);
     ctx.drawImage(Gfx.vignette, 0, 0, W, H);
     if (th.dark) { ctx.fillStyle = `rgba(0,0,0,${th.dark})`; ctx.fillRect(0, 0, W, H); }
   };

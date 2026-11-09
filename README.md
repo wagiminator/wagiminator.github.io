@@ -255,12 +255,13 @@ Code: `gerber.js` reads ZIP archives, recognizes layers, parses Gerber and Excel
 
 Underwater shoot'em-up as a homage to the Amiga classic X-Out (Rainbow Arts, 1990). All graphics are drawn by code, music and sound effects are synthesized with the Web Audio API.
 
-- Four stages (Coral Shelf, Wreck Graveyard, Magma Vents, The Hive), each with its own boss, and a shipyard between the stages: four main weapons with four power levels, satellites with five formations, homing missiles, depth charges, rear and side guns, shield, armour, turbo engine, nova bombs, repairs and extra ships.
+- Eight stages, each with its own boss, and a shipyard between the stages. The first zone has Coral Shelf, Wreck Graveyard, Magma Vents and The Hive. The much harder deep zone has Trench Gate, Crystal Caverns, Frozen Rift and Abyss Core, with multi-layer parallax scrolling, faster and tougher enemies from every side, fixed obstacles and its own dark techno soundtrack. The shipyard offers four main weapons with four power levels, satellites with five formations, homing missiles, depth charges, rear and side guns, shield, armour, turbo engine, nova bombs, repairs and extra ships.
 - Large particle explosions with shock waves, debris, smoke and bubbles; tracker-style soundtrack.
+- Short voice announcements for power-ups, bosses and the end of a stage (Web Speech API, can be switched off).
 - Keyboard, mouse and gamepad controls, fullscreen mode (F).
 - Top 10 highscore list stored in the browser; entering a name is optional.
 
-Code: `js/world.js` (stages, weapons, enemies, bosses), `js/gfx.js` (sprites, backgrounds, particles), `js/audio.js` (music and sound), `js/ui.js` (screens, shipyard, HUD), `js/main.js` (main loop); see `games/x-abyss/README.md`.
+Code: `js/world.js` (stages, weapons, enemies, obstacles, bosses), `js/deep.js` (deep zone stages, enemies and bosses), `js/gfx.js` (sprites, backgrounds, particles), `js/deepgfx.js` (deep zone graphics), `js/audio.js` (music and sound), `js/ui.js` (screens, shipyard, HUD), `js/main.js` (main loop); see `games/x-abyss/README.md`.
 
 ### Primordia
 

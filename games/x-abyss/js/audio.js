@@ -30,6 +30,11 @@
     calm: { k: "x.........x.....", s: "....x.......x...", h: "x...x...x...x..." },
     half: { k: "x.......x.......", s: "........x.......", h: "x.x.x.x.x.x.x.x." },
     boss: { k: "x.x.x.x.x.x.x.x.", s: "....x..x....x.xx", h: "xxxxxxxxxxxxxxxx" },
+    // deep zone: four-to-the-floor techno, broken beats and industrial patterns with claps (c)
+    techno: { k: "x...x...x...x...", s: "................", c: "....x.......x...", h: "..o...o...o...o." },
+    broken: { k: "x.....x...x.....", s: "....x.......x..x", c: "........x.......", h: "x.xxx.xxx.xxx.xo" },
+    indust: { k: "x..x..x.x..x..x.", s: "....x.......x...", c: "....x..x....x...", h: "xxoxxxoxxxoxxxox" },
+    hard: { k: "x...x...x...x.x.", s: "....x.......x...", c: "....x...x...x..x", h: "o.xxo.xxo.xxo.xx" },
   };
   const SONGS = {
     title: {
@@ -75,6 +80,47 @@
       chords: "Em F Em F Em F G F",
       mel: "e5:2 r:2 e5:2 f5:2 g5:4 b5:4 a5:2 r:2 c6:2 a5:2 f5:4 c5:4 e5:2 g5:2 b5:2 e6:2 d6:4 b5:4 c6:8 a5:8 " +
         "e6:4 b5:2 g5:2 e5:4 g5:4 f5:4 a5:4 c6:4 f6:4 g6:4 d6:2 b5:2 g5:4 d6:4 c6:8 b5:8",
+    },
+    /* Deep zone (stages 5–8): dark techno and industrial with an acid bass and metallic leads */
+    level5: {
+      bpm: 136, drums: DR.techno, acid: true, bass: "RRORR5RORRORR5RO", arp: 0, stab: "x..x..x...x..x..", lead: "pluck",
+      chords: "Fm Fm Db Eb Fm Fm Bbm C",
+      mel: "f5:2 r:2 f5:2 ab5:2 r:2 c6:2 r:2 bb5:2 ab5:4 g5:2 f5:2 r:8 " +
+        "f5:2 r:2 f5:2 ab5:2 r:2 db6:2 r:2 c6:2 bb5:4 ab5:2 g5:2 r:8 " +
+        "c6:2 r:2 c6:2 eb6:2 r:2 f6:2 eb6:2 c6:2 bb5:4 c6:4 f5:8 " +
+        "db6:4 c6:4 bb5:4 f5:4 e5:4 g5:4 bb5:4 c6:4",
+    },
+    level6: {
+      bpm: 128, drums: DR.broken, acid: false, bass: "R..R..O.R..5..O.", arp: 2, pad: true, lead: "fm",
+      chords: "Em7 Cmaj7 Am7 B7 Em7 Cmaj7 F#m7 B7",
+      mel: "b5:4 e6:4 f#6:2 g6:2 f#6:4 e6:8 b5:4 d6:4 " +
+        "c6:4 e6:4 g6:4 b6:4 a6:8 g6:4 e6:4 " +
+        "b5:4 e6:4 f#6:2 g6:2 a6:4 b6:8 a6:4 f#6:4 " +
+        "e6:4 c#6:4 a5:4 f#6:4 d#6:8 f#6:4 b6:4",
+    },
+    level7: {
+      bpm: 146, drums: DR.indust, acid: true, bass: "RR.RO.RR5.RR.ORR", arp: 1, stab: "x.......x..x....", lead: "saw",
+      chords: "Dm Dm Bb A Dm Dm Gm A",
+      mel: "d6:6 a5:2 d6:4 e6:4 f6:6 e6:2 d6:4 a5:4 " +
+        "d6:6 a5:2 d6:4 f6:4 g6:4 f6:2 e6:2 c#6:8 " +
+        "a6:4 g6:2 f6:2 e6:4 d6:4 bb5:4 d6:4 f6:8 " +
+        "g6:4 f6:4 e6:4 d6:4 c#6:4 e6:4 a6:8",
+    },
+    level8: {
+      bpm: 150, drums: DR.hard, acid: true, bass: "R.RR.RO.R.RR.Rb.", arp: 1, stab: "x..x..x.x..x..x.", lead: "pluck",
+      chords: "C#m D C#m D C#m D B A",
+      mel: "c#6:2 c#6:2 r:2 d6:2 r:2 c#6:2 g#5:4 e6:2 r:2 d6:2 c#6:2 d6:4 a5:4 " +
+        "c#6:2 c#6:2 r:2 d6:2 r:2 e6:2 g#6:4 f#6:2 e6:2 d6:2 c#6:2 d6:8 " +
+        "g#6:4 f#6:2 e6:2 d6:4 c#6:4 a5:4 c#6:4 d6:4 f#6:4 " +
+        "e6:4 d#6:4 b5:4 f#5:4 e6:4 c#6:4 a5:4 e5:4",
+    },
+    boss2: {
+      bpm: 158, drums: DR.indust, acid: true, bass: "RRORRbRORROR5RbO", arp: 1, stab: "x..x..x.........", lead: "saw",
+      chords: "Gm Ab Gm Ab Gm Ab F# Ab",
+      mel: "g5:2 r:2 g5:2 ab5:2 bb5:4 d6:4 c6:2 r:2 eb6:2 c6:2 ab5:4 eb5:4 " +
+        "g5:2 bb5:2 d6:2 g6:2 f#6:4 d6:4 eb6:8 c6:8 " +
+        "g6:4 d6:2 bb5:2 g5:4 bb5:4 ab5:4 c6:4 eb6:4 ab6:4 " +
+        "f#6:4 c#6:2 a#5:2 f#5:4 a#5:4 c6:8 ab5:8",
     },
   };
 
@@ -169,6 +215,45 @@
     const end = t + dur + 0.6;
     for (const o of [o1, o2, lfo]) { o.start(t); o.stop(end); }
   }
+  // 303-style acid bass: resonant filter sweep, accent on every first note of a beat
+  function voiceAcid(t, midi, dur, cut, accent) {
+    const ctx = A.ctx, o = ctx.createOscillator(), g = ctx.createGain(), flt = ctx.createBiquadFilter();
+    o.type = "sawtooth"; o.frequency.value = mtof(midi);
+    flt.type = "lowpass"; flt.Q.value = accent ? 16 : 11;
+    flt.frequency.setValueAtTime(cut * (accent ? 2.4 : 1.6), t); flt.frequency.exponentialRampToValueAtTime(Math.max(120, cut * 0.35), t + dur * 0.9);
+    const v = accent ? 0.2 : 0.13;
+    g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(v, t + 0.004); g.gain.setTargetAtTime(0.0001, t + dur * 0.75, 0.03);
+    const ws = A.drive || (A.drive = (() => { const w = ctx.createWaveShaper(), c = new Float32Array(256); for (let i = 0; i < 256; i++) { const x = i / 128 - 1; c[i] = Math.tanh(x * 2.4); } w.curve = c; w.connect(A.musicBus); return w; })());
+    o.connect(flt); flt.connect(g); g.connect(ws);
+    o.start(t); o.stop(t + dur + 0.2);
+  }
+  // short chord stab (detuned saws through a closing filter)
+  function voiceStab(t, midis, dur) {
+    const ctx = A.ctx, g = ctx.createGain(), flt = ctx.createBiquadFilter();
+    flt.type = "lowpass"; flt.Q.value = 4; flt.frequency.setValueAtTime(4200, t); flt.frequency.exponentialRampToValueAtTime(500, t + dur);
+    g.gain.setValueAtTime(0.045, t); g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+    flt.connect(g); g.connect(A.musicBus); g.connect(A.delay); g.connect(A.revIn);
+    for (const m of midis) for (const d of [-12, 12]) { const o = ctx.createOscillator(); o.type = "sawtooth"; o.frequency.value = mtof(m); o.detune.value = d; o.connect(flt); o.start(t); o.stop(t + dur + 0.05); }
+  }
+  // plucked metallic lead and an FM bell
+  function voicePluck(t, midi, dur) {
+    const ctx = A.ctx, f = mtof(midi), g = ctx.createGain(), flt = ctx.createBiquadFilter();
+    const o1 = ctx.createOscillator(), o2 = ctx.createOscillator();
+    o1.type = "square"; o2.type = "sawtooth"; o1.frequency.value = f; o2.frequency.value = f * 2; o2.detune.value = 6;
+    flt.type = "lowpass"; flt.Q.value = 6; flt.frequency.setValueAtTime(6000, t); flt.frequency.exponentialRampToValueAtTime(700, t + Math.min(0.35, dur));
+    g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(0.075, t + 0.004); g.gain.exponentialRampToValueAtTime(0.002, t + Math.max(0.12, dur * 0.95));
+    o1.connect(flt); o2.connect(flt); flt.connect(g); g.connect(A.musicBus); g.connect(A.delay); g.connect(A.revIn);
+    for (const o of [o1, o2]) { o.start(t); o.stop(t + dur + 0.1); }
+  }
+  function voiceFM(t, midi, dur) {
+    const ctx = A.ctx, f = mtof(midi), car = ctx.createOscillator(), mod = ctx.createOscillator(), mg = ctx.createGain(), g = ctx.createGain();
+    car.type = "sine"; car.frequency.value = f; mod.type = "sine"; mod.frequency.value = f * 3.5;
+    mg.gain.setValueAtTime(f * 4, t); mg.gain.exponentialRampToValueAtTime(f * 0.3, t + dur);
+    mod.connect(mg); mg.connect(car.frequency);
+    g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(0.12, t + 0.005); g.gain.exponentialRampToValueAtTime(0.002, t + dur + 0.3);
+    car.connect(g); g.connect(A.musicBus); g.connect(A.delay); g.connect(A.revIn);
+    for (const o of [car, mod]) { o.start(t); o.stop(t + dur + 0.35); }
+  }
   function voiceArp(t, midi, dur) {
     const ctx = A.ctx, o = ctx.createOscillator(), g = ctx.createGain();
     o.type = "square"; o.frequency.value = mtof(midi);
@@ -219,6 +304,15 @@
     og.gain.setValueAtTime(0.25, t); og.gain.exponentialRampToValueAtTime(0.001, t + 0.1);
     o.connect(og); og.connect(dest); o.start(t); o.stop(t + 0.12);
   }
+  function clap(t, dest) {
+    const ctx = A.ctx, f = ctx.createBiquadFilter(), g = ctx.createGain();
+    f.type = "bandpass"; f.frequency.value = 1300; f.Q.value = 1.2;
+    f.connect(g); g.connect(dest); g.connect(A.revIn);
+    g.gain.setValueAtTime(0.0001, t);
+    for (let i = 0; i < 3; i++) { g.gain.setValueAtTime(0.3, t + i * 0.011); g.gain.exponentialRampToValueAtTime(0.05, t + i * 0.011 + 0.009); }
+    g.gain.setValueAtTime(0.28, t + 0.033); g.gain.exponentialRampToValueAtTime(0.001, t + 0.2);
+    noiseSrc(t, 0.22).connect(f);
+  }
   function hat(t, dest, open) {
     const ctx = A.ctx, d = open ? 0.18 : 0.04, n = noiseSrc(t, d + 0.02), f = ctx.createBiquadFilter(), g = ctx.createGain();
     f.type = "highpass"; f.frequency.value = 7500;
@@ -229,15 +323,17 @@
   function scheduleStep(s, step, t, sd) {
     const st = step % 16, bar = Math.floor(step / 16) % s.chords.length, ch = s.chords[bar];
     const bus = A.musicBus;
-    if (s.drums.k[st] === "x") kick(t, bus);
+    if (s.drums.k[st] === "x") kick(t, bus, s.acid !== undefined ? 1.05 : 0.9);
     if (s.drums.s[st] === "x") snare(t, bus);
+    if (s.drums.c && s.drums.c[st] === "x") clap(t, bus);
     if (s.drums.h[st] === "x") hat(t, bus, false);
     else if (s.drums.h[st] === "o") hat(t, bus, true);
     const b = s.bass[st];
     if (b !== ".") {
       let root = 36 + ch.pc; if (root > 43) root -= 12;
-      const m = b === "O" ? root + 12 : b === "5" ? root + 7 : root;
-      voiceBass(t, m, sd * 1.5);
+      const m = b === "O" ? root + 12 : b === "5" ? root + 7 : b === "b" ? root + 1 : root;
+      if (s.acid) voiceAcid(t, m, sd * 1.1, 500 + 1500 * (0.5 + 0.5 * Math.sin(step / 24)), st % 4 === 0);
+      else voiceBass(t, m, sd * 1.5);
     }
     if (s.arp) {
       const tones = ch.iv.concat([12]);
@@ -247,9 +343,14 @@
         voiceArp(t + (k * sd) / per, 60 + ch.pc + tones[idx] + (ch.pc > 6 ? -12 : 0), sd / per);
       }
     }
+    if (s.stab && s.stab[st] === "x") voiceStab(t, ch.iv.slice(0, 3).map((i) => 60 + ch.pc + i - (ch.pc > 5 ? 12 : 0)), sd * 1.6);
     if (s.pad && st === 0) voicePad(t, ch.iv.slice(0, 3).map((i) => 48 + ch.pc + i), sd * 16);
     const ev = s.melody.get(step % s.melLen);
-    if (ev && ev.midi != null) voiceLead(t, ev.midi, ev.dur * sd, s.lead);
+    if (ev && ev.midi != null) {
+      if (s.lead === "pluck") voicePluck(t, ev.midi, ev.dur * sd);
+      else if (s.lead === "fm") voiceFM(t, ev.midi, ev.dur * sd);
+      else voiceLead(t, ev.midi, ev.dur * sd, s.lead);
+    }
   }
 
   function tick() {
@@ -386,5 +487,34 @@
     if (!seq) return;
     let x = t;
     for (const [m, d] of seq) { voiceLead(x, m, d * 0.95, "square"); voiceLead(x, m - 12, d * 0.95, "soft"); x += d; }
+  };
+
+  /* ---------- Speech: short announcements through the Web Speech API ---------- */
+  A.voiceOn = Store.get("voice", true);
+  A.setVoice = (on) => { A.voiceOn = on; Store.set("voice", on); if (!on && window.speechSynthesis) speechSynthesis.cancel(); };
+  let voice = null;
+  function pickVoice() {
+    if (!window.speechSynthesis) return null;
+    const vs = speechSynthesis.getVoices();
+    if (!vs.length) return null;
+    const en = vs.filter((v) => /^en/i.test(v.lang));
+    voice = en.find((v) => /Google US English|Samantha|Daniel|Alex|Aria|Guy|Zira|David/i.test(v.name)) || en[0] || vs[0];
+    return voice;
+  }
+  if (window.speechSynthesis) { pickVoice(); speechSynthesis.onvoiceschanged = pickVoice; }
+  A.lastSay = 0; A.said = [];
+  A.say = function (text, opt = {}) {
+    A.said.push(text); if (A.said.length > 20) A.said.shift();
+    if (!A.voiceOn || A.muted || !window.speechSynthesis) return;
+    const now = performance.now();
+    if (!opt.force && now - A.lastSay < (opt.gap || 700)) return;
+    A.lastSay = now;
+    try {
+      if (opt.interrupt !== false) speechSynthesis.cancel();
+      const u = new SpeechSynthesisUtterance(text);
+      if (voice || pickVoice()) u.voice = voice;
+      u.lang = "en-US"; u.rate = opt.rate || 1.05; u.pitch = opt.pitch ?? 0.9; u.volume = Math.min(1, A.sfxVol + 0.2);
+      speechSynthesis.speak(u);
+    } catch (e) { /* speech not available */ }
   };
 })(window.XA);

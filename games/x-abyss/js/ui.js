@@ -170,10 +170,11 @@
     menu: makeMenu([
       { label: () => "MUSIC  " + pct(A.musicVol), adjust: (d, wrap) => { let v = Math.round((A.musicVol + d * 0.1) * 10) / 10; if (wrap && v > 1) v = 0; A.setMusicVol(U.clamp(v, 0, 1)); A.sfx("menuMove"); } },
       { label: () => "SOUND  " + pct(A.sfxVol), adjust: (d, wrap) => { let v = Math.round((A.sfxVol + d * 0.1) * 10) / 10; if (wrap && v > 1) v = 0; A.setSfxVol(U.clamp(v, 0, 1)); A.sfx("gem"); } },
+      { label: () => "VOICE  " + (A.voiceOn ? "ON" : "OFF"), adjust: () => { A.setVoice(!A.voiceOn); A.sfx("menuMove"); if (A.voiceOn) A.say("Voice on"); } },
       { label: () => "SCREEN SHAKE  " + (XA.Main.shakeOn ? "ON" : "OFF"), adjust: () => { XA.Main.shakeOn = !XA.Main.shakeOn; Store.set("shake", XA.Main.shakeOn); A.sfx("menuMove"); } },
       { label: () => "FULLSCREEN  " + (document.fullscreenElement ? "ON" : "OFF"), action: () => XA.Main.toggleFullscreen() },
       { label: "BACK", action: () => States.options.leave() },
-    ], W / 2, 250, 560),
+    ], W / 2, 232, 560),
     enter(back) { this.t = 0; this.back = back || "title"; this.menu.sel = 0; },
     leave() { if (this.back === "play") setState("play", { resume: true }); else setState(this.back); },
     input() { if (I.hit("back")) { A.sfx("menuBack"); this.leave(); return; } menuInput(this.menu); },
@@ -240,7 +241,7 @@
         const col = hl ? "#fff7b0" : i < 3 ? "#ffd27a" : "#e6f6ff";
         txt(ctx, `${i + 1}.`, W / 2 - 330, y, 22, col, "left");
         txt(ctx, e.name, W / 2 - 220, y, 22, col, "left");
-        txt(ctx, e.stage >= 5 ? "ALL" : String(e.stage), W / 2 + 110, y, 22, col, "center");
+        txt(ctx, e.stage > G.LEVELS.length ? "ALL" : String(e.stage), W / 2 + 110, y, 22, col, "center");
         txt(ctx, U.fmt(e.score), W / 2 + 340, y, 22, col, "right");
       });
       txt(ctx, "Scores are saved in this browser.", W / 2, H - 40, 18, "rgba(170,210,230,0.6)", "center", 500, BODY);
@@ -544,6 +545,7 @@
       ctx.globalAlpha = a;
       glowTxt(ctx, `STAGE ${G.run.level + 1}`, W / 2, H / 2 - 40, 64, "#ffffff", "rgba(40,200,255,0.9)", 24);
       txt(ctx, G.L.name.toUpperCase(), W / 2, H / 2 + 20, 28, "#ffd27a");
+      if (G.L.sub) txt(ctx, G.L.sub, W / 2, H / 2 + 62, 18, "#ff8a7a");
       ctx.globalAlpha = 1;
     } else if (G.phase === "warning") {
       const a = 0.5 + 0.5 * Math.sin(t * 10);
@@ -600,7 +602,7 @@
     enter() {
       this.t = 0;
       const run = G.run;
-      run.level = 4; // all stages done (shown as "ALL")
+      run.level = G.LEVELS.length; // all stages done (shown as "ALL")
       this.bonus = run.cheated ? 0 : (run.lives + 1) * 10000;
       if (this.bonus) G.addScore(this.bonus);
       A.jingle("victory");
@@ -617,7 +619,7 @@
     draw(ctx) {
       backdrop.draw(ctx, "coral");
       glowTxt(ctx, "MISSION COMPLETE", W / 2, 170, 64, "#ffffff", "rgba(40,200,255,0.9)", 28);
-      wrap(ctx, "The Hive Mother is destroyed and her drones are falling silent. The oceans are safe again – for now.", W / 2 - 330, 250, 660, 30, 24);
+      wrap(ctx, "The Omega Heart has stopped beating. Its machines in the deep zone fall silent, and the oceans are safe again – for now.", W / 2 - 330, 250, 660, 30, 24);
       panel(ctx, W / 2 - 260, 340, 520, 200, 0.7);
       txt(ctx, "Fleet bonus", W / 2 - 220, 380, 22, "rgba(190,225,240,0.9)", "left", 600, BODY);
       txt(ctx, U.fmt(this.bonus), W / 2 + 220, 380, 22, "#fff7b0", "right");
