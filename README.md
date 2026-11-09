@@ -34,6 +34,10 @@ games/
   x-abyss/              X-Abyss (underwater shoot'em-up)
   primordia/            Primordia (vertical shoot'em-up)
   sunset-highway/       Sunset Highway (arcade road racer)
+  dreamhop/             DREAMHOP (jump-and-run)
+  deep-diner/           Deep Diner (eat-and-grow game)
+  bubble-puff/          Bubble Puff (bubble-blowing platformer)
+  alien-armada/         Alien Armada (alien-invasion shooter)
 ```
 
 Every app lives in its own folder under `apps/` and is reachable at `https://wagiminator.github.io/apps/<app-name>/`. Apps are plain HTML, CSS and JavaScript without a build step and run entirely in the browser. Browser games live in the same way under `games/<game-name>/` and are listed under "Games" on the start page.
@@ -282,3 +286,55 @@ Pseudo-3D arcade road racer as a homage to the 1986 arcade classic Out Run. All 
 - Top 10 highscore list stored in the browser; entering a name is optional.
 
 Code: `js/race.js` (route, track, pseudo-3D renderer, physics, traffic), `js/gfx.js` (sprites, landscapes, sky), `js/audio.js` (radio, engine and sound effects), `js/ui.js` (screens, HUD, route map, goal scenes), `js/main.js` (main loop); see `games/sunset-highway/README.md`.
+
+### DREAMHOP
+
+Cute jump-and-run as a homage to the 1987 home computer classic The Great Giana Sisters. The heroine Lulu, all enemies, bosses, levels, graphics and music are original, drawn by code and synthesized with the Web Audio API.
+
+- Four dream worlds with three levels each (Meadow of Naps, Crystal Caverns, Sugar Hills, Starlight Clouds); the last level of every world ends with a boss.
+- Star blocks with gems, hidden blocks, bricks, springs, moving platforms, pits, lava and checkpoints.
+- Power-ups: dream orb, star wand, clock, lightning, bubble and lollipops; 100 gems give an extra life.
+- Pixel graphics with parallax backgrounds and many small animations; chiptune soundtrack.
+- Keyboard, mouse and gamepad controls, fullscreen mode (F).
+- Top 10 highscore list stored in the browser; entering a name is optional.
+
+See `games/dreamhop/README.md`.
+
+### Deep Diner
+
+Comic underwater eat-and-grow game in the spirit of Feeding Frenzy. All graphics, music and sounds are generated at runtime.
+
+- Five worlds with two levels each (Coral Reef, Kelp Forest, Sunken Ship, Frozen Sea, The Abyss).
+- Eat smaller fish, avoid bigger ones and grow through three sizes; eat quickly in a row for a Feeding Frenzy.
+- Many animated creatures from guppies to orcas, plus jellyfish, sea mines and oysters with pearls.
+- Spoken comments (Web Speech API, can be switched off), a song for every world.
+- Mouse, keyboard and gamepad controls, fullscreen mode (F).
+- Highscore list stored in the browser; entering a name is optional.
+
+See `games/deep-diner/README.md`.
+
+### Bubble Puff
+
+Cute bubble-blowing platform game in the spirit of Bubble Bobble. All graphics, music and sounds are generated at runtime.
+
+- 16 rounds in six areas, each with its own layouts, tiles, background and enemies, and a final battle against King Grumble.
+- Trap monsters in bubbles and pop them for chain reactions, fruit and EXTEND letters; ride on bubbles and fall through the floor to the top.
+- Power-ups, a hurry-up timer and a skull ghost for dawdlers.
+- Spoken comments (can be switched off), a song for every area.
+- Keyboard, mouse and gamepad controls, fullscreen mode (F).
+- Highscore list stored in the browser; entering a name is optional.
+
+See `games/bubble-puff/README.md`.
+
+### Alien Armada
+
+Retro alien-invasion shooter in the spirit of Space Invaders, with detailed pixel graphics and techno music. All graphics, music and sounds are generated at runtime.
+
+- Five worlds with animated backgrounds, three waves each and a mothership with several attack patterns.
+- Marching formation with the classic four-note beat, destructible bunkers, a mystery UFO and extra lives.
+- Power-ups: double shot, rapid fire, shield, laser beam and bomb.
+- Spoken announcements (can be switched off), a techno track for every world.
+- Keyboard, mouse and gamepad controls, fullscreen mode (F).
+- Highscore list stored in the browser; entering a name is optional.
+
+See `games/alien-armada/README.md`.
