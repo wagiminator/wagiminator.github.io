@@ -155,10 +155,11 @@
     menu: makeMenu([
       { label: () => "MUSIC  " + pct(A.musicVol), adjust: (d, wrap) => { let v = Math.round((A.musicVol + d * 0.1) * 10) / 10; if (wrap && v > 1) v = 0; A.setMusicVol(U.clamp(v, 0, 1)); A.sfx("menuMove"); } },
       { label: () => "SOUND  " + pct(A.sfxVol), adjust: (d, wrap) => { let v = Math.round((A.sfxVol + d * 0.1) * 10) / 10; if (wrap && v > 1) v = 0; A.setSfxVol(U.clamp(v, 0, 1)); A.sfx("credit"); } },
+      { label: () => "VOICE  " + (A.voiceOn ? "ON" : "OFF"), adjust: () => { A.setVoice(!A.voiceOn); A.sfx("menuMove"); if (A.voiceOn) A.say("Voice on"); } },
       { label: () => "SCREEN SHAKE  " + (XA.Main.shakeOn ? "ON" : "OFF"), adjust: () => { XA.Main.shakeOn = !XA.Main.shakeOn; Store.set("shake", XA.Main.shakeOn); A.sfx("menuMove"); } },
       { label: () => "FULLSCREEN  " + (document.fullscreenElement ? "ON" : "OFF"), action: () => XA.Main.toggleFullscreen() },
       { label: "BACK", action: () => States.options.leave() },
-    ], W / 2, 240, 560),
+    ], W / 2, 226, 560),
     enter(back) { this.t = 0; this.back = back || "title"; this.menu.sel = 0; },
     leave() { if (this.back === "play") setState("play", { resume: true }); else setState(this.back); },
     input() { if (I.hit("back")) { A.sfx("menuBack"); this.leave(); return; } menuInput(this.menu); },
@@ -196,7 +197,7 @@
       });
       panel(ctx, 70, 478, W - 140, 150, 0.72);
       const lines = [
-        "Fly through four ages of evolution. Every stage has a trading post in the middle and at the end.",
+        "Fly through eight ages of evolution. Every stage has a trading post in the middle and at the end.",
         "Collect the golden credits and buy add-ons: side and rear shots, cannons, lasers, missiles, electro balls,",
         "drones, mines, zappers and more – they all fire at the same time. Losing a ship costs one add-on.",
         "Capsules: P power · W random weapon · S speed · H health · B bomb · O overdrive (all weapons at full power).",
@@ -226,7 +227,7 @@
         const col = hl ? "#fff7b0" : i < 3 ? "#ffd27a" : "#f6ece0";
         txt(ctx, `${i + 1}.`, W / 2 - 330, y, 22, col, "left");
         txt(ctx, e.name, W / 2 - 220, y, 22, col, "left");
-        txt(ctx, e.stage >= 5 ? "ALL" : String(e.stage), W / 2 + 110, y, 22, col);
+        txt(ctx, e.stage > G.LEVELS.length ? "ALL" : String(e.stage), W / 2 + 110, y, 22, col);
         txt(ctx, U.fmt(e.score), W / 2 + 340, y, 22, col, "right");
       });
       txt(ctx, "Scores are saved in this browser.", W / 2, H - 40, 18, "rgba(240,220,190,0.6)", "center", 500, BODY);
@@ -577,6 +578,7 @@
       ctx.globalAlpha = a;
       glowTxt(ctx, `STAGE ${G.run.level + 1}${G.run.half ? "B" : "A"}`, PWc / 2, PH() / 2 - 40, 58, "#ffffff", "rgba(255,130,30,0.9)", 24);
       txt(ctx, G.L.name.toUpperCase(), PWc / 2, PH() / 2 + 16, 26, "#8ae8ff");
+      if (G.L.sub) txt(ctx, G.L.sub, PWc / 2, PH() / 2 + 84, 16, "#ff9a7a");
       if (G.over > 0) txt(ctx, "OVERDRIVE ACTIVE", PWc / 2, PH() / 2 + 56, 18, "#fff6a0");
       ctx.globalAlpha = 1;
     } else if (G.phase === "warning") {
@@ -628,7 +630,7 @@
     enter() {
       this.t = 0;
       const run = G.run;
-      run.level = 4;
+      run.level = G.LEVELS.length; // all stages done (shown as "ALL")
       this.bonus = run.cheated ? 0 : (run.lives + 1) * 15000;
       if (this.bonus) G.addScore(this.bonus);
       A.jingle("victory");
@@ -641,9 +643,9 @@
       if (Math.random() < dt * 3) Fx.explode(U.rand(150, W - 150), U.rand(100, H - 260), U.rand(18, 50), { rgb: U.pick(["255,200,90", "120,220,255", "255,120,200", "160,255,140"]) });
     },
     draw(ctx) {
-      backdrop.draw(ctx, "core");
+      backdrop.draw(ctx, "star");
       glowTxt(ctx, "TIMELINE RESTORED", W / 2, 160, 60, "#ffffff", "rgba(255,130,30,0.9)", 28);
-      wrap(ctx, "The Overmind is destroyed and the time rift collapses. Evolution may take its course again.", W / 2, 236, 640, 30, 24, "rgba(245,235,220,0.95)", "center");
+      wrap(ctx, "The Astral Seed is destroyed and the last time rift collapses. Evolution may take its course again – all the way to the stars.", W / 2, 236, 640, 30, 24, "rgba(245,235,220,0.95)", "center");
       panel(ctx, W / 2 - 260, 320, 520, 200, 0.78);
       txt(ctx, "Fleet bonus", W / 2 - 220, 360, 22, "rgba(240,220,195,0.9)", "left", 600, BODY);
       txt(ctx, U.fmt(this.bonus), W / 2 + 220, 360, 22, "#fff7b0", "right");

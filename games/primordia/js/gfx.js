@@ -457,6 +457,10 @@
     ],
   };
 
+  // Shared with the add-on for stages 5–8 (deepgfx.js), which registers its sprites and themes before init()
+  Gfx.DEF = DEF; Gfx.DECO = DECO;
+  Gfx.tools = { mk, lin, rad, ell, circ, poly, lamp, wrapDraw, TW, TH };
+
   Gfx.init = function () {
     for (const k in DEF) { Gfx.spr[k] = DEF[k](); Gfx.white[k] = whiteOf(Gfx.spr[k]); }
     Gfx.deco = {};
@@ -466,9 +470,12 @@
       const th = Gfx.THEMES[k];
       const far = tileCanvas(); let g = far.getContext("2d");
       g.fillStyle = lin(g, 0, 0, 0, TH, [[0, th.bg[1]], [0.5, th.bg[0]], [1, th.bg[1]]]); g.fillRect(0, 0, TW, TH);
-      FAR[k](g, U.rng(th.seed * 101));
+      (th.layers ? th.layers[0] : FAR[k])(g, U.rng(th.seed * 101));
       const mid = tileCanvas(); g = mid.getContext("2d");
-      MID[k](g, U.rng(th.seed * 307));
+      (th.layers ? th.layers[1] : MID[k])(g, U.rng(th.seed * 307));
+      // further parallax layers (only the newer themes have them)
+      const more = [];
+      if (th.layers) for (let i = 2; i < th.layers.length; i++) { const c = tileCanvas(); th.layers[i](c.getContext("2d"), U.rng(th.seed * 509 + i * 97)); more.push(c); }
       // rock texture tinted for the walls
       const tex = document.createElement("canvas"); tex.width = tex.height = 256;
       g = tex.getContext("2d");
@@ -478,7 +485,7 @@
         g.fillStyle = rr() < 0.55 ? `rgba(0,0,0,${0.1 + rr() * 0.25})` : `rgba(255,255,255,${0.04 + rr() * 0.08})`;
         for (const dx of [-256, 0, 256]) for (const dy of [-256, 0, 256]) { g.beginPath(); g.ellipse(x + dx, y + dy, s, s * (0.5 + rr() * 0.4), rr() * 3, 0, TAU); g.fill(); }
       }
-      Gfx.tiles[k] = { far, mid, tex };
+      Gfx.tiles[k] = { far, mid, more, tex };
     }
     const v = document.createElement("canvas"); v.width = 360; v.height = 360;
     const g = v.getContext("2d");
@@ -514,9 +521,11 @@
 
   // Background for the 720 px wide playfield; dist = distance flown in px
   Gfx.drawBackground = function (ctx, key, dist, t) {
-    const T = Gfx.tiles[key];
-    tileLayer(ctx, T.far, dist * 0.3, 1);
-    tileLayer(ctx, T.mid, dist * 0.6, 1);
+    const T = Gfx.tiles[key], th = Gfx.THEMES[key], par = th.par || [0.3, 0.6];
+    tileLayer(ctx, T.far, dist * par[0], 1);
+    if (th.under) th.under(ctx, dist, t);
+    tileLayer(ctx, T.mid, dist * par[1], 1);
+    T.more.forEach((c, i) => tileLayer(ctx, c, dist * par[i + 2], 1));
   };
 
   Gfx.drawWalls = function (ctx, key, dist, walls, t) {
@@ -574,6 +583,7 @@
       ctx.fillRect(p.x, y, p.s * p.z, p.s * p.z * (1 + p.z));
     }
     ctx.globalAlpha = 1;
+    if (th.fore) th.fore(ctx, dist, t);
     ctx.drawImage(Gfx.vignette, 0, 0, TW, 720);
   };
 

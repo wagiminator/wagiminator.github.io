@@ -86,6 +86,47 @@
       mel: "c6:2 r:2 c6:2 bb5:2 g5:4 eb5:4 ab5:2 r:2 c6:2 eb6:2 f6:4 eb6:4 d6:2 bb5:2 f5:2 bb5:2 d6:4 f6:4 b5:8 g5:8 " +
         "c6:2 eb6:2 g6:4 f6:2 eb6:2 c6:4 ab5:4 c6:4 eb6:2 c6:2 ab5:4 f5:4 ab5:4 c6:4 f6:4 d6:4 b5:4 g5:4",
     },
+    /* Stages 5–8: synthwave and dark synth – gated drums, sequencer bass, brass and bell leads, choir pads */
+    age5: {
+      bpm: 100, swing: 0, bassType: "seq", lead: "brass", stabType: "brass", gated: true, pad: "choir",
+      drums: { k: "x...x...x...x...", s: "....x.......x...", c: "................", h: "x.x.x.x.x.x.x.x.", x: "................" },
+      bass: "0O0O0O0O0O0O5O5O", stab: "................",
+      chords: "Am F C G Am F Dm E",
+      mel: "e5:4 a5:4 c6:4 b5:2 a5:2 g5:8 e5:8 c6:4 e6:4 d6:4 c6:2 b5:2 g5:12 r:4 " +
+        "a5:4 c6:4 e6:4 f6:2 e6:2 d6:8 a5:8 b5:4 d6:4 f6:4 e6:2 d6:2 e6:8 g#5:8",
+    },
+    age6: {
+      bpm: 112, swing: 0, bassType: "seq", lead: "brass", stabType: "brass", gated: true, arp: true,
+      drums: { k: "x...x...x...x...", s: "....x.......x...", c: "............x...", h: "xxoxxxoxxxoxxxox", x: "................" },
+      bass: "00O000O000O05O0O", stab: "x.........x.....",
+      chords: "Dm Bb F C Dm Bb Gm A",
+      mel: "d6:6 c6:2 a5:8 bb5:6 a5:2 f5:8 a5:4 c6:4 f6:4 e6:2 c6:2 g5:16 " +
+        "d6:4 f6:4 a6:4 g6:2 f6:2 f6:8 d6:8 g6:4 f6:2 e6:2 d6:4 bb5:4 c#6:8 e6:8",
+    },
+    age7: {
+      bpm: 120, swing: 0, bassType: "seq", lead: "bell", stabType: "brass", gated: true, arp: true,
+      drums: { k: "x..x..x.x...x...", s: "....x.......x...", c: "....x.......x...", h: "x.xxx.xxx.xxx.xo", x: "................" },
+      bass: "0.0O0.0O0.0O5.5O", stab: "...x......x.....",
+      chords: "Em Em C D Em Em Am B",
+      mel: "e6:2 r:2 e6:2 g6:2 b6:4 a6:4 g6:2 f#6:2 e6:4 b5:8 c6:2 r:2 c6:2 e6:2 g6:4 f#6:4 d6:8 f#6:8 " +
+        "e6:2 r:2 e6:2 g6:2 b6:4 d7:4 c7:4 b6:4 a6:8 a6:4 c7:2 b6:2 a6:4 e6:4 d#6:8 b5:8",
+    },
+    age8: {
+      bpm: 104, swing: 0, bassType: "seq", lead: "brass", stabType: "brass", gated: true, pad: "choir", arp: true,
+      drums: { k: "x.......x.x.....", s: "....x.......x...", c: "................", h: ".x.x.x.x.x.x.x.x", x: "................" },
+      bass: "0O0O0O0O0O0O7O5O", stab: "x...............",
+      chords: "Cm Ab Eb Bb Cm Ab Fm G",
+      mel: "g5:4 c6:4 eb6:4 d6:2 c6:2 c6:8 ab5:8 g5:4 bb5:4 eb6:4 f6:2 g6:2 f6:12 r:4 " +
+        "g6:4 eb6:4 c6:4 d6:2 eb6:2 c6:8 ab5:8 ab5:4 c6:4 f6:4 eb6:2 d6:2 d6:8 b5:8",
+    },
+    boss2: {
+      bpm: 140, swing: 0, bassType: "seq", lead: "brass", stabType: "brass", gated: true,
+      drums: { k: "x.x.x.x.x.x.x.x.", s: "....x.......x.x.", c: "....x.......x...", h: "xxxxxxxxxxxxxxxx", x: "................" },
+      bass: "0O0O0O0O0O0O0O5O", stab: "x..x..x.........",
+      chords: "Fm Fm Db Eb Fm Fm Bbm C",
+      mel: "f5:2 ab5:2 c6:2 f6:2 e6:4 c6:4 db6:4 c6:2 bb5:2 ab5:8 f5:2 ab5:2 c6:2 f6:2 g6:4 ab6:4 g6:8 eb6:8 " +
+        "f6:4 c6:4 ab5:4 f5:4 db6:4 f6:4 ab6:8 bb6:4 ab6:2 g6:2 f6:4 db6:4 e6:8 c6:8",
+    },
   };
 
   function prepare(def) {
@@ -158,7 +199,26 @@
     lfo.frequency.value = 5.5; lg.gain.setValueAtTime(0, t); lg.gain.linearRampToValueAtTime(f * 0.01, t + Math.min(0.4, dur));
     lfo.connect(lg); lg.connect(o1.frequency); lg.connect(o2.frequency);
     let lvl;
-    if (kind === "pluck") {
+    if (kind === "bell") {
+      // FM bell: the second oscillator modulates the first
+      o1.type = "sine"; o2.type = "sine"; o2.frequency.value = f * 3.5; o2.detune.value = 0;
+      const mg = ctx.createGain(); mg.gain.setValueAtTime(f * 3, t); mg.gain.exponentialRampToValueAtTime(f * 0.2, t + Math.max(0.2, dur));
+      o2.connect(mg); mg.connect(o1.frequency);
+      flt.frequency.value = 6000;
+      lvl = 0.1;
+      g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(lvl, t + 0.005); g.gain.exponentialRampToValueAtTime(0.002, t + dur + 0.4);
+      o1.connect(flt); flt.connect(g);
+      g.connect(A.musicBus); g.connect(A.delay); g.connect(A.revIn);
+      for (const o of [o1, o2, lfo]) { o.start(t); o.stop(t + dur + 0.6); }
+      return;
+    } else if (kind === "brass") {
+      // synth brass: two detuned saws with a slow filter swell
+      o1.type = "sawtooth"; o2.detune.value = 14;
+      flt.Q.value = 2; flt.frequency.setValueAtTime(500, t); flt.frequency.linearRampToValueAtTime(3200, t + 0.09); flt.frequency.setTargetAtTime(1800, t + 0.12, 0.25);
+      lvl = 0.07;
+      g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(lvl, t + 0.04);
+      g.gain.setTargetAtTime(lvl * 0.8, t + 0.05, 0.2); g.gain.setTargetAtTime(0.0001, t + dur * 0.95, 0.09);
+    } else if (kind === "pluck") {
       flt.frequency.setValueAtTime(5000, t); flt.frequency.exponentialRampToValueAtTime(900, t + 0.25);
       lvl = 0.075;
       g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(lvl, t + 0.005);
@@ -178,7 +238,7 @@
   function voiceBass(t, midi, dur, type, accent) {
     const ctx = A.ctx, g = ctx.createGain(), flt = ctx.createBiquadFilter();
     const o = ctx.createOscillator();
-    o.type = type === "sub" ? "triangle" : type === "acid" ? "sawtooth" : "square";
+    o.type = type === "sub" ? "triangle" : type === "acid" || type === "seq" ? "sawtooth" : "square";
     o.frequency.value = mtof(midi);
     flt.type = "lowpass";
     if (type === "acid") {
@@ -189,6 +249,12 @@
       flt.Q.value = 6;
       flt.frequency.setValueAtTime(2200, t); flt.frequency.exponentialRampToValueAtTime(300, t + 0.12);
       const o2 = ctx.createOscillator(); o2.type = "sawtooth"; o2.frequency.value = mtof(midi); o2.detune.value = -7;
+      o2.connect(flt); o2.start(t); o2.stop(t + dur + 0.3);
+    } else if (type === "seq") {
+      // synthwave sequencer bass: short, punchy, slightly detuned
+      flt.Q.value = 4;
+      flt.frequency.setValueAtTime(accent ? 1800 : 1200, t); flt.frequency.exponentialRampToValueAtTime(380, t + 0.09);
+      const o2 = ctx.createOscillator(); o2.type = "square"; o2.frequency.value = mtof(midi); o2.detune.value = 9;
       o2.connect(flt); o2.start(t); o2.stop(t + dur + 0.3);
     } else { flt.Q.value = 1; flt.frequency.value = 600; }
     const lvl = type === "sub" ? 0.3 : accent ? 0.2 : 0.15;
@@ -221,6 +287,27 @@
     g.gain.setValueAtTime(0.022, t); g.gain.exponentialRampToValueAtTime(0.001, t + dur * 0.95);
     o.connect(g); g.connect(A.musicBus); g.connect(A.delay);
     o.start(t); o.stop(t + dur);
+  }
+  function voiceChoir(t, midis, dur) {
+    // "aah" pad: detuned saws through two vowel formants, with a slow vibrato
+    const ctx = A.ctx, g = ctx.createGain(), f1 = ctx.createBiquadFilter(), f2 = ctx.createBiquadFilter();
+    f1.type = "bandpass"; f1.frequency.value = 760; f1.Q.value = 5;
+    f2.type = "bandpass"; f2.frequency.value = 1200; f2.Q.value = 6;
+    g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(0.16, t + dur * 0.3); g.gain.setTargetAtTime(0.0001, t + dur * 0.85, 0.2);
+    f1.connect(g); f2.connect(g); g.connect(A.musicBus); g.connect(A.revIn);
+    const lfo = ctx.createOscillator(), lg = ctx.createGain(); lfo.frequency.value = 4.8; lg.gain.value = 5; lfo.connect(lg);
+    for (const m of midis) for (const d of [-10, 0, 10]) {
+      const o = ctx.createOscillator(); o.type = "sawtooth"; o.frequency.value = mtof(m + 12); o.detune.value = d; lg.connect(o.detune);
+      o.connect(f1); o.connect(f2); o.start(t); o.stop(t + dur + 0.9);
+    }
+    lfo.start(t); lfo.stop(t + dur + 0.9);
+  }
+  function gatedTail(t) {
+    // the big gated-reverb snare of 80s synth pop
+    const ctx = A.ctx, n = noiseSrc(t, 0.3), f = ctx.createBiquadFilter(), g = ctx.createGain();
+    f.type = "bandpass"; f.frequency.value = 1800; f.Q.value = 0.6;
+    g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(0.16, t + 0.01); g.gain.setValueAtTime(0.13, t + 0.2); g.gain.linearRampToValueAtTime(0.0001, t + 0.23);
+    n.connect(f); f.connect(g); g.connect(A.musicBus); g.connect(A.revIn);
   }
   function voicePad(t, midis, dur) {
     const ctx = A.ctx, g = ctx.createGain(), flt = ctx.createBiquadFilter();
@@ -279,7 +366,7 @@
     if (st % 2 === 1) t += s.swing * sd;
     const bus = A.musicBus, d = s.drums;
     if (d.k[st] === "x") kick(t, bus);
-    if (d.s[st] === "x") snare(t, bus);
+    if (d.s[st] === "x") { snare(t, bus); if (s.gated) gatedTail(t); }
     if (d.c[st] === "x") clap(t, bus);
     if (d.h[st] === "x") hat(t, bus, false); else if (d.h[st] === "o") hat(t, bus, true);
     if (d.x[st] === "x" && bar % 2 === 1) scratch(t, bus, sd);
@@ -296,7 +383,8 @@
       const tones = ch.iv.concat([12, 7 + 12]);
       voiceArp(t, 72 + ch.pc + tones[step % tones.length] - (ch.pc > 5 ? 12 : 0), sd);
     }
-    if (s.pad && st === 0) voicePad(t, ch.iv.slice(0, 3).map((i) => 48 + ch.pc + i), sd * 16);
+    if (s.pad === "choir" && st === 0) voiceChoir(t, ch.iv.slice(0, 3).map((i) => 48 + ch.pc + i), sd * 16);
+    else if (s.pad && st === 0) voicePad(t, ch.iv.slice(0, 3).map((i) => 48 + ch.pc + i), sd * 16);
     const ev = s.melody.get(step % s.melLen);
     if (ev && ev.midi != null && Math.floor(step / s.melLen) % 4 !== 3) voiceLead(t, ev.midi, ev.dur * sd, s.lead);
   }
@@ -399,6 +487,36 @@
     A.lastSfx[name] = t;
     const f = SFX[name];
     if (f) f(t + 0.005);
+  };
+
+  /* ---------- Speech: short announcements through the Web Speech API ---------- */
+  A.voiceOn = Store.get("voice", true);
+  A.setVoice = (on) => { A.voiceOn = on; Store.set("voice", on); if (!on && window.speechSynthesis) speechSynthesis.cancel(); };
+  let voice = null;
+  function pickVoice() {
+    if (!window.speechSynthesis) return null;
+    const vs = speechSynthesis.getVoices();
+    if (!vs.length) return null;
+    const en = vs.filter((v) => /^en/i.test(v.lang));
+    voice = en.find((v) => /Google US English|Samantha|Daniel|Alex|Aria|Guy|Zira|David/i.test(v.name)) || en[0] || vs[0];
+    return voice;
+  }
+  if (window.speechSynthesis) { pickVoice(); speechSynthesis.onvoiceschanged = pickVoice; }
+  A.lastSay = 0; A.said = [];
+  A.say = function (text, opt = {}) {
+    if (!text) return;
+    A.said.push(text); if (A.said.length > 20) A.said.shift();
+    if (!A.voiceOn || A.muted || !window.speechSynthesis) return;
+    const now = performance.now();
+    if (!opt.force && now - A.lastSay < (opt.gap || 700)) return;
+    A.lastSay = now;
+    try {
+      if (opt.interrupt !== false) speechSynthesis.cancel();
+      const u = new SpeechSynthesisUtterance(text);
+      if (voice || pickVoice()) u.voice = voice;
+      u.lang = "en-US"; u.rate = opt.rate || 1.05; u.pitch = opt.pitch ?? 0.9; u.volume = Math.min(1, A.sfxVol + 0.2);
+      speechSynthesis.speak(u);
+    } catch (e) { /* speech not available */ }
   };
 
   A.jingle = function (name) {

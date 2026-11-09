@@ -267,13 +267,14 @@ Code: `js/world.js` (stages, weapons, enemies, obstacles, bosses), `js/deep.js` 
 
 Vertical shoot'em-up as a homage to the Amiga classic Xenon 2 (The Bitmap Brothers, 1989). All graphics are drawn by code, music and sound effects are synthesized with the Web Audio API.
 
-- Four stages through the ages of evolution (Primeval Ocean, Fossil Depths, Spore Jungle, Bio Core), each in two halves with a trading post in between and a boss at the end.
+- Eight stages through the ages of evolution, each in two halves with a trading post in between and a boss at the end. The early ages are Primeval Ocean, Fossil Depths, Spore Jungle and Bio Core. The much harder later ages are Ice Age, Ember Age, Machine Age and Star Seed, with four parallax layers, faster and tougher enemies from the sides and from behind, fixed obstacles and their own synthwave and dark-synth soundtrack.
 - Many add-ons that fire at the same time: blaster with five levels, side and rear shots, cannon, laser, homing missiles, electro balls, drones, mines, zapper, rapid fire, speed and armour; plus health, smart bombs, overdrive and extra lives. Add-ons can be sold back for half the price.
 - Parallax scrolling with detailed backgrounds and walls, large particle explosions; breakbeat-style soundtrack.
+- Short voice announcements for power-ups, bosses and the end of a stage (Web Speech API, can be switched off).
 - Keyboard, mouse and gamepad controls, fullscreen mode (F).
 - Top 10 highscore list stored in the browser; entering a name is optional.
 
-Code: `js/world.js` (stages, ship, add-ons, enemies, bosses), `js/gfx.js` (sprites, parallax layers, particles), `js/audio.js` (music and sound), `js/ui.js` (screens, trading post, HUD), `js/main.js` (main loop); see `games/primordia/README.md`.
+Code: `js/world.js` (stages, ship, add-ons, enemies, obstacles, bosses), `js/deep.js` (later ages: stages, enemies and bosses), `js/gfx.js` (sprites, parallax layers, particles), `js/deepgfx.js` (later ages graphics), `js/audio.js` (music and sound), `js/ui.js` (screens, trading post, HUD), `js/main.js` (main loop); see `games/primordia/README.md`.
 
 ### Sunset Highway
 
