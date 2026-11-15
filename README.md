@@ -5,8 +5,10 @@ Personal page of wagiminator with links and small browser apps, published with G
 ## Structure
 
 ```
-index.html              Start page (links, the "Web Apps" and the "Games" list)
-assets/css/site.css     Shared styles and color tokens for all pages
+index.html              Start page: web apps, games, hardware projects with search, links
+assets/home/            Start page only: home.css, home.js (project search), favicon,
+                        img/projects/ and img/games/ (480x300 WebP thumbnails)
+assets/css/site.css     Shared styles and color tokens for the apps
 assets/js/d64edit.js    Shared D64 disk library (editor and transfer app)
 assets/js/serial-link.js  Shared Web Serial connection with timeouts (transfer apps)
 assets/js/tap.js        Shared TAP tape library (read, write, decode, optimize)
@@ -354,3 +356,7 @@ Retro alien-invasion shooter in the spirit of Space Invaders, with detailed pixe
 - Highscore list stored in the browser; entering a name is optional.
 
 See `games/alien-armada/README.md`.
+
+## Start page
+
+The start page is plain static HTML; `assets/home/home.js` only filters the hardware project list. To add a hardware project, copy one `<li class="proj">` block in the matching category of `index.html`, change the link, name, chip (`<span class="part">`), description, `data-fam` (microcontroller family used by the drop-down) and `data-s` (lower-case search words), and add a 480x300 WebP picture to `assets/home/img/projects/`. Then update the counts in the category heading and the category button. A search can be linked directly, e.g. `https://wagiminator.github.io/?q=usb-c` or `?mcu=CH32V003`.
