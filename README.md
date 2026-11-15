@@ -31,6 +31,7 @@ apps/
   mt3608-sepic/         MT3608 SEPIC Voltage Calculator
   gerber-viewer/        Gerber Viewer
 games/
+  ironfall/             Ironfall (run-and-gun action platformer)
   x-abyss/              X-Abyss (underwater shoot'em-up)
   primordia/            Primordia (vertical shoot'em-up)
   sunset-highway/       Sunset Highway (arcade road racer)
@@ -250,6 +251,19 @@ Shows the top and bottom side of a printed circuit board from its Gerber and dri
 Code: `gerber.js` reads ZIP archives, recognizes layers, parses Gerber and Excellon files and draws the board, `app.js` is the user interface (no dependencies).
 
 ## Games
+
+### Ironfall
+
+Run-and-gun action platformer as a homage to the C64/Amiga classic Turrican (Rainbow Arts, 1990). All graphics are drawn by code, music and sound effects are synthesized with the Web Audio API.
+
+- Five worlds with two large stages each (Alien Frontier, Crystal Caverns, Bio Hive, Steel Foundry, Machine Core) and five bosses: Iron Fist, Crystal Widow, Hive Mind, Titan Walker and the Overmind. Levels scroll in all directions, with climbing shafts, drops, liquids, spikes, crushers, moving platforms, checkpoints, a time limit, hidden ledges and secret tunnels.
+- Five main weapons with four power levels (Spread Shot, Laser, Rebound, Flamer, Homing), the rotating lightning beam, power lines and the gyroscope; floating blocks release power-ups, diamonds and extra lives. 20 enemy types.
+- Multi-layer parallax backgrounds, large particle explosions with shock waves and debris; tracker-style soundtrack with a track for every world and boss music.
+- Short voice announcements for extras, checkpoints, bosses and the end of a stage (Web Speech API, can be switched off).
+- Keyboard, mouse (360° aiming) and gamepad controls, fullscreen mode (F).
+- Top 10 highscore list stored in the browser; entering a name is optional.
+
+Code: `js/levels.js` (worlds, stages, level builder), `js/game.js` (player, weapons, physics, stage flow), `js/enemies.js` (enemy types), `js/bosses.js` (bosses), `js/themes.js` (parallax layers, tiles, liquids), `js/sprites.js` (suit, items, projectiles), `js/gfx.js` (drawing helpers, particles), `js/audio.js` (music, sound and voice), `js/ui.js` (screens, HUD), `js/main.js` (main loop); see `games/ironfall/README.md`.
 
 ### X-Abyss
 
