@@ -50,6 +50,24 @@
 
   // Pause when the page is hidden or loses focus
   document.addEventListener("visibilitychange", () => { if (document.hidden && Main.state === "race") States.race.pause(); });
+
+  /* ---------- Keep the screen awake while playing (gamepad input does not reset the screen saver) ---------- */
+  let wakeLock = null, wakeBusy = false, wakeRetry = 0;
+  function updateWakeLock(dt) {
+    if (wakeRetry > 0) { wakeRetry -= dt; return; }
+    if (!navigator.wakeLock || wakeBusy) return;
+    const want = Main.state === "race" && !States.race.paused && !document.hidden;
+    if (want && !wakeLock) {
+      wakeBusy = true;
+      navigator.wakeLock.request("screen").then((l) => {
+        wakeLock = l; wakeBusy = false;
+        l.addEventListener("release", () => { if (wakeLock === l) wakeLock = null; });
+      }).catch(() => { wakeBusy = false; wakeRetry = 5; });
+    } else if (!want && wakeLock) {
+      const l = wakeLock; wakeLock = null;
+      l.release().catch(() => {});
+    }
+  }
   window.addEventListener("blur", () => { if (Main.state === "race") States.race.pause(); });
 
   /* ---------- Secret ---------- */
@@ -96,6 +114,7 @@
     if (dt > 0.25) dt = 0.25;
     if (dt < 0) dt = 0;
     I.poll(dt);
+    updateWakeLock(dt);
     checkSecret();
     globalKeys();
     if (cur.input) cur.input(dt);
