@@ -43,6 +43,7 @@ games/
   bubble-puff/          Bubble Puff (bubble-blowing platformer)
   alien-armada/         Alien Armada (alien-invasion shooter)
   garden-siege/         Garden Siege (tower-defense garden game)
+  feather-frenzy/       Feather Frenzy (grouse-shooting arcade game)
 ```
 
 Every app lives in its own folder under `apps/` and is reachable at `https://wagiminator.github.io/apps/<app-name>/`. Apps are plain HTML, CSS and JavaScript without a build step and run entirely in the browser. Browser games live in the same way under `games/<game-name>/` and are listed under "Games" on the start page.
@@ -384,6 +385,19 @@ Tower-defense garden game as a homage to the PC classic Plants vs. Zombies (PopC
 - Mouse and touch, keyboard and gamepad controls, fullscreen mode (F); progress is saved in the browser.
 
 Code: `js/plants.js` (plants), `js/zombies.js` (zombies and boss), `js/levels.js` (areas, levels, modes, waves, save game), `js/game.js` (board, rules, special modes), `js/draw.js` (backgrounds and drawing helpers), `js/audio.js` (music, sound and voice), `js/ui.js` (screens), `js/main.js` (main loop); see `games/garden-siege/README.md`.
+
+### Feather Frenzy
+
+Grouse-shooting arcade game as a homage to the PC classic Moorhuhn (Witan Entertainment / Phenomedia, 1999), with eight different hunting grounds instead of one. All graphics are drawn by code, music and sound effects are synthesized with the Web Audio API; names and artwork are original.
+
+- Eight levels (Highland Moor, Sunny Farmyard, Deep Pine Forest, Silver Lake, Castle Ruins, Snowy Valley, Autumn Village, Moonlit Moor), each a panorama three screens wide with three parallax layers; move the crosshair to the screen edge to scroll.
+- 90 seconds per round and a shotgun with 8 shells (right click to reload). Far grouse are worth 25 points, middle ones 10, near ones 5; grouse peeking out of hiding places, a huge grouse flying past the camera, golden grouse, a plane with a banner, a balloon with a parachuting grouse, a rowing boat, ski gondolas and shooting stars give extra points.
+- Hidden bonus targets in every level (windmill, signpost, scarecrow, weathervane, tractor, beehive, lighthouse, banners, a suit of armour, snowmen, church bell and clock, pumpkins …), trees that flush out grouse, animals that cost points when hit, falling snow and leaves, and a night level lit only by your lamp.
+- A goal score unlocks the next level; a Top 10 high score table per level with name entry.
+- Tracker-style soundtrack for every level, sound effects and short voice announcements (Web Speech API, can be switched off).
+- Mouse and touch, keyboard and gamepad controls, fullscreen mode (F); progress and scores are saved in the browser.
+
+Code: `js/scenes.js` (levels, layers, props), `js/birds.js` (grouse, animals and other sprites), `js/game.js` (round, shooting, scoring, HUD), `js/draw.js` (drawing and landscape helpers), `js/audio.js` (music, sound and voice), `js/ui.js` (screens), `js/main.js` (main loop); see `games/feather-frenzy/README.md`.
 
 ## Start page
 
