@@ -42,6 +42,7 @@ games/
   deep-diner/           Deep Diner (eat-and-grow game)
   bubble-puff/          Bubble Puff (bubble-blowing platformer)
   alien-armada/         Alien Armada (alien-invasion shooter)
+  garden-siege/         Garden Siege (tower-defense garden game)
 ```
 
 Every app lives in its own folder under `apps/` and is reachable at `https://wagiminator.github.io/apps/<app-name>/`. Apps are plain HTML, CSS and JavaScript without a build step and run entirely in the browser. Browser games live in the same way under `games/<game-name>/` and are listed under "Games" on the start page.
@@ -371,6 +372,18 @@ Retro alien-invasion shooter in the spirit of Space Invaders, with detailed pixe
 - Highscore list stored in the browser; entering a name is optional.
 
 See `games/alien-armada/README.md`.
+
+### Garden Siege
+
+Tower-defense garden game as a homage to the PC classic Plants vs. Zombies (PopCap Games, 2009). All graphics are drawn by code, music and sound effects are synthesized with the Web Audio API; names and artwork are original.
+
+- Adventure with 50 levels in five areas (Front Yard, Night Yard, Backyard Pool, Foggy Pool, Rooftop), special levels, conveyor-belt levels and the final fight against Dr. Zed and his robot.
+- 48 plants (shooters, catapults, mushrooms that sleep by day, water and roof plants, instant-use plants and shop upgrades such as the Corn Cannon) and 29 zombie types, from the Walker to the Gargantuar with its Imp, with the rules of the original: sun, recharge, lawn mowers, huge waves, armour, screen doors, graves, ice trails, fog and the roof slope.
+- 18 mini-games, Vasebreaker and "I, Zombie" puzzles, Survival in every area (normal, hard, endless with a Top 10 list), an almanac and a shop for seed slots, upgrades, pool and roof cleaners.
+- Tracker-style soundtrack, sound effects and short voice announcements (Web Speech API, can be switched off).
+- Mouse and touch, keyboard and gamepad controls, fullscreen mode (F); progress is saved in the browser.
+
+Code: `js/plants.js` (plants), `js/zombies.js` (zombies and boss), `js/levels.js` (areas, levels, modes, waves, save game), `js/game.js` (board, rules, special modes), `js/draw.js` (backgrounds and drawing helpers), `js/audio.js` (music, sound and voice), `js/ui.js` (screens), `js/main.js` (main loop); see `games/garden-siege/README.md`.
 
 ## Start page
 
