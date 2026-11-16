@@ -421,11 +421,11 @@
     audio.spQueue = []; audio.reported = 0; audio.sent = 0;
   }
   function userGesture() {
-    if (!settings.sound) { $("click-hint").hidden = true; return; }
+    updateWakeLock(true);
+    $("click-hint").hidden = true;
+    if (!settings.sound) return;
     if (!audio.ctx) initAudio();
     else if (audio.ctx.state === "suspended") audio.ctx.resume();
-    $("click-hint").hidden = true;
-    updateWakeLock();
   }
   function updateSoundUi() {
     var b = $("btn-sound");
@@ -454,7 +454,7 @@
     }
     frameCount += frames;
     if (frames) draw();
-    if (++statusTick >= 10) { statusTick = 0; updateStatus(); }
+    if (++statusTick >= 10) { statusTick = 0; updateStatus(); updateWakeLock(); }
     if (now - speedT >= 1000) {
       $("st-speed").textContent = Math.round(frameCount / ((now - speedT) / 1000) / FRAME_HZ * 100) + " %";
       frameCount = 0; speedT = now;
@@ -513,21 +513,34 @@
   }
 
   // ------------------------------------------------------------------ keep the screen awake
-  var wakeLock = null;
-  async function updateWakeLock() {
-    var want = settings.awake && running && !document.hidden && "wakeLock" in navigator;
-    if (want && !wakeLock) {
-      try {
-        wakeLock = await navigator.wakeLock.request("screen");
-        wakeLock.addEventListener("release", function () { wakeLock = null; });
-      } catch (e) { wakeLock = null; }
-    } else if (!want && wakeLock) {
-      try { await wakeLock.release(); } catch (e) { /* ignore */ }
+  // The browser may refuse the lock or drop it at any time (also while the page stays
+  // visible), so the main loop checks it regularly and asks again; a refused request
+  // is retried after a few seconds or with the next click or key press.
+  var wakeLock = null, wakeBusy = false, wakeRetryAt = 0;
+  function wantWakeLock() { return !!(settings.awake && running && !document.hidden); }
+  function updateWakeLock(force) {
+    if (!navigator.wakeLock) return;
+    if (wakeLock && wakeLock.released) wakeLock = null;
+    if (force) wakeRetryAt = 0;
+    if (wantWakeLock()) {
+      if (wakeLock || wakeBusy || performance.now() < wakeRetryAt) return;
+      wakeBusy = true;
+      navigator.wakeLock.request("screen").then(function (l) {
+        wakeBusy = false;
+        if (!wantWakeLock()) { l.release().catch(function () {}); return; }
+        wakeLock = l;
+      }).catch(function () {
+        wakeBusy = false;
+        wakeRetryAt = performance.now() + 3000;
+      });
+    } else if (wakeLock) {
+      var l = wakeLock;
       wakeLock = null;
+      l.release().catch(function () {});
     }
   }
   document.addEventListener("visibilitychange", function () {
-    updateWakeLock();
+    updateWakeLock(true);
     if (!document.hidden) { last = performance.now(); acc = 0; }
   });
 
