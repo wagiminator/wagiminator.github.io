@@ -20,6 +20,7 @@ apps/
   d64-transfer/         C64 Disk Transfer
   tap-transfer/         C64 Tape Transfer
   cart-builder/         C64 Cartridge Builder
+  c64-emulator/         C64 Emulator (CPU, VIC-II, SID, CIAs, 1541 drive, datasette)
   gameconsole/          Game Console Flasher
   rvprog/               WCH RISC-V Programmer
   chprog/               WCH USB Programmer
@@ -122,6 +123,20 @@ Builds cartridge images for the [64k/256k](https://github.com/wagiminator/C64-Co
 - Not covered: the simple 8k cartridge, which has no bank switching and needs ready-made 8 KB ROM images instead of PRG files.
 
 Code: `cartgen.js` creates the image (no dependencies, also runs in Node.js), `menucode.js` contains the C64 menu programs (sources in `source/`), `preview.js` draws the menu preview, `app.js` is the user interface.
+
+### C64 Emulator
+
+A Commodore 64 (PAL) emulator written from scratch in plain JavaScript, no build step and no external libraries.
+
+- 6510 CPU with all undocumented opcodes (passes Klaus Dormann's 6502 functional test), cycle-based VIC-II (bad lines, sprites with expansion, priorities and collisions, raster interrupts, border flip-flops, all graphics modes), two CIAs with timers and time-of-day clock, SID 6581/8580 with ADSR, ring modulation, sync and filter.
+- Media: PRG, P00, D64 (35/40 tracks, with error bytes), G64, T64, TAP (version 0/1), CRT (normal 8K/16K/Ultimax, Ocean, Magic Desk, Fun Play, Super Games, System 3, Dinamic, Simons' BASIC, Epyx FastLoad, EasyFlash) and ZIP archives (several disks become a disk menu). Drop a file and it starts by itself.
+- Real 1541 drive emulation (6502, both VIAs, GCR bit stream with SYNC and BYTE READY, stepper motor, writing) when the 1541 DOS ROM is loaded; otherwise a KERNAL fast loader reads and writes the disk image directly. Changed disks can be downloaded as D64/G64.
+- Datasette with PLAY/STOP/REWIND and motor control, for normal and turbo tapes.
+- Keyboard mapped by character (type what you see), on-screen C64 keys, joystick on the numpad, the arrow keys or W/A/S/D, up to two gamepads, port swap, text pasting into the keyboard buffer.
+- Sound through an AudioWorklet that also paces the emulation, fullscreen, warp mode, save/load state, sharp or smooth pixels, small border, and an option that keeps the screen saver off while the emulator runs.
+- System ROMs: the free [MEGA65 Open ROMs](https://github.com/MEGA65/open-roms) (LGPL 3, in `roms/`) are built in. They run most games, but their BASIC is incomplete. The original KERNAL, BASIC, character and 1541 ROMs can be loaded once and are kept in the browser's IndexedDB; they are not part of this repository.
+
+Code: `emu/cpu6502.js`, `emu/vic.js`, `emu/sid.js`, `emu/cia.js`, `emu/c64.js` (memory map, scheduler, fast loader), `emu/drive1541.js` (1541 with VIAs), `emu/media.js` (image formats, GCR), `emu/tape.js`, `emu/cart.js`; `app.js` is the user interface. The emulator core also runs in Node.js.
 
 ### Game Console Flasher
 

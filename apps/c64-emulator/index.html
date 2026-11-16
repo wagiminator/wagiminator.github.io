@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>C64 Emulator</title>
+  <meta name="description" content="A Commodore 64 emulator that runs in your browser: PRG, D64, G64, T64, TAP, CRT and ZIP files, 1541 drive, datasette, joystick, gamepad, sound and fullscreen.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chivo:wght@400;700&family=Press+Start+2P&display=swap">
+  <link rel="stylesheet" href="../../assets/css/site.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav class="site-bar" aria-label="Breadcrumb">
+    <a href="../../">wagiminator</a><span class="sep">/</span><span>Apps</span><span class="sep">/</span><span>C64 Emulator</span>
+  </nav>
+
+  <main class="app">
+    <header class="app-head">
+      <h1>C64 Emulator</h1>
+      <p>A Commodore 64 in your browser. Drop a program, disk, tape or cartridge image on the screen and it starts by itself. Your files stay on your computer; nothing is uploaded.</p>
+    </header>
+
+    <section class="stage" aria-label="Emulator">
+      <div class="monitor" id="monitor">
+        <canvas id="screen" width="384" height="272" tabindex="0" aria-label="C64 screen. Click to type on the C64 keyboard."></canvas>
+        <div class="drop-hint" id="drop-hint" hidden>Drop to load and start</div>
+        <button type="button" class="click-hint" id="click-hint">Click to start with sound</button>
+        <div class="fs-bar" id="fs-bar">
+          <button type="button" class="btn-icon" data-act="pause" title="Pause">❚❚</button>
+          <button type="button" class="btn-icon" data-act="reset" title="Reset">⟲</button>
+          <button type="button" class="btn-icon" data-act="swapjoy" title="Swap joystick port">⇄</button>
+          <button type="button" class="btn-icon" data-act="fullscreen" title="Leave fullscreen (Esc)">✕</button>
+        </div>
+      </div>
+
+      <div class="status" aria-live="polite">
+        <span class="led" id="led" title="Drive activity"></span>
+        <span id="st-drive">Drive 8: empty</span>
+        <span id="st-tape" hidden></span>
+        <span class="st-right"><span id="st-joy">Joystick: port 2</span> · <span id="st-speed">100 %</span></span>
+      </div>
+
+      <div class="toolbar" role="toolbar" aria-label="Emulator controls">
+        <button type="button" class="btn" id="btn-open">Open file…</button>
+        <button type="button" class="btn" data-act="pause" id="btn-pause">Pause</button>
+        <button type="button" class="btn" data-act="reset">Reset</button>
+        <button type="button" class="btn" data-act="fullscreen">Fullscreen</button>
+        <button type="button" class="btn" id="btn-sound" aria-pressed="false">Sound off</button>
+        <button type="button" class="btn" id="btn-warp" aria-pressed="false">Warp</button>
+        <button type="button" class="btn" id="btn-save-state">Save state</button>
+        <button type="button" class="btn" id="btn-load-state" disabled>Load state</button>
+        <button type="button" class="btn" id="btn-paste">Paste text</button>
+        <input type="file" id="file-input" accept=".prg,.p00,.d64,.g64,.t64,.tap,.crt,.zip,.bin" hidden>
+      </div>
+
+      <div class="ckeys" aria-label="C64 keys">
+        <button type="button" data-key="RUN_STOP">RUN/STOP</button>
+        <button type="button" data-key="RESTORE">RESTORE</button>
+        <button type="button" data-key="CBM">C=</button>
+        <button type="button" data-key="CTRL">CTRL</button>
+        <button type="button" data-key="HOME">CLR/HOME</button>
+        <button type="button" data-key="F1">F1</button>
+        <button type="button" data-key="F3">F3</button>
+        <button type="button" data-key="F5">F5</button>
+        <button type="button" data-key="F7">F7</button>
+        <button type="button" data-key="LEFT_ARROW">←</button>
+        <button type="button" data-key="UP_ARROW">↑</button>
+        <button type="button" data-key="POUND">£</button>
+        <button type="button" data-key="SPACE">SPACE</button>
+      </div>
+
+      <p class="error" id="error" role="alert" hidden></p>
+      <p class="notice" id="notice" hidden></p>
+    </section>
+
+    <aside class="side">
+      <section class="panel" aria-labelledby="media-title">
+        <h2 id="media-title">Media</h2>
+        <label class="dropzone" id="dropzone">
+          <strong>Drop a file here</strong>
+          <span>or <span class="link-like">choose one</span>: PRG, P00, D64, G64, T64, TAP, CRT or ZIP</span>
+          <input type="file" id="file-input-2" accept=".prg,.p00,.d64,.g64,.t64,.tap,.crt,.zip,.bin">
+        </label>
+        <label class="choice"><input type="checkbox" id="opt-autostart" checked> Start automatically</label>
+
+        <div class="slot" id="slot-disk">
+          <div class="slot-head"><span class="slot-label">Disk</span><span class="slot-name" id="disk-name">empty</span></div>
+          <div class="slot-tools">
+            <select id="disk-select" hidden aria-label="Disk in drive"></select>
+            <button type="button" class="btn-small" id="disk-new">New disk</button>
+            <button type="button" class="btn-small" id="disk-download" disabled>Download</button>
+            <button type="button" class="btn-small" id="disk-eject" disabled>Eject</button>
+          </div>
+        </div>
+        <div class="slot" id="slot-tape">
+          <div class="slot-head"><span class="slot-label">Tape</span><span class="slot-name" id="tape-name">empty</span></div>
+          <div class="slot-tools">
+            <button type="button" class="btn-small" id="tape-play" disabled>Play</button>
+            <button type="button" class="btn-small" id="tape-stop" disabled>Stop</button>
+            <button type="button" class="btn-small" id="tape-rewind" disabled>Rewind</button>
+            <button type="button" class="btn-small" id="tape-eject" disabled>Eject</button>
+          </div>
+          <div class="tape-bar"><span id="tape-progress"></span></div>
+        </div>
+        <div class="slot" id="slot-cart">
+          <div class="slot-head"><span class="slot-label">Cartridge</span><span class="slot-name" id="cart-name">empty</span></div>
+          <div class="slot-tools">
+            <button type="button" class="btn-small" id="cart-eject" disabled>Remove</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel" id="dir-panel" aria-labelledby="dir-title" hidden>
+        <h2 id="dir-title">Directory</h2>
+        <p class="hint">Select a program to load and start it.</p>
+        <div class="c64" id="directory"></div>
+      </section>
+
+      <section class="panel" aria-labelledby="input-title">
+        <h2 id="input-title">Joystick</h2>
+        <div class="field">
+          <label for="opt-port">Joystick in</label>
+          <select id="opt-port">
+            <option value="1">Port 1</option>
+            <option value="2" selected>Port 2 (most games)</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="opt-keyjoy">Keyboard as joystick</label>
+          <select id="opt-keyjoy">
+            <option value="numpad" selected>Numpad 8 4 6 2, fire 0 or 5</option>
+            <option value="cursor">Arrow keys, fire Space</option>
+            <option value="wasd">W A S D, fire Shift</option>
+            <option value="off">Off</option>
+          </select>
+        </div>
+        <p class="hint" id="pad-status">No gamepad found. Connect one and press a button.</p>
+      </section>
+
+      <section class="panel" aria-labelledby="settings-title">
+        <h2 id="settings-title">Settings</h2>
+        <div class="field">
+          <span class="field-label">System ROMs</span>
+          <p class="rom-status" id="rom-status"></p>
+          <div class="rom-tools">
+            <button type="button" class="btn-small" id="rom-load">Load original ROMs…</button>
+            <button type="button" class="btn-small" id="rom-clear" hidden>Forget ROMs</button>
+            <input type="file" id="rom-input" multiple hidden>
+          </div>
+        </div>
+        <label class="choice"><input type="checkbox" id="opt-truedrive" checked> Real 1541 drive (needs its ROM)</label>
+        <div class="field">
+          <label for="opt-sid">Sound chip</label>
+          <select id="opt-sid">
+            <option value="6581" selected>SID 6581 (original C64)</option>
+            <option value="8580">SID 8580 (C64C)</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="opt-border">Border</label>
+          <select id="opt-border">
+            <option value="full" selected>Full</option>
+            <option value="small">Small</option>
+          </select>
+        </div>
+        <label class="choice"><input type="checkbox" id="opt-smooth"> Smooth pixels</label>
+        <label class="choice"><input type="checkbox" id="opt-awake" checked> Keep the screen awake while running</label>
+      </section>
+    </aside>
+
+    <section class="panel help" aria-labelledby="help-title">
+      <h2 id="help-title">Keyboard</h2>
+      <p>Click the screen, then type: letters, digits and symbols go to the C64 as you see them on your keyboard. Special keys:</p>
+      <dl class="keys">
+        <div><dt>Esc</dt><dd>RUN/STOP</dd></div>
+        <div><dt>Page Up</dt><dd>RESTORE</dd></div>
+        <div><dt>Tab</dt><dd>CTRL</dd></div>
+        <div><dt>Left Alt</dt><dd>C= (Commodore key)</dd></div>
+        <div><dt>Home / Shift+Home</dt><dd>HOME / CLR</dd></div>
+        <div><dt>Backspace / Insert</dt><dd>DEL / INST</dd></div>
+        <div><dt>F1 … F8</dt><dd>F1 … F8</dd></div>
+        <div><dt>Arrow keys</dt><dd>Cursor keys (unless they steer the joystick)</dd></div>
+        <div><dt>` or _</dt><dd>← (left arrow)</dd></div>
+        <div><dt>^</dt><dd>↑ (up arrow)</dd></div>
+        <div><dt>Ctrl+F12</dt><dd>Reset</dd></div>
+        <div><dt>F11</dt><dd>Fullscreen</dd></div>
+      </dl>
+      <p class="small">Built-in ROMs: the free <a href="https://github.com/MEGA65/open-roms">MEGA65 Open ROMs</a> (LGPL&nbsp;3). They run most games, but their BASIC is incomplete and they cannot drive a real 1541. For full compatibility load the original C64 ROMs (KERNAL, BASIC, character ROM) and the 1541 DOS ROM once; they are stored only in this browser.</p>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    C64 Emulator by <a href="https://github.com/wagiminator">wagiminator</a>. Palette "Colodore" by Pepto, free system ROMs by the <a href="https://github.com/MEGA65/open-roms">MEGA65 Open ROMs</a> project.
+  </footer>
+
+  <script src="emu/cpu6502.js"></script>
+  <script src="emu/cia.js"></script>
+  <script src="emu/vic.js"></script>
+  <script src="emu/sid.js"></script>
+  <script src="emu/media.js"></script>
+  <script src="emu/tape.js"></script>
+  <script src="emu/cart.js"></script>
+  <script src="emu/drive1541.js"></script>
+  <script src="emu/c64.js"></script>
+  <script src="roms/openroms.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
