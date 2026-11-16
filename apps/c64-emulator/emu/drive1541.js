@@ -120,7 +120,8 @@
   function Drive1541(c64, rom) {
     var self = this;
     this.c64 = c64;
-    this.rom = rom;                       // 16 KB
+    this.hle = !rom;                      // no DOS ROM: virtual drive (see below)
+    this.rom = rom || stubRom();          // 16 KB
     this.ram = new Uint8Array(0x800);
     this.cpu = new global.CPU6502(this);
     this.via1 = new VIA("VIA1");
@@ -154,6 +155,14 @@
     this.writeMode = false;
     this.soe = true;
     this.clk = 0;
+    if (this.hle) {
+      // what the DOS would have set up
+      this.via1.ddrb = 0x1A; this.via1.orb = 0x00;
+      this.via2.ddrb = 0x6F; this.via2.orb = 0x00;
+      this.via2.pcr = 0xEE;
+      this.via2Changed();
+      this.hleReset();
+    }
   };
   D.syncBase = function (c64clk) { this.base = c64clk; this.clk = 0; };
 
@@ -176,6 +185,7 @@
 
   // ---- serial bus
   D.busOut = function () {
+    if (this.hle && this.idle()) return { clk: this.oClk, data: this.oData };
     var v = this.via1, out = (v.orb | ~v.ddrb) & 0xFF;
     var atna = (out >> 4) & 1;
     return { clk: (out >> 3) & 1, data: ((out >> 1) & 1) | (atna ^ this.c64.iec.atn) };
@@ -265,7 +275,15 @@
   D.runTo = function (c64clk) {
     var target = (c64clk - (this.base || 0)) * this.ratio;
     var cpu = this.cpu, v1 = this.via1, v2 = this.via2;
+    if (this.hle) {
+      if (this.idle()) { this.hleBus(c64clk); this.clk = target; return; }
+      this.hleRunning = true;
+    }
     while (this.clk < target) {
+      if (this.hle) {
+        if (this.idle()) { this.codeDone(c64clk); this.clk = target; return; }
+        this.checkJobs();
+      }
       var n = cpu.step();
       this.clk += n;
       v1.tick(n); v2.tick(n);
@@ -289,6 +307,321 @@
     this.halfTrack = o.halfTrack; this.bitPos = o.bitPos; this.phase = o.phase; this.motor = o.motor; this.zone = o.zone;
     this.clk = o.clk; this.base = o.base;
     this.via2Changed();
+  };
+
+  // ==================================================================
+  // Virtual drive (no DOS ROM). The serial bus protocol (listener and
+  // talker, ATN commands), the command channel (M-W, M-R, M-E, U3-U8, UI,
+  // status), file channels for LOAD/SAVE/OPEN and the DOS job queue are done
+  // in JavaScript. Code uploaded with M-W and started with M-E runs on the
+  // emulated 1541 hardware (CPU, VIAs, disk), so drive-based fast loaders work.
+  // ==================================================================
+  var IDLE = 0xFF00;
+  function stubRom() {
+    var r = new Uint8Array(0x4000).fill(0xEA);
+    r.set([0x4C, 0x00, 0xFF], 0x3F00);            // $FF00: JMP $FF00 (idle loop)
+    r[0x3F10] = 0x40;                             // $FF10: RTI
+    r.set([0x10, 0xFF, 0x00, 0xFF, 0x10, 0xFF], 0x3FFA);
+    return r;
+  }
+  var ST_OK = "00, OK,00,00\r";
+
+  D.idle = function () { var pc = this.cpu.pc; return pc >= IDLE && pc < IDLE + 3; };
+
+  D.hleReset = function () {
+    this.oClk = 0; this.oData = 0;
+    this.st = "idle"; this.atnSeen = false;
+    this.listening = false; this.talking = false; this.sa = 0; this.saCmd = 0;
+    this.chan = {};
+    this.cmd = [];
+    this.openName = null;
+    this.status = "73,CBM DOS V2.6 1541,00,00\r";
+    this.statusBytes = null;
+    this.pendingExec = -1;
+    this.jobT = [0, 0, 0, 0, 0, 0];
+    this.hleRunning = false;
+    this.jobsDone = 0;
+    this.headTrack = 18;
+  };
+
+  D.setStatus = function (code, text, t, s) {
+    var pad = function (n) { return (n < 10 ? "0" : "") + n; };
+    this.status = pad(code) + "," + text + "," + pad(t || 0) + "," + pad(s || 0) + "\r";
+    this.statusBytes = null;
+  };
+
+  // drive code returned (RTS to the idle loop)
+  D.codeDone = function (now) {
+    this.hleRunning = false;
+    this.oClk = 0; this.oData = 0;
+    this.st = this.c64.iec.atn ? "atn" : "idle";
+    if (this.led && this.onLed) { this.led = false; this.onLed(false); }
+    this.hleBus(now);
+  };
+
+  D.execute = function (addr) {
+    var cpu = this.cpu;
+    cpu.s = 0xFF;
+    cpu.push((IDLE - 1) >> 8); cpu.push((IDLE - 1) & 0xFF);
+    cpu.pc = addr & 0xFFFF;
+    cpu.i = 0;
+    this.oClk = 0; this.oData = 0;
+    this.st = "idle";
+    this.hleRunning = true;
+    this.jobsDone = 0;
+  };
+
+  // ---- DOS job queue ($00-$05 job codes, $06/$07... track/sector, buffers at $0300)
+  var ERR_JOB = { 20: 2, 21: 3, 22: 4, 23: 5, 27: 9, 29: 11 };
+  D.checkJobs = function () {
+    var ram = this.ram;
+    for (var n = 0; n < 6; n++) {
+      var j = ram[n];
+      if (!(j & 0x80)) { this.jobT[n] = 0; continue; }
+      if (!this.jobT[n]) {
+        // realistic duration: half a revolution on average, more for the first job and head steps
+        var t = ram[6 + 2 * n], dt = this.jobsDone ? 20000 : 100000;
+        if (t && this.headTrack) dt += Math.abs(t - this.headTrack) * 12000;
+        this.jobT[n] = this.clk + dt;
+        if (this.onLed && !this.led) { this.led = true; this.onLed(true); }
+        continue;
+      }
+      if (this.clk < this.jobT[n]) continue;
+      this.jobT[n] = 0;
+      ram[n] = this.doJob(n, j & 0xF0);
+      this.jobsDone++;
+      if (ram[6 + 2 * n]) { this.headTrack = ram[6 + 2 * n]; this.halfTrack = this.headTrack * 2; }
+    }
+  };
+  D.doJob = function (n, job) {
+    var d = this.disk, ram = this.ram;
+    if (!d || !d.sectors) return 0x0F;                          // drive not ready
+    var t = ram[6 + 2 * n], s = ram[7 + 2 * n], buf = 0x300 + 0x100 * n;
+    if (job === 0xB0 || job === 0xC0) return 1;                  // seek, bump
+    var sec = d.sector(t, s);
+    if (!sec) return 2;                                          // header block not found
+    if (d.errors) {
+      var idx = d.offset(t, s) >> 8, e = d.errors[idx];
+      if (ERR_JOB[e] && job !== 0x90) return ERR_JOB[e];
+    }
+    if (job === 0x80 || job === 0xA0) {
+      if (buf + 256 <= 0x800) ram.set(sec, buf);
+      return 1;
+    }
+    if (job === 0x90) {
+      if (d.writeProtect) return 8;
+      if (buf + 256 <= 0x800) sec.set(ram.subarray(buf, buf + 256));
+      d.dirty = true; d.readFiles(); d.gcrStale = true;
+      return 1;
+    }
+    return 1;                                                    // execute jobs are not supported
+  };
+
+  // ---- serial bus protocol (times in C64 cycles)
+  D.hleBus = function (now) {
+    var iec = this.c64.iec;
+    // ATN starts a command sequence at any time
+    if (iec.atn && !this.atnSeen) {
+      this.atnSeen = true;
+      this.oData = 1; this.oClk = 0;
+      this.underAtn = true;
+      this.st = "rAtn";
+    } else if (!iec.atn && this.atnSeen) {
+      this.atnSeen = false;
+      this.underAtn = false;
+      this.atnDone(now);
+    }
+    for (var guard = 0; guard < 4; guard++) {
+      var st = this.st;
+      this.step(now);
+      if (this.st === st) break;
+    }
+  };
+
+  D.step = function (now) {
+    var iec = this.c64.iec;
+    switch (this.st) {
+      // -------- listener
+      case "rAtn":                            // ATN: wait until the C64 pulls CLK
+        if (iec.clk) this.st = "rReady";
+        break;
+      case "rReady":                          // wait until the talker is ready to send
+        if (!iec.clk) { this.oData = 0; this.t = now; this.eoi = false; this.st = "rWait"; }
+        break;
+      case "rWait":                           // wait for the first bit (or signal EOI)
+        if (iec.clk) { this.bits = 0; this.byte = 0; this.st = "rBitHi"; }
+        else if (!this.eoi && now - this.t > 200) { this.oData = 1; this.t = now; this.st = "rEoi"; }
+        break;
+      case "rEoi":
+        if (now - this.t >= 60) { this.oData = 0; this.eoi = true; this.st = "rWait"; }
+        break;
+      case "rBitHi":
+        if (!iec.clk) {
+          if (!iec.data) this.byte |= 1 << this.bits;
+          this.bits++;
+          this.st = "rBitLo";
+        }
+        break;
+      case "rBitLo":
+        if (iec.clk) {
+          if (this.bits >= 8) {
+            this.oData = 1;                  // frame handshake
+            this.st = "rReady";
+            this.received(this.byte, this.eoi, this.underAtn);
+          } else this.st = "rBitHi";
+        }
+        break;
+      // -------- talker
+      case "tTurn":                           // C64 releases CLK, we take it over
+        if (!iec.clk) { this.oClk = 1; this.oData = 0; this.t = now; this.st = "tNext"; }
+        break;
+      case "tNext":
+        if (now - this.t < 80) break;
+        this.cur = this.nextByte();
+        if (!this.cur) { this.oClk = 0; this.oData = 0; this.st = "idle"; break; }
+        this.oClk = 0; this.st = "tWaitL";     // ready to send
+        break;
+      case "tWaitL":                          // listener ready for data
+        if (!iec.data) { this.t = now; this.st = this.cur.eoi ? "tEoi1" : "tSend"; }
+        break;
+      case "tEoi1": if (iec.data) this.st = "tEoi2"; break;
+      case "tEoi2": if (!iec.data) { this.t = now; this.st = "tSend"; } break;
+      case "tSend":
+        if (now - this.t < 20) break;
+        this.oClk = 1; this.bit = 0; this.t = now; this.st = "tBitSet";
+        break;
+      case "tBitSet":                         // CLK low phase and bit high phase are ~80 cycles
+        // each, long enough to survive a bad line on the C64; the first bit comes later, as
+        // some KERNALs check that DATA is free again after their own release of it
+        if (now - this.t < (this.bit ? 40 : 70)) break;
+        this.oData = (this.cur.v >> this.bit) & 1 ? 0 : 1;
+        this.t = now; this.st = "tBitHi";
+        break;
+      case "tBitHi":
+        if (now - this.t < 40) break;
+        this.oClk = 0; this.t = now; this.st = "tBitLo";
+        break;
+      case "tBitLo":
+        if (now - this.t < 80) break;
+        this.oClk = 1; this.t = now;
+        if (++this.bit < 8) this.st = "tBitSet";
+        else { this.oData = 0; this.st = "tAck"; }
+        break;
+      case "tAck":                            // listener acknowledges the byte
+        if (iec.data) { this.t = now; this.st = this.cur.eoi ? "tDone" : "tNext"; this.byteSent(); }
+        else if (now - this.t > 1000) { this.oClk = 0; this.oData = 0; this.st = "idle"; }
+        break;
+      case "tDone":
+        if (now - this.t > 60) { this.oClk = 0; this.st = "idle"; }
+        break;
+    }
+  };
+
+  D.atnDone = function (now) {
+    if (this.pendingExec >= 0) { var a = this.pendingExec; this.pendingExec = -1; this.oData = 0; this.execute(a); return; }
+    if (this.listening) { this.oData = 1; this.st = "rReady"; }
+    else if (this.talking) { this.st = "tTurn"; }
+    else { this.oData = 0; this.oClk = 0; this.st = "idle"; }
+  };
+
+  D.received = function (b, eoi, atn) {
+    if (atn) {
+      var cmd = b & 0xE0, sa = b & 0x0F, hi = b & 0xF0;
+      if (b === 0x3F) { if (this.listening) this.unlisten(); this.listening = false; }
+      else if (b === 0x5F) { this.talking = false; }
+      else if (cmd === 0x20) { this.listening = (b & 0x1F) === 8; this.talking = false; }
+      else if (cmd === 0x40) { this.talking = (b & 0x1F) === 8; this.listening = false; }
+      else if (hi === 0x60) { this.sa = sa; this.saCmd = 0x60; }
+      else if (hi === 0xE0) { if (this.listening) this.closeChannel(sa); this.saCmd = 0xE0; }
+      else if (hi === 0xF0) { this.sa = sa; this.saCmd = 0xF0; this.openName = []; }
+      return;
+    }
+    if (!this.listening) return;
+    if (this.saCmd === 0xF0) this.openName.push(b);
+    else if (this.sa === 15) { this.cmd.push(b); if (eoi) { this.command(this.cmd); this.cmd = []; } }
+    else {
+      var ch = this.chan[this.sa];
+      if (!ch) ch = this.chan[this.sa] = { write: [], name: [0x40] };
+      if (ch.write) ch.write.push(b);
+    }
+  };
+
+  D.unlisten = function () {
+    if (this.saCmd === 0xF0 && this.openName) {
+      if (this.sa === 15) { if (this.openName.length) this.command(this.openName); }
+      else this.openChannel(this.sa, this.openName);
+      this.openName = null; this.saCmd = 0;
+    } else if (this.sa === 15 && this.cmd.length) { this.command(this.cmd); this.cmd = []; }
+  };
+
+  D.openChannel = function (sa, nameBytes) {
+    var Media = global.C64Media, name = Array.from(nameBytes), write = sa === 1;
+    var comma = name.indexOf(0x2C);
+    if (comma >= 0) {
+      var rest = String.fromCharCode.apply(null, name.slice(comma));
+      if (/,W/.test(rest)) write = true;
+      name = name.slice(0, comma);
+    }
+    if (write) { this.chan[sa] = { write: [], name: name }; this.setStatus(0, " OK"); return; }
+    if (!this.disk) { this.chan[sa] = { data: new Uint8Array(0), pos: 0 }; this.setStatus(74, "DRIVE NOT READY"); return; }
+    var f = Media.findFile(this.disk, name);
+    if (!f) { this.chan[sa] = { data: new Uint8Array(0), pos: 0 }; this.setStatus(62, "FILE NOT FOUND"); return; }
+    this.chan[sa] = { data: f.data, pos: 0 };
+    this.setStatus(0, " OK");
+  };
+
+  D.closeChannel = function (sa) {
+    var ch = this.chan[sa];
+    delete this.chan[sa];
+    if (!ch || !ch.write || !ch.write.length || !this.disk || !this.disk.saveFile) return;
+    var ok = this.disk.saveFile(ch.name, new Uint8Array(ch.write));
+    if (ok) { this.disk.gcrStale = false; this.setStatus(0, " OK"); } else this.setStatus(72, "DISK FULL");
+  };
+
+  D.nextByte = function () {
+    if (this.sa === 15) {
+      if (!this.statusBytes) { this.statusBytes = this.status; this.statusPos = 0; }
+      var sb = this.statusBytes, i = this.statusPos;
+      if (i >= sb.length) return null;
+      return { v: typeof sb === "string" ? sb.charCodeAt(i) : sb[i], eoi: i === sb.length - 1 };
+    }
+    var ch = this.chan[this.sa];
+    if (!ch || !ch.data || ch.pos >= ch.data.length) return null;
+    return { v: ch.data[ch.pos], eoi: ch.pos === ch.data.length - 1 };
+  };
+  D.byteSent = function () {
+    if (this.sa === 15) {
+      if (++this.statusPos >= this.statusBytes.length) { this.status = ST_OK; this.statusBytes = null; }
+      return;
+    }
+    var ch = this.chan[this.sa];
+    if (ch) ch.pos++;
+  };
+
+  D.command = function (bytes) {
+    var b = Array.from(bytes);
+    while (b.length && b[b.length - 1] === 13) b.pop();
+    if (!b.length) return;
+    var txt = String.fromCharCode.apply(null, b.slice(0, 3));
+    if (txt === "M-W") {
+      var a = b[3] | (b[4] << 8), n = b[5];
+      for (var i = 0; i < n && 6 + i < b.length; i++) this.write((a + i) & 0xFFFF, b[6 + i]);
+      this.setStatus(0, " OK"); return;
+    }
+    if (txt === "M-R") {
+      var ar = b[3] | (b[4] << 8), nr = b.length > 5 ? b[5] || 256 : 1, out = [];
+      for (var k = 0; k < nr; k++) out.push(this.read((ar + k) & 0xFFFF));
+      this.status = out; this.statusBytes = null; return;
+    }
+    if (txt === "M-E") { this.pendingExec = b[3] | (b[4] << 8); return; }
+    if (b[0] === 0x55) {                                         // U commands
+      var u = b[1];
+      if (u >= 0x33 && u <= 0x38) { this.pendingExec = 0x500 + (u - 0x33) * 3; return; }
+      if (u >= 0x43 && u <= 0x48) { this.pendingExec = 0x500 + (u - 0x43) * 3; return; }
+      if (u === 0x49 || u === 0x4A || u === 0x3A || u === 0x3B) { this.setStatus(73, "CBM DOS V2.6 1541"); return; }
+    }
+    if (b[0] === 0x49 || b[0] === 0x56) { this.setStatus(0, " OK"); return; }   // I, V
+    this.setStatus(31, "SYNTAX ERROR");
   };
 
   global.Drive1541 = Drive1541;

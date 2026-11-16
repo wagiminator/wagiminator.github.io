@@ -326,7 +326,8 @@
     var ram = this.ram, cpu = this.cpu;
     var dev = ram[0xBA], sa = ram[0xB9];
     var src = null;
-    if (dev >= 8 && dev <= 11 && this.disk && !this.drive) src = this.disk;
+    if (dev === 1 && this.tape && this.tape.image) return this.tapeLoadTrap();
+    if (dev >= 8 && dev <= 11 && this.disk && (!this.drive || this.drive.hle)) src = this.disk;
     else if (dev === 1 && this.tapeImage && !(this.tape && this.tape.image)) src = this.tapeImage;
     if (!src) return false;
     var len = ram[0xB7], ptr = ram[0xBB] | (ram[0xBC] << 8);
@@ -359,10 +360,47 @@
     return true;
   };
 
+  // LOAD from a TAP image: the standard KERNAL blocks are decoded directly from the
+  // pulses (works with any KERNAL and takes no time); the tape is then positioned
+  // behind the program, so a turbo loader in it can go on reading in real time.
+  P.tapeLoadTrap = function () {
+    var ram = this.ram, cpu = this.cpu, tape = this.tape, Media = global.C64Media;
+    var len = ram[0xB7], ptr = ram[0xBB] | (ram[0xBC] << 8), name = [];
+    for (var i = 0; i < len; i++) name.push(this.read((ptr + i) & 0xFFFF));
+    var f = Media.findTapeFile(tape.image, tape.pos, name);
+    if (!f && tape.pos > 0) f = Media.findTapeFile(tape.image, 0, name);
+    if (!f) return false;                           // not the standard format: let the KERNAL try
+    // header into the cassette buffer, like the KERNAL does (some loaders live there)
+    var buf = ram[0xB2] | (ram[0xB3] << 8);
+    if (buf < 0x0200 || buf > 0xFF00) buf = 0x033C;
+    for (var h = 0; h < f.header.length && h < 192; h++) ram[buf + h] = f.header[h];
+    var sa = ram[0xB9];
+    var start = (f.type === 3 || sa !== 0) ? f.start : (ram[0xC3] | (ram[0xC4] << 8));
+    var end = start;
+    if (cpu.a === 0) for (var j = 0; j < f.data.length; j++) { ram[end & 0xFFFF] = f.data[j]; end++; }
+    else end += f.data.length;
+    end &= 0xFFFF;
+    ram[0xAE] = end & 0xFF; ram[0xAF] = end >> 8;
+    ram[0x90] = 0;
+    cpu.x = end & 0xFF; cpu.y = end >> 8; cpu.c = 0; cpu.a = 0;
+    // tape continues behind the program
+    var el = 0, P2 = tape.image.pulses;
+    for (var k = 0; k < f.end && k < P2.length; k++) el += P2[k];
+    tape.pos = Math.min(f.end, P2.length - 1);
+    tape.rem = P2[tape.pos] || 0;
+    tape.elapsed = el;
+    tape.playing = true; tape.update();
+    if (this.onLoad) this.onLoad({ name: f.name });
+    var lo = cpu.pull(), hi = cpu.pull();
+    cpu.pc = (((hi << 8) | lo) + 1) & 0xFFFF;
+    this.syncTo(this.clk + 200);
+    return true;
+  };
+
   // SAVE to the mounted disk image (fast loader mode only)
   P.handleSaveTrap = function () {
     var ram = this.ram, cpu = this.cpu, dev = ram[0xBA];
-    if (!(dev >= 8 && dev <= 11 && this.disk && !this.drive && this.disk.saveFile)) return false;
+    if (!(dev >= 8 && dev <= 11 && this.disk && (!this.drive || this.drive.hle) && this.disk.saveFile)) return false;
     var len = ram[0xB7], ptr = ram[0xBB] | (ram[0xBC] << 8), name = [];
     for (var i = 0; i < len; i++) name.push(this.read((ptr + i) & 0xFFFF));
     var start = ram[0xC1] | (ram[0xC2] << 8), end = ram[0xAE] | (ram[0xAF] << 8);   // set by $FFD8 before the vector

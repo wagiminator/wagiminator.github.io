@@ -412,6 +412,78 @@
     return { kind: "tap", name: name, version: version, pulses: Uint32Array.from(pulses), cycles: total };
   }
 
+  // Read one block in the standard KERNAL tape format starting at pulse index
+  // 'start': leader of short pulses, then bytes (long+medium marker, 8 data bits
+  // and a parity bit as short/medium pairs). Returns { start, end, bytes } or null.
+  function readTapeBlock(p, start) {
+    var n = p.length, i = start;
+    function cls(v) { return v < 456 ? 0 : v < 608 ? 1 : v < 1100 ? 2 : 3; }
+    for (;;) {
+      var run = 0;
+      while (i < n && cls(p[i]) === 0) { run++; i++; }
+      if (i + 1 >= n) return null;
+      if (run >= 32 && cls(p[i]) === 2 && cls(p[i + 1]) === 1) break;
+      i++;
+    }
+    var first = i, bytes = [];
+    while (i + 19 < n && cls(p[i]) === 2 && cls(p[i + 1]) === 1) {
+      var j = i + 2, v = 0, ok = true;
+      for (var b = 0; b < 9; b++, j += 2) {
+        var a = cls(p[j]), c = cls(p[j + 1]), bit;
+        if (a === 0 && c === 1) bit = 0; else if (a === 1 && c === 0) bit = 1; else { ok = false; break; }
+        if (b < 8) v |= bit << b;
+      }
+      if (!ok) break;
+      bytes.push(v);
+      i = j;
+    }
+    if (bytes.length < 10) return { start: first, end: i + 1, bytes: bytes, bad: true };
+    return { start: first, end: i + 2, bytes: bytes };
+  }
+
+  // Find the next program (header + data block) on a TAP image from pulse 'from'.
+  // nameBytes: the name given to LOAD (prefix match, as the KERNAL does).
+  function findTapeFile(tap, from, nameBytes) {
+    var p = tap.pulses, pos = from;
+    for (var guard = 0; guard < 400; guard++) {
+      var h = readTapeBlock(p, pos);
+      if (!h) return null;
+      pos = h.end;
+      if (h.bad || h.bytes[0] !== 0x89 || h.bytes.length < 9 + 21) continue;
+      var hd = h.bytes.slice(9, h.bytes.length - 1), type = hd[0];
+      if (type === 5) return null;                     // end of tape marker
+      if (type !== 1 && type !== 3) continue;
+      var nm = hd.slice(5, 21), match = true;
+      for (var k = 0; k < nameBytes.length; k++) {
+        if (nameBytes[k] === 0x2A) break;
+        if (nameBytes[k] !== 0x3F && nameBytes[k] !== nm[k]) { match = false; break; }
+      }
+      if (!match) continue;
+      // header repeat, then the data block and its repeat
+      var data = null, q = pos;
+      for (var t = 0; t < 4; t++) {
+        var d = readTapeBlock(p, q);
+        if (!d) break;
+        q = d.end;
+        if (!d.bad && d.bytes[0] === 0x89) {
+          var payload = d.bytes.slice(9, d.bytes.length - 1), cs = 0;
+          for (var x = 0; x < payload.length; x++) cs ^= payload[x];
+          data = payload;
+          var r = readTapeBlock(p, q);
+          if (r && !r.bad && r.bytes[0] === 0x09) {
+            q = r.end;
+            if (cs !== d.bytes[d.bytes.length - 1]) data = r.bytes.slice(9, r.bytes.length - 1);
+          }
+          break;
+        }
+      }
+      if (!data) return null;
+      var start = hd[1] | (hd[2] << 8);
+      return { header: hd, type: type, name: nm, start: start, data: data, end: q };
+    }
+    return null;
+  }
+
   // ------------------------------------------------------------------ CRT
   function parseCrt(name, bytes) {
     if (ascii(bytes, 0, 16) !== "C64 CARTRIDGE   ") throw new Error("This is not a valid CRT cartridge image.");
@@ -587,6 +659,7 @@
   global.C64Media = {
     load: load, parse: parse, findFile: findFile, directoryProgram: directoryProgram,
     blankDisk: blankDisk, petsciiToText: petsciiToText, decodeTrack: decodeTrack,
+    readTapeBlock: readTapeBlock, findTapeFile: findTapeFile,
     SPT: SPT, TRACK_BYTES: TRACK_BYTES, SPEED: SPEED, TYPES: TYPES, ext: ext
   };
 })(typeof window !== "undefined" ? window : globalThis);
