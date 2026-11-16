@@ -79,10 +79,9 @@
     c64.sid.setModel(+settings.sid);
     if (audio.ctx) c64.sid.setSampleRate(audio.rate);
     c64.tape = new Datasette();
-    if (settings.truedrive && userRoms.dos) {
-      c64.drive = new Drive1541(c64, userRoms.dos);
-      c64.drive.onLed = setLed;
-    }
+    // real 1541 with its DOS ROM, otherwise the virtual drive (fast loader + drive code)
+    c64.drive = new Drive1541(c64, settings.truedrive && userRoms.dos ? userRoms.dos : null);
+    c64.drive.onLed = setLed;
     remount();
     c64.reset(true);
     updateRomStatus();
@@ -157,18 +156,19 @@
     } else if (first.kind === "disk") {
       remount();
       if (autostart) startDisk(null);
-      if (!c64.drive && first.format === "g64") notice("Without the 1541 ROM, G64 images are read through the fast loader; copy-protected disks need the real drive.", 7000);
+      if (c64.drive.hle && first.format === "g64") notice("Without the 1541 ROM, G64 images are read through the fast loader; copy-protected disks need the real drive.", 7000);
     } else if (first.kind === "t64") {
       remount();
       if (autostart && first.files.length) startPrg(first.files[0].data);
     } else if (first.kind === "tap") {
       remount();
-      c64.tape.play();
       if (autostart) {
         hardReset();
-        c64.type("LOAD\rRUN\r");
-        notice("The tape is playing. Loading from tape takes a few minutes – Warp speeds it up.", 6000);
-      }
+        // press PLAY together with LOAD; device 1 is given because the Open ROMs default to 8
+        c64.typeQueue.push({ fn: function () { c64.tape.rewind(); c64.tape.play(); } });
+        c64.type('LOAD"",1,1\rRUN\r');
+        notice("The tape is playing. Turbo loaders read the tape in real time – Warp speeds it up.", 6000);
+      } else c64.tape.play();
     }
     updateMediaUi();
   }
@@ -305,8 +305,8 @@
     var s;
     if (usingOriginal) s = "Original C64 ROMs" + (userRoms.dos ? " and 1541 ROM" : "") + ", stored in this browser.";
     else s = "Built-in free Open ROMs" + (userRoms.dos ? ", 1541 ROM loaded" : "") + ".";
-    if (!userRoms.dos) s += " No 1541 ROM: disks load through a fast loader.";
-    else if (!settings.truedrive) s += " Real drive switched off: fast loader.";
+    if (!userRoms.dos) s += " No 1541 ROM: a virtual drive is used; it loads fast and runs uploaded drive code (most fast loaders).";
+    else if (!settings.truedrive) s += " Real drive switched off: virtual drive.";
     $("rom-status").textContent = s;
     $("rom-clear").hidden = !(userRoms.kernal || userRoms.basic || userRoms.chargen || userRoms.dos);
   }
@@ -488,7 +488,6 @@
     var d = media.disks[media.diskIndex];
     var txt = "Drive 8: " + (d ? d.name : "empty");
     if (c64.drive && c64.drive.motor) txt = "Drive 8: track " + (c64.drive.halfTrack / 2).toFixed(1).replace(".0", "");
-    if (!c64.drive) setLed(false);
     $("st-drive").textContent = txt;
     if (media.tape) {
       var p = c64.tape.progress();
@@ -731,7 +730,7 @@
   // ------------------------------------------------------------------ snapshots
   function saveState() {
     snapshot = c64.saveState();
-    snapshot.meta = { drive: !!c64.drive, original: usingOriginal };
+    snapshot.meta = { drive: !c64.drive.hle, original: usingOriginal };
     store.put("state", snapshot);
     $("btn-load-state").disabled = false;
     notice("State saved (also kept in this browser for the next visit).", 3000);
@@ -743,7 +742,7 @@
       return;
     }
     var s = Object.assign({}, snapshot);
-    if (!c64.drive) s.drive = null;
+    if (c64.drive.hle || !(snapshot.meta && snapshot.meta.drive)) s.drive = null;
     c64.loadState(s);
     if (audio.ctx) c64.sid.setSampleRate(audio.rate);
     clearAudio();
@@ -809,8 +808,7 @@
     d.name = "new-disk.d64";
     media.disks.push(d); media.diskIndex = media.disks.length - 1;
     remount(); updateMediaUi();
-    notice(c64.drive ? 'Blank disk inserted. Save with SAVE"NAME",8 and download it afterwards.'
-                     : "Blank disk inserted. Saving needs the real 1541 drive (load the 1541 ROM in the settings).", 6000);
+    notice('Blank disk inserted. Save with SAVE"NAME",8 and download it afterwards.', 5000);
   });
   $("disk-download").addEventListener("click", function () {
     var d = media.disks[media.diskIndex];
