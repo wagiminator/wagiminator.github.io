@@ -44,6 +44,7 @@ games/
   alien-armada/         Alien Armada (alien-invasion shooter)
   garden-siege/         Garden Siege (tower-defense garden game)
   feather-frenzy/       Feather Frenzy (grouse-shooting arcade game)
+  starlane-command/     Starlane Command (real-time fleet command game)
 ```
 
 Every app lives in its own folder under `apps/` and is reachable at `https://wagiminator.github.io/apps/<app-name>/`. Apps are plain HTML, CSS and JavaScript without a build step and run entirely in the browser. Browser games live in the same way under `games/<game-name>/` and are listed under "Games" on the start page.
@@ -398,6 +399,19 @@ Grouse-shooting arcade game as a homage to the PC classic Moorhuhn (Witan Entert
 - Mouse and touch, keyboard and gamepad controls, fullscreen mode (F); progress and scores are saved in the browser.
 
 Code: `js/scenes.js` (levels, layers, props), `js/birds.js` (grouse, animals and other sprites), `js/game.js` (round, shooting, scoring, HUD), `js/draw.js` (drawing and landscape helpers), `js/audio.js` (music, sound and voice), `js/ui.js` (screens), `js/main.js` (main loop); see `games/feather-frenzy/README.md`.
+
+### Starlane Command
+
+Real-time fleet command game as a homage to SPACECOM (Flow Combine / 11 bit studios, 2014). All graphics are drawn by code, music and sound effects are synthesized with the Web Audio API; names, missions and artwork are original.
+
+- Star systems linked by starlanes: shipyards build ships, mining colonies send supply convoys to the nearest shipyard, repair docks mend damaged ships, outposts are stepping stones; every system has a garrison.
+- Three fleet types, shown as triangles with a stripe for their role: battle fleets fight other fleets, siege fleets break shields and battle stations and can raze a system for good, invasion fleets defeat the garrison and capture the system.
+- Supply builds ships and buys shields and battle stations; enemy fleets seize convoys that pass through their system; orders are final, and fleets stop only where enemy ships or a station block the lane. Pause at any time, or play at 2× or 4× speed.
+- A campaign of eight operations (take a sector, deliver supply, first contact, hold a choke point, raze enemy mines, two fronts, a fortified gauntlet, a final battle against three powers) and skirmishes against one to three computer commanders on generated maps in three sizes and three difficulty levels.
+- Tracker-style soundtrack, sound effects and short voice reports (Web Speech API, can be switched off).
+- Mouse and touch (drag to send fleets), keyboard and gamepad controls, fullscreen mode (F); progress is saved in the browser.
+
+Code: `js/game.js` (simulation), `js/ai.js` (computer commanders), `js/maps.js` (operations and map generator), `js/play.js` (tactical map, command panel, orders), `js/draw.js` (display style and widgets), `js/audio.js` (music, sound and voice), `js/ui.js` (screens), `js/main.js` (main loop); see `games/starlane-command/README.md`.
 
 ## Start page
 
