@@ -1,0 +1,109 @@
+/* STARHAUL: background worker that paints planet surfaces, clouds, night lights and the nebula sky (seamless 3D noise). */
+"use strict";
+
+function rng(seed) { let s = (seed >>> 0) || 1; return () => { s ^= s << 13; s >>>= 0; s ^= s >>> 17; s ^= s << 5; s >>>= 0; return s / 4294967296; }; }
+function makeNoise(seed) {
+  const r = rng(seed), perm = new Uint8Array(512), vals = new Float32Array(256);
+  for (let i = 0; i < 256; i++) { perm[i] = i; vals[i] = r(); }
+  for (let i = 255; i > 0; i--) { const j = Math.floor(r() * (i + 1)); const t = perm[i]; perm[i] = perm[j]; perm[j] = t; }
+  for (let i = 0; i < 256; i++) perm[i + 256] = perm[i];
+  const h = (x, y, z) => vals[perm[perm[perm[x & 255] + (y & 255)] + (z & 255)]];
+  const sm = (t) => t * t * (3 - 2 * t);
+  return function (x, y, z) {
+    const xi = Math.floor(x), yi = Math.floor(y), zi = Math.floor(z);
+    const xf = sm(x - xi), yf = sm(y - yi), zf = sm(z - zi);
+    const a = h(xi, yi, zi), b = h(xi + 1, yi, zi), c = h(xi, yi + 1, zi), d = h(xi + 1, yi + 1, zi);
+    const e = h(xi, yi, zi + 1), f = h(xi + 1, yi, zi + 1), g = h(xi, yi + 1, zi + 1), k = h(xi + 1, yi + 1, zi + 1);
+    const x1 = a + (b - a) * xf, x2 = c + (d - c) * xf, x3 = e + (f - e) * xf, x4 = g + (k - g) * xf;
+    const y1 = x1 + (x2 - x1) * yf, y2 = x3 + (x4 - x3) * yf;
+    return y1 + (y2 - y1) * zf;
+  };
+}
+function fbm(n, x, y, z, oct, lac = 2.03, gain = 0.5) {
+  let s = 0, a = 0.5, f = 1, norm = 0;
+  for (let i = 0; i < oct; i++) { s += a * n(x * f + i * 17.3, y * f + i * 5.1, z * f + i * 11.7); norm += a; a *= gain; f *= lac; }
+  return s / norm;
+}
+function hexToRgb(h) { const v = parseInt(h.slice(1), 16); return [(v >> 16) & 255, (v >> 8) & 255, v & 255]; }
+function palette(stops) {
+  const lut = new Uint8Array(256 * 3);
+  const st = stops.map(([p, c]) => [p, hexToRgb(c)]);
+  for (let i = 0; i < 256; i++) {
+    const t = i / 255;
+    let k = 0; while (k < st.length - 2 && t > st[k + 1][0]) k++;
+    const [p0, c0] = st[k], [p1, c1] = st[Math.min(k + 1, st.length - 1)];
+    const u = p1 > p0 ? Math.min(1, Math.max(0, (t - p0) / (p1 - p0))) : 0;
+    for (let j = 0; j < 3; j++) lut[i * 3 + j] = c0[j] + (c1[j] - c0[j]) * u;
+  }
+  return lut;
+}
+
+function planet(o) {
+  const W = o.w, H = o.h, n = makeNoise(o.seed), n2 = makeNoise(o.seed + 7), lut = palette(o.pal);
+  const color = new Uint8ClampedArray(W * H * 4), night = new Uint8ClampedArray(W * H * 4);
+  const cW = W / 2, cH = H / 2, clouds = new Uint8ClampedArray(cW * cH * 4);
+  const scale = o.scale || 2.2, sea = o.sea || 0.47, iceCaps = o.ice;
+  for (let y = 0; y < H; y++) {
+    const lat = (y / (H - 1) - 0.5) * Math.PI, cl = Math.cos(lat), sl = Math.sin(lat);
+    for (let x = 0; x < W; x++) {
+      const lon = (x / W) * Math.PI * 2, px = cl * Math.cos(lon), pz = cl * Math.sin(lon), py = sl;
+      const warp = fbm(n2, px * 1.5, py * 1.5, pz * 1.5, 3) - 0.5;
+      let h = fbm(n, px * scale + warp, py * scale + warp, pz * scale + warp, 6);
+      h = Math.min(1, Math.max(0, (h - 0.5) * 1.9 + 0.5));
+      let idx = Math.floor(h * 255);
+      const i4 = (y * W + x) * 4;
+      let r = lut[idx * 3], g = lut[idx * 3 + 1], b = lut[idx * 3 + 2];
+      // ice caps
+      const pol = Math.abs(sl);
+      if (iceCaps && pol > 0.82 - (fbm(n2, px * 4, py * 4, pz * 4, 2) - 0.5) * 0.2) { r = 235; g = 240; b = 250; }
+      // fine detail
+      const d = (fbm(n2, px * 18, py * 18, pz * 18, 2) - 0.5) * 30;
+      color[i4] = r + d; color[i4 + 1] = g + d; color[i4 + 2] = b + d; color[i4 + 3] = 255;
+      // night lights on land (cities) or glowing lava
+      let L = 0;
+      if (o.lights && h > sea + 0.03 && h < 0.8) { const c = fbm(n2, px * 40, py * 40, pz * 40, 2); if (c > 0.62) L = (c - 0.62) * 900 * o.lights; }
+      if (o.lava && h < 0.25) L = (0.25 - h) * 1000;
+      night[i4] = o.lava ? Math.min(255, L) : Math.min(255, L); night[i4 + 1] = o.lava ? Math.min(255, L * 0.35) : Math.min(255, L * 0.8); night[i4 + 2] = o.lava ? 0 : Math.min(255, L * 0.45); night[i4 + 3] = 255;
+    }
+  }
+  if (o.clouds > 0) {
+    const n3 = makeNoise(o.seed + 99);
+    for (let y = 0; y < cH; y++) {
+      const lat = (y / (cH - 1) - 0.5) * Math.PI, cl = Math.cos(lat), sl = Math.sin(lat);
+      for (let x = 0; x < cW; x++) {
+        const lon = (x / cW) * Math.PI * 2, px = cl * Math.cos(lon), pz = cl * Math.sin(lon), py = sl * 2.2;
+        const w = fbm(n2, px * 2, py * 2, pz * 2, 3) * 1.5;
+        const c = fbm(n3, px * 3 + w, py * 3 + w, pz * 3 + w, 5);
+        const a = Math.max(0, Math.min(1, (c - (1 - o.clouds * 0.62)) * 3.2));
+        const i4 = (y * cW + x) * 4;
+        clouds[i4] = clouds[i4 + 1] = clouds[i4 + 2] = 255; clouds[i4 + 3] = a * 255;
+      }
+    }
+  }
+  return { color, night, clouds, w: W, h: H, cw: cW, ch: cH };
+}
+
+function nebula(o) {
+  const W = o.w, H = o.h, n = makeNoise(o.seed), n2 = makeNoise(o.seed + 3), out = new Uint8ClampedArray(W * H * 4);
+  const [c1, c2] = [hexToRgb(o.c1), hexToRgb(o.c2)];
+  for (let y = 0; y < H; y++) {
+    const lat = (y / (H - 1) - 0.5) * Math.PI, cl = Math.cos(lat), sl = Math.sin(lat);
+    for (let x = 0; x < W; x++) {
+      const lon = (x / W) * Math.PI * 2, px = cl * Math.cos(lon), pz = cl * Math.sin(lon), py = sl;
+      const w = fbm(n2, px * 2, py * 2, pz * 2, 3);
+      const v = fbm(n, px * 2.5 + w, py * 2.5 + w, pz * 2.5 + w, 6);
+      const band = Math.exp(-Math.pow((py + (w - 0.5) * 0.6) * 2.6, 2)); // a milky band
+      const a = Math.max(0, v - 0.47) * 1.6 * (0.25 + band);
+      const m = fbm(n2, px * 5, py * 5, pz * 5, 3);
+      const i4 = (y * W + x) * 4;
+      out[i4] = (c1[0] * (1 - m) + c2[0] * m) * a; out[i4 + 1] = (c1[1] * (1 - m) + c2[1] * m) * a; out[i4 + 2] = (c1[2] * (1 - m) + c2[2] * m) * a; out[i4 + 3] = 255;
+    }
+  }
+  return { sky: out, w: W, h: H };
+}
+
+self.onmessage = (e) => {
+  const o = e.data;
+  if (o.kind === "planet") { const r = planet(o); self.postMessage({ id: o.id, kind: "planet", ...r }, [r.color.buffer, r.night.buffer, r.clouds.buffer]); }
+  else if (o.kind === "nebula") { const r = nebula(o); self.postMessage({ id: o.id, kind: "nebula", ...r }, [r.sky.buffer]); }
+};
