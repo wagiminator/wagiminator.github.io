@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SID Player</title>
+  <meta name="description" content="Play and analyse C64 SID music in the browser: PSID and RSID tunes on an emulated C64, with a live oscilloscope for every voice, note and register views, a tracker log, spectrum and WAV export.">
+  <link rel="stylesheet" href="../../assets/css/site.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav class="site-bar" aria-label="Breadcrumb">
+    <a href="../../">wagiminator</a><span class="sep">/</span><span>Apps</span><span class="sep">/</span><span>SID Player</span>
+  </nav>
+
+  <main class="app">
+    <header class="app-head">
+      <h1>SID Player</h1>
+      <p>Play C64 music (PSID and RSID files) on an emulated C64 and watch the SID chip at work: a live oscilloscope for every voice, notes, envelopes, filter, registers and a tracker log of every tick.</p>
+    </header>
+
+    <!-- now playing and transport -->
+    <section class="card deck" aria-label="Player">
+      <div class="now">
+        <div class="now-text">
+          <h2 id="t-name">No tune loaded</h2>
+          <p class="now-author"><span id="t-author">Open a SID file or play the demo tune.</span> <span id="t-released" class="soft"></span></p>
+        </div>
+        <div class="clock" aria-live="off"><span id="t-time">0:00</span><small id="t-song">–</small></div>
+      </div>
+      <ul class="chips" id="t-meta" aria-label="Tune details"></ul>
+      <div class="transport" role="group" aria-label="Playback">
+        <button type="button" id="b-prevtune" title="Previous tune (↑)" aria-label="Previous tune">⏮</button>
+        <button type="button" id="b-prev" title="Previous song (←)" aria-label="Previous song">◀</button>
+        <button type="button" id="b-play" class="primary" title="Play / pause (Space)" aria-label="Play">▶</button>
+        <button type="button" id="b-next" title="Next song (→)" aria-label="Next song">▶▶</button>
+        <button type="button" id="b-nexttune" title="Next tune (↓)" aria-label="Next tune">⏭</button>
+        <button type="button" id="b-restart" title="Start the song again" aria-label="Restart song">↺</button>
+        <label class="vol">Volume <input type="range" id="i-vol" min="0" max="100" value="80"></label>
+      </div>
+      <div class="options">
+        <label>SID model
+          <select id="o-model">
+            <option value="auto">From the file</option>
+            <option value="6581">6581 (old)</option>
+            <option value="8580">8580 (new)</option>
+          </select>
+        </label>
+        <label>Next tune after
+          <select id="o-next">
+            <option value="0">never (loop)</option>
+            <option value="60">1 minute</option>
+            <option value="120">2 minutes</option>
+            <option value="180" selected>3 minutes</option>
+            <option value="300">5 minutes</option>
+          </select>
+        </label>
+        <label>Save as WAV
+          <span class="row">
+            <select id="o-wavlen" aria-label="Length of the WAV file">
+              <option value="30">30 s</option>
+              <option value="60" selected>1 min</option>
+              <option value="120">2 min</option>
+              <option value="180">3 min</option>
+              <option value="300">5 min</option>
+            </select>
+            <button type="button" id="b-wav">Save</button>
+          </span>
+        </label>
+      </div>
+      <p class="note" id="msg" role="status" hidden></p>
+      <progress id="wav-progress" max="1" value="0" hidden></progress>
+    </section>
+
+    <!-- tunes -->
+    <aside class="card library" aria-label="Tunes">
+      <div class="drop" id="drop">
+        <p><strong>Drop .sid files here</strong> or</p>
+        <label class="button">Open files<input type="file" id="file" accept=".sid,.psid,.rsid" multiple hidden></label>
+        <button type="button" id="b-demo">Play the demo tune</button>
+      </div>
+      <ol class="playlist" id="playlist" aria-label="Playlist"></ol>
+      <p class="hint">Music collections: the <a href="https://www.hvsc.c64.org/">High Voltage SID Collection</a> has more than 60,000 tunes.</p>
+    </aside>
+
+    <!-- voices -->
+    <section class="scope-area" id="voices" aria-label="Voices"></section>
+
+    <section class="card panel keys-card" aria-label="Notes">
+      <h3>Notes</h3>
+      <canvas id="keys" width="1200" height="90" aria-label="Keyboard with the notes that sound"></canvas>
+    </section>
+
+    <section class="card panel tracker-card" aria-label="Tracker log">
+      <div class="panel-head">
+        <h3>Tracker log</h3>
+        <div class="seg" id="chip-sel" role="group" aria-label="SID chip"></div>
+      </div>
+      <div class="tracker" id="tracker" aria-label="One row per player tick"></div>
+    </section>
+
+    <section class="card panel regs-card" aria-label="Registers">
+      <h3>Registers</h3>
+      <div id="regs" class="regs"></div>
+    </section>
+
+    <section class="card panel spec-card" aria-label="Spectrum">
+      <h3>Spectrum</h3>
+      <canvas id="spec" width="600" height="160" aria-label="Frequency spectrum of the output"></canvas>
+    </section>
+
+    <section class="card help" aria-label="Help">
+      <h3>Good to know</h3>
+      <ul>
+        <li><strong>PSID</strong> tunes are run like SIDPLAY does: the player calls their init and play routines. <strong>RSID</strong> tunes run in a full C64 environment with their own interrupts (also digi tunes and BASIC programs). Tunes for two or three SIDs are supported.</li>
+        <li>The oscilloscopes show each voice before volume and filter, so muted voices stay visible. Click <em>M</em> to mute a voice and <em>S</em> to hear it alone.</li>
+        <li>The tracker log shows one row per call of the play routine (or per frame for RSID tunes): new notes, waveform (control register), envelope, pulse width and filter.</li>
+        <li>Keys: Space play/pause, ← → song, ↑ ↓ tune, 1–9 mute a voice, 0 all voices on.</li>
+        <li>The C64 runs on the free <a href="https://github.com/MEGA65/open-roms">Open ROMs</a>. Tunes that need the original KERNAL routines may not play.</li>
+      </ul>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    SID Player by <a href="https://github.com/wagiminator">wagiminator</a>. Uses the C64 emulator of the <a href="../c64-emulator/">C64 Emulator</a> app.
+  </footer>
+
+  <script src="emu/cpu6502.js"></script>
+  <script src="emu/cia.js"></script>
+  <script src="emu/vic.js"></script>
+  <script src="emu/sid.js"></script>
+  <script src="emu/c64.js"></script>
+  <script src="roms/openroms.js"></script>
+  <script src="js/psid.js"></script>
+  <script src="js/player.js"></script>
+  <script src="js/demo.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
