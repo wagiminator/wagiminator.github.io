@@ -12,7 +12,7 @@
 
   var st = {
     player: null, list: [], cur: -1, song: 1, playing: false, booting: false,
-    gen: 0, ringPos: 0, played: 0, playedAt: 0, queued: 0, sent: 0,
+    gen: 0, ringPos: 0, played: 0, playedAt: 0,
     rings: [], mute: [0, 0, 0], solo: null, chipView: 0, lastTick: -1, lastRegs: [], nextAt: 180,
   };
   var audio = { ctx: null, node: null, gain: null, analyser: null, rate: 44100, target: 0 };
@@ -77,14 +77,16 @@
     var m = e.data;
     if (m.g !== st.gen) return;
     st.played = m.played; st.playedAt = performance.now();
-    st.queued = m.queued; st.sent = 0;
     feed();
   }
   // keep about a quarter of a second of sound ahead of the speakers
   function feed() {
     if (!st.playing || !st.player || !audio.node) return;
-    var guard = 0;
-    while (st.queued + st.sent < audio.target && guard++ < 16) {
+    // the sound still ahead of the speakers, from the ring position being played; the
+    // queue sizes reported by the audio thread can be out of date after a busy moment
+    // (switching tunes), and trusting them made the player render more and more ahead
+    var ahead = st.ringPos - st.played, guard = 0;
+    while (ahead < audio.target && guard++ < 16) {
       var r = st.player.render(1024);
       var n = r.mix.length;
       if (!n) break;
@@ -97,13 +99,13 @@
       }
       audio.post({ g: st.gen, s: st.ringPos, d: r.mix }, [r.mix.buffer]);
       st.ringPos += n;
-      st.sent += n;
+      ahead += n;
     }
   }
   setInterval(feed, 40);
   function clearAudio() {
     st.gen++;
-    st.ringPos = 0; st.played = 0; st.playedAt = performance.now(); st.queued = 0; st.sent = 0;
+    st.ringPos = 0; st.played = 0; st.playedAt = performance.now();
     if (audio.post) audio.post({ clear: st.gen });
   }
   // browsers start the sound only after a click or a key press on the page

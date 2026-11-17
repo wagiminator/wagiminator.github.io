@@ -85,6 +85,9 @@
     this.tune = tune;
     this.song = n || tune.startSong;
     c.loadState(this.boot);
+    // the state brings the clock back to the boot time; the instruction start must follow,
+    // or the first I/O access of the player runs the machine up to the old time
+    c.instrStart = c.clk; c.pollAt = c.clk; c.cpu.cyc = 0;
     this.clock = tune.clock === 2 ? NTSC : PAL;
     this.addrs = tune.sidAddr.slice();
     // fresh SIDs, clocked like the tune expects
