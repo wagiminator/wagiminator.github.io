@@ -73,47 +73,73 @@
     tt.decor = out;
     return out;
   }
+  // scenery drawn as smooth shapes in cell units (1 cell = 3 pixels)
   function drawProp(c, theme, d, t) {
-    const px = (x, y, w, h, col) => { c.fillStyle = col; c.fillRect(d.x + x, d.y + y, w, h); };
+    const x = d.x, y = d.y + 0.5;
+    const blob = (cx, cy, rx, ry, col) => { c.fillStyle = col; c.beginPath(); c.ellipse(x + cx, y + cy, rx, ry, 0, 0, U.TAU); c.fill(); };
+    const poly = (pts, col) => { c.fillStyle = col; c.beginPath(); pts.forEach(([a, b], i) => (i ? c.lineTo(x + a, y + b) : c.moveTo(x + a, y + b))); c.closePath(); c.fill(); };
+    const stem = (x0, y0, x1, y1, wd, col) => { c.strokeStyle = col; c.lineWidth = wd; c.lineCap = "round"; c.beginPath(); c.moveTo(x + x0, y + y0); c.lineTo(x + x1, y + y1); c.stroke(); };
     if (theme === "meadow") {
-      if (d.k < 0.35) { // a little tree
-        const h = 12 + Math.floor(d.size * 8);
-        px(-1, -h, 2, h, "#6a4322");
-        for (let yy = -h - 7; yy <= -h + 3; yy++) { const hw = Math.round(Math.sqrt(Math.max(0, 1 - ((yy + h - 2) / 6) ** 2)) * 7); px(-hw, yy, hw * 2, 1, yy < -h - 3 ? "#7ad04a" : "#5aa83a"); }
+      if (d.k < 0.35) { // a little tree with a round crown
+        const h = 12 + d.size * 8;
+        stem(0, 0, 0, -h, 2, "#6a4322");
+        blob(0, -h - 1, 7.5, 6.5, "#4f9a32"); blob(-2, -h - 3, 5, 4.2, "#5fb03c"); blob(2.5, -h - 2.5, 4, 3.6, "#7ad04a");
+        blob(-3, -h - 4.5, 1.8, 1.2, "rgba(255,255,255,0.25)");
       } else if (d.k < 0.7) { // flowers
-        for (let i = 0; i < 4; i++) { const fx = i * 3 - 5; px(fx, -3 - (i % 2), 1, 3 + (i % 2), "#4a9a2a"); px(fx - 1, -4 - (i % 2), 3, 1, ["#ff7aa0", "#ffd84a", "#ffffff", "#b48aff"][i]); }
-      } else { // a bush
-        for (let yy = -6; yy <= 0; yy++) { const hw = Math.round(Math.sqrt(Math.max(0, 1 - ((yy + 1) / 6.5) ** 2)) * 6); px(-hw, yy, hw * 2, 1, yy < -3 ? "#6ec04a" : "#4f9a32"); }
-        px(-2, -4, 1, 1, "#ff5a5a"); px(2, -3, 1, 1, "#ff5a5a");
+        const cols = ["#ff7aa0", "#ffd84a", "#ffffff", "#b48aff"];
+        for (let i = 0; i < 4; i++) {
+          const fx = i * 3 - 4.5, fh = 3.5 + (i % 2) * 1.2;
+          stem(fx, 0, fx + 0.3, -fh, 0.6, "#4a9a2a");
+          for (let k = 0; k < 5; k++) { const a = (k / 5) * U.TAU + t * 0.4; blob(fx + 0.3 + Math.cos(a) * 0.9, -fh + Math.sin(a) * 0.9, 0.75, 0.75, cols[i]); }
+          blob(fx + 0.3, -fh, 0.55, 0.55, "#ffb02a");
+        }
+      } else { // a bush with berries
+        blob(0, -2.5, 6.5, 3.6, "#4f9a32"); blob(-2.2, -3.8, 3.6, 2.8, "#6ec04a"); blob(2.4, -3.4, 3.2, 2.5, "#62b444");
+        blob(-2, -3.6, 0.7, 0.7, "#ff5a5a"); blob(2, -2.6, 0.7, 0.7, "#ff5a5a"); blob(0.5, -4.6, 0.6, 0.6, "#ff5a5a");
       }
     } else if (theme === "forest") {
-      if (d.k < 0.4) { // a dark pine
-        const h = 18 + Math.floor(d.size * 10);
-        px(-1, -4, 2, 4, "#4a2e16");
-        for (let yy = -h; yy < -3; yy++) { const hw = Math.max(1, Math.round(((yy + h) / h) * 6 * (1 - 0.25 * (((yy + h) % 6) / 6)))); px(-hw, yy, hw * 2, 1, (yy + h) % 6 < 2 ? "#3a7a3a" : "#2c6030"); }
+      if (d.k < 0.4) { // a dark pine in three tiers
+        const h = 18 + d.size * 10;
+        stem(0, 0, 0, -4, 2, "#4a2e16");
+        for (let i = 0; i < 3; i++) {
+          const yb = -3 - i * (h - 4) / 3.2, hw = 6.5 - i * 1.6;
+          poly([[-hw, yb], [0, yb - (h - 4) / 2.2], [hw, yb]], i % 2 ? "#3a7a3a" : "#2c6030");
+        }
       } else if (d.k < 0.75) { // toadstools
-        px(-3, -4, 2, 4, "#efe4d0"); px(-6, -6, 8, 2, "#d8402a"); px(-5, -6, 1, 1, "#fff"); px(-2, -6, 1, 1, "#fff");
-        px(3, -3, 1, 3, "#efe4d0"); px(1, -4, 5, 1, "#d8402a");
-      } else { // fern
-        for (let i = -4; i <= 4; i++) px(i, -Math.abs(i) - 2 - Math.round(d.size * 3), 1, Math.abs(i) + 2, "#4a9a3a");
+        stem(-2, 0, -2, -4.5, 1.8, "#efe4d0");
+        c.fillStyle = "#d8402a"; c.beginPath(); c.ellipse(x - 2, y - 4.6, 4, 2.6, 0, Math.PI, 0); c.closePath(); c.fill();
+        blob(-3.3, -5.6, 0.6, 0.5, "#fff"); blob(-0.9, -5.9, 0.5, 0.45, "#fff");
+        stem(3.5, 0, 3.5, -2.8, 1.2, "#efe4d0");
+        c.fillStyle = "#d8402a"; c.beginPath(); c.ellipse(x + 3.5, y - 2.9, 2.4, 1.6, 0, Math.PI, 0); c.closePath(); c.fill();
+      } else { // a fern
+        c.strokeStyle = "#4a9a3a"; c.lineWidth = 0.8; c.lineCap = "round";
+        for (let i = -2; i <= 2; i++) {
+          const a = -Math.PI / 2 + i * 0.42, L = 7 + d.size * 3 - Math.abs(i);
+          c.beginPath(); c.moveTo(x, y); c.quadraticCurveTo(x + Math.cos(a) * L * 0.5, y + Math.sin(a) * L * 0.7, x + Math.cos(a) * L + i * 1.2, y + Math.sin(a) * L * 0.8); c.stroke();
+        }
       }
     } else if (theme === "caves") {
       // glowing crystals
       const glow = 0.6 + 0.4 * Math.sin(t * 2 + d.x);
       const cols = d.k < 0.5 ? ["#7fe0ff", "#c8f6ff"] : ["#d08aff", "#f0d4ff"];
+      blob(0, -4, 8, 6, `rgba(${d.k < 0.5 ? "160,230,255" : "220,170,255"},${0.18 * glow})`);
       const n = 2 + Math.floor(d.size * 3);
       for (let i = 0; i < n; i++) {
-        const h = 5 + ((i * 7 + d.x) % 7), x0 = i * 3 - n * 1.5;
-        for (let yy = 0; yy < h; yy++) px(x0 + (yy > h - 3 ? 1 : 0), -yy - 1, yy > h - 3 ? 1 : 2, 1, yy % 3 === 0 ? cols[1] : cols[0]);
+        const h = 5 + ((i * 7 + d.x) % 7), x0 = i * 3 - n * 1.5 + 1, lean = (i - (n - 1) / 2) * 0.35;
+        poly([[x0 - 1.2, 0], [x0 - 1.1 + lean * h * 0.15, -h * 0.75], [x0 + lean * h * 0.2, -h], [x0 + 1.1 + lean * h * 0.15, -h * 0.75], [x0 + 1.2, 0]], cols[0]);
+        poly([[x0, 0], [x0 + lean * h * 0.2, -h], [x0 + 1.1 + lean * h * 0.15, -h * 0.75], [x0 + 1.2, 0]], cols[1]);
       }
-      c.globalAlpha = 0.18 * glow; px(-6, -10, 12, 10, cols[1]); c.globalAlpha = 1;
     } else if (theme === "frost") {
-      if (d.k < 0.5) { // snowy pine
-        const h = 16 + Math.floor(d.size * 10);
-        px(-1, -3, 2, 3, "#5a3a1e");
-        for (let yy = -h; yy < -2; yy++) { const hw = Math.max(1, Math.round(((yy + h) / h) * 6)); px(-hw, yy, hw * 2, 1, (yy + h) % 5 === 0 ? "#f4faff" : "#3c6a5a"); }
+      if (d.k < 0.5) { // a snowy pine
+        const h = 16 + d.size * 10;
+        stem(0, 0, 0, -3, 2, "#5a3a1e");
+        for (let i = 0; i < 3; i++) {
+          const yb = -2 - i * (h - 3) / 3.2, hw = 6 - i * 1.5, top = yb - (h - 3) / 2.2;
+          poly([[-hw, yb], [0, top], [hw, yb]], "#3c6a5a");
+          poly([[-hw * 0.45, top + (yb - top) * 0.55], [0, top], [hw * 0.45, top + (yb - top) * 0.55], [0, top + (yb - top) * 0.4]], "#f4faff");
+        }
       } else { // ice spikes
-        for (let i = 0; i < 3; i++) { const h = 4 + ((i * 5 + d.x) % 6); for (let yy = 0; yy < h; yy++) px(i * 4 - 5, -yy - 1, yy > h - 2 ? 1 : 2, 1, "#cfe8ff"); }
+        for (let i = 0; i < 3; i++) { const h = 4 + ((i * 5 + d.x) % 6), x0 = i * 4 - 4; poly([[x0 - 1.4, 0], [x0, -h], [x0 + 1.4, 0]], "#cfe8ff"); poly([[x0, 0], [x0, -h], [x0 + 1.4, 0]], "#a8d0f0"); }
       }
     }
   }
@@ -124,34 +150,35 @@
     hills(c, lv.theme, cam, width);
     T.flush(s.t);
     c.save();
-    c.imageSmoothingEnabled = false;
+    c.imageSmoothingEnabled = true;
     c.scale(SC, SC);
     c.translate(-cam, 0);
-    // hazards behind the terrain edge
+    // water and lava with smooth waves (behind the terrain edge)
     for (const h of lv.hazards || []) {
       const lava = h.kind === "lava";
-      c.fillStyle = lava ? "#e0521e" : "#2f7fd0";
-      c.fillRect(h.x, h.y + 2, h.w, h.h);
-      c.fillStyle = lava ? "#ffb02a" : "#7fc4f4";
-      for (let x = h.x; x < h.x + h.w; x++) {
-        const wv = Math.round(Math.sin(x * 0.45 + t * (lava ? 2.2 : 4)) * 1.2 + 1);
-        c.fillRect(x, h.y + wv, 1, 1);
-      }
-      if (lava && Math.random() < 0.3) { c.fillStyle = "#ffe080"; c.fillRect(h.x + Math.random() * h.w, h.y + 1, 1, 1); }
+      const wave = (x) => h.y + 1.2 + Math.sin(x * 0.45 + t * (lava ? 2.2 : 4)) * 0.9 + Math.sin(x * 0.17 - t * 1.3) * 0.4;
+      const gr = c.createLinearGradient(0, h.y, 0, h.y + h.h);
+      gr.addColorStop(0, lava ? "#ff7a1e" : "#3f92dc"); gr.addColorStop(1, lava ? "#b8300e" : "#1f5a9c");
+      c.fillStyle = gr; c.beginPath(); c.moveTo(h.x, h.y + h.h + 2);
+      for (let x = h.x; x <= h.x + h.w; x += 0.5) c.lineTo(x, wave(x));
+      c.lineTo(h.x + h.w, h.y + h.h + 2); c.closePath(); c.fill();
+      c.strokeStyle = lava ? "#ffd06a" : "#a8dcff"; c.lineWidth = 0.7; c.beginPath();
+      for (let x = h.x; x <= h.x + h.w; x += 0.5) (x === h.x ? c.moveTo(x, wave(x)) : c.lineTo(x, wave(x)));
+      c.stroke();
+      if (lava && Math.random() < 0.3) { c.fillStyle = "#ffe080"; c.beginPath(); c.arc(h.x + Math.random() * h.w, h.y + 1.2, 0.6, 0, U.TAU); c.fill(); }
     }
     for (const d of scenery(s)) if (d.x > cam - 20 && d.x < cam + (opt.whole ? s.lv.w : VIEW) + 20) drawProp(c, lv.theme, d, t);
-    c.drawImage(s.t.cv, 0, 0);
+    c.drawImage(s.t.cv, 0, 0, s.t.w, s.t.h);
     S.hatch(c, lv.entrance.x, lv.entrance.y, U.clamp((s.hatch - 4) / 12, 0, 1), lv.theme);
     S.door(c, lv.exit.x, lv.exit.y + 1, t);
     // mosslings
     for (const m of s.ms) {
       if (m.st === "dead" || m.st === "saved") continue;
       const [pose, f] = S.pose(m);
-      c.imageSmoothingEnabled = true;
       c.drawImage(S.frame(pose, f, m.dir), m.x - S.AX, m.y - S.AY, S.SZ, S.SZ);
     }
     // particles
-    for (const p of s.fx) { c.fillStyle = p.col; c.fillRect(Math.round(p.x), Math.round(p.y), 1, 1); }
+    for (const p of s.fx) { c.fillStyle = p.col; c.beginPath(); c.arc(p.x + 0.5, p.y + 0.5, 0.65, 0, U.TAU); c.fill(); }
     c.restore();
     // fuses above the heads
     for (const m of s.ms) {
@@ -365,7 +392,7 @@
     D.rr(c, x, y, w, h, 3, "#8a5a32", C.ink, 2);
     c.fillStyle = "#6fbf45"; c.fillRect(x + 1, y + 1, w - 2, 3);
   }
-  const SKILL_LABEL = (ML.SKILL_LABEL = { climb: "CLIMB", float: "FLOAT", bomb: "BOMB", block: "BLOCK", build: "BRIDGE", bash: "BASH", mine: "MINE", dig: "DIG" });
+  const SKILL_LABEL = (ML.SKILL_LABEL = { climb: "CLIMB", float: "FLOAT", bomb: "BOMB", block: "BLOCK", build: "BUILD", bash: "BASH", mine: "MINE", dig: "DIG" });
   // a clear picture of each job (centre x, feet line y)
   function skillIcon(c, k, x, y) {
     c.save();
@@ -475,7 +502,7 @@
     const my = mi.y + (mi.h - mh) / 2;
     D.rr(c, mi.x - 4, mi.y - 2, mi.w + 8, mi.h + 4, 8, "#1e1208", C.ink, 3);
     c.save(); c.imageSmoothingEnabled = true;
-    c.drawImage(s.t.cv, 0, 0, lv.w, T.H, mi.x, my, mi.w, mh);
+    c.drawImage(s.t.cv, 0, 0, s.t.cv.width, s.t.cv.height, mi.x, my, mi.w, mh);
     c.restore();
     c.fillStyle = "#ffe680";
     for (const q of s.ms) if (!G.GONE.has(q.st)) c.fillRect(mi.x + q.x * sc - 1, my + (q.y - 4) * sc - 1, 2, 2);
