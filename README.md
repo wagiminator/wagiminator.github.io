@@ -45,6 +45,7 @@ games/
   garden-siege/         Garden Siege (tower-defense garden game)
   feather-frenzy/       Feather Frenzy (grouse-shooting arcade game)
   starlane-command/     Starlane Command (real-time fleet command game)
+  mossling-march/       Mossling March (Lemmings-style puzzle game)
 ```
 
 Every app lives in its own folder under `apps/` and is reachable at `https://wagiminator.github.io/apps/<app-name>/`. Apps are plain HTML, CSS and JavaScript without a build step and run entirely in the browser. Browser games live in the same way under `games/<game-name>/` and are listed under "Games" on the start page.
@@ -412,6 +413,19 @@ Real-time fleet command game as a homage to SPACECOM (Flow Combine / 11 bit stud
 - Mouse and touch (drag to send fleets), keyboard and gamepad controls, fullscreen mode (F); progress is saved in the browser.
 
 Code: `js/game.js` (simulation), `js/ai.js` (computer commanders), `js/maps.js` (operations and map generator), `js/play.js` (tactical map, command panel, orders), `js/draw.js` (display style and widgets), `js/audio.js` (music, sound and voice), `js/ui.js` (screens), `js/main.js` (main loop); see `games/starlane-command/README.md`.
+
+### Mossling March
+
+Puzzle game as a homage to the classic Lemmings (DMA Design / Psygnosis, 1991). Little round moss sprites with a sprout on their heads march out of a hollow log and walk straight on; give them jobs so that enough of them reach the round door. All graphics are drawn by code, music and sound effects are synthesized with the Web Audio API; names, characters and levels are original.
+
+- Eight jobs, each with a clear icon and label in the panel: climber, floater, bomber, blocker, builder (bridge), basher, miner and digger.
+- Destructible terrain: every cell can be dug, bashed, mined or blown away – except steel; stone with arrows only gives way in their direction; long falls, water and lava are deadly.
+- Twenty levels in four ratings with their own landscapes (meadow, forest, crystal caves, frost peaks); each level gives a number of mosslings, the share to bring home, a limited set of jobs, a release rate and a clock. A double click on the bomb button blows up everyone.
+- Scrolling playfield with minimap, pause and fast forward, level previews, best result per level; completing a level unlocks the next.
+- Tracker-style soundtrack for every landscape, sound effects and a few voice lines (Web Speech API, can be switched off).
+- Mouse and touch, keyboard and gamepad controls, fullscreen mode (F); progress is saved in the browser.
+
+Code: `js/terrain.js` (destructible terrain), `js/sprites.js` (mosslings, hatch and door), `js/game.js` (simulation and jobs), `js/levels.js` (levels), `js/play.js` (playfield, job panel, minimap, input), `js/draw.js` (drawing helpers and widgets), `js/audio.js` (music, sound and voice), `js/ui.js` (screens), `js/main.js` (main loop); see `games/mossling-march/README.md`.
 
 ## Start page
 
