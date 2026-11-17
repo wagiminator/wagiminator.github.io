@@ -221,37 +221,52 @@
   };
 
   /* ---------- the burrow hatch and the home door ---------- */
-  // both drawn in cell units with a pixel helper (anchor: hatch at its mouth, door at its threshold)
+  // both drawn as smooth shapes in cell units (anchor: hatch at its mouth, door at its threshold)
   S.hatch = function (c, x, y, open, theme) {
-    const px = (ax, ay, w, h, col) => { c.fillStyle = col; c.fillRect(x + ax, y + ay, w, h); };
+    const INK = "#3a2210";
+    c.save(); c.translate(x, y);
     // a hollow log hanging from the top, mouth facing down
-    px(-15, -16, 30, 12, "#6a4322");
-    px(-15, -16, 30, 2, "#8a5a2e");
-    for (let i = -13; i < 15; i += 4) px(i, -14, 1, 9, "#56361b");
-    px(-16, -6, 32, 3, "#4a2e16");
-    px(-12, -18, 3, 3, "#4f8a2e"); px(6, -19, 4, 3, "#5aa03a"); px(-2, -20, 2, 4, "#4f8a2e");
+    c.lineJoin = "round";
+    c.fillStyle = "#6a4322"; c.strokeStyle = INK; c.lineWidth = 0.8;
+    rr(c, -15.5, -16.5, 31, 13, 3); c.fill(); c.stroke();
+    c.fillStyle = "#8a5a2e"; rr(c, -14.5, -16, 29, 2.5, 1.2); c.fill();
+    c.strokeStyle = "#56361b"; c.lineWidth = 0.7; c.lineCap = "round";
+    for (let i = -11; i <= 11; i += 5.5) { c.beginPath(); c.moveTo(i, -13); c.quadraticCurveTo(i + 1, -9.5, i, -6); c.stroke(); }
+    c.fillStyle = "#4a2e16"; rr(c, -16.5, -6, 33, 3.2, 1.5); c.fill();
+    // moss on top
+    c.fillStyle = "#5aa03a";
+    for (const [mx, r] of [[-10, 2.2], [-6.5, 1.6], [6.5, 2.4], [10.5, 1.5], [-1, 1.8]]) { c.beginPath(); c.ellipse(mx, -16.6, r, r * 0.7, 0, Math.PI, 0); c.fill(); }
     // the two flaps swing down when it opens
-    const a = Math.min(1, open);
-    const len = 13;
-    c.save(); c.translate(x - 13, y - 3); c.rotate(a * 1.35); c.fillStyle = "#8a5a2e"; c.fillRect(0, 0, len, 2); c.restore();
-    c.save(); c.translate(x + 13, y - 3); c.rotate(-a * 1.35); c.fillStyle = "#8a5a2e"; c.fillRect(-len, 0, len, 2); c.restore();
-    if (a > 0.3) { c.fillStyle = "rgba(20,10,4,0.75)"; c.fillRect(x - 11, y - 3, 22, 2); }
+    const a = Math.min(1, open), len = 13;
+    c.fillStyle = "#8a5a2e"; c.strokeStyle = INK; c.lineWidth = 0.5;
+    c.save(); c.translate(-13, -3); c.rotate(a * 1.35); rr(c, 0, -0.2, len, 2.2, 1); c.fill(); c.stroke(); c.restore();
+    c.save(); c.translate(13, -3); c.rotate(-a * 1.35); rr(c, -len, -0.2, len, 2.2, 1); c.fill(); c.stroke(); c.restore();
+    if (a > 0.3) { c.fillStyle = "rgba(20,10,4,0.75)"; rr(c, -11, -3, 22, 2, 1); c.fill(); }
+    c.restore();
   };
   S.door = function (c, x, y, t) {
-    const px = (ax, ay, w, h, col) => { c.fillStyle = col; c.fillRect(x + ax, y + ay, w, h); };
-    // a round door in a mossy mound with a lantern
-    for (let yy = -22; yy <= 0; yy++) {
-      const half = Math.round(Math.sqrt(Math.max(0, 1 - ((yy + 2) / 22) ** 2)) * 16);
-      px(-half, yy, half * 2, 1, yy < -18 ? "#5aa03a" : "#7a5634");
-    }
-    for (let yy = -15; yy <= 0; yy++) {
-      const half = Math.round(Math.sqrt(Math.max(0, 1 - ((yy + 1) / 15) ** 2)) * 8);
-      px(-half, yy, half * 2, 1, "#2a1608");
-    }
+    c.save(); c.translate(x, y + 1);
+    // a mossy mound
+    c.fillStyle = "#7a5634"; c.beginPath(); c.ellipse(0, 0, 16.5, 22.5, 0, Math.PI, 0); c.closePath(); c.fill();
+    c.strokeStyle = "#3a2210"; c.lineWidth = 0.8; c.stroke();
+    c.save(); c.beginPath(); c.ellipse(0, 0, 16.5, 22.5, 0, Math.PI, 0); c.clip();
+    c.fillStyle = "#5aa03a"; c.beginPath(); c.ellipse(0, -23, 13, 6, 0, 0, (Math.PI * 2)); c.fill();
+    c.fillStyle = "rgba(0,0,0,0.12)";
+    for (const [sx, sy, r] of [[-10, -8, 1.6], [9, -12, 1.3], [-6, -15, 1.1], [11, -4, 1.2]]) { c.beginPath(); c.arc(sx, sy, r, 0, (Math.PI * 2)); c.fill(); }
+    c.restore();
+    // the round door, glowing from inside
+    c.fillStyle = "#2a1608"; c.beginPath(); c.ellipse(0, 0, 8.5, 15.5, 0, Math.PI, 0); c.closePath(); c.fill();
     const glow = 0.55 + 0.25 * Math.sin(t * 6) + 0.1 * Math.sin(t * 17);
-    c.fillStyle = `rgba(255,200,90,${glow * 0.55})`;
-    for (let yy = -13; yy <= 0; yy++) { const half = Math.round(Math.sqrt(Math.max(0, 1 - ((yy + 1) / 13) ** 2)) * 6); c.fillRect(x - half, y + yy, half * 2, 1); }
-    px(10, -12, 2, 4, "#3a2a1a"); px(9, -8, 4, 4, `rgba(255,${190 + Math.round(glow * 40)},90,1)`); px(9, -4, 4, 1, "#3a2a1a");
-    px(-14, -21, 6, 2, "#7ad04a"); px(4, -23, 5, 2, "#7ad04a");
+    const g = c.createRadialGradient(0, -3, 1, 0, -3, 12);
+    g.addColorStop(0, `rgba(255,214,120,${glow * 0.8})`); g.addColorStop(1, `rgba(255,170,70,${glow * 0.15})`);
+    c.fillStyle = g; c.beginPath(); c.ellipse(0, 0, 6.5, 13.5, 0, Math.PI, 0); c.closePath(); c.fill();
+    c.strokeStyle = "#8a5a2e"; c.lineWidth = 1; c.beginPath(); c.ellipse(0, 0, 8.5, 15.5, 0, Math.PI, 0); c.stroke();
+    // a lantern on a hook
+    c.strokeStyle = "#3a2a1a"; c.lineWidth = 0.7; c.beginPath(); c.moveTo(11, -14); c.lineTo(11, -11); c.stroke();
+    c.fillStyle = `rgba(255,${190 + Math.round(glow * 40)},90,1)`; rr(c, 9.2, -11, 3.6, 4.2, 1); c.fill();
+    c.fillStyle = `rgba(255,220,120,${glow * 0.3})`; c.beginPath(); c.arc(11, -9, 4.5, 0, (Math.PI * 2)); c.fill();
+    c.fillStyle = "#3a2a1a"; rr(c, 8.8, -7, 4.4, 1, 0.4); c.fill();
+    c.restore();
   };
+  function rr(c, x, y, w, h, r) { c.beginPath(); if (c.roundRect) c.roundRect(x, y, w, h, r); else c.rect(x, y, w, h); }
 })(window.ML);

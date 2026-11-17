@@ -1,11 +1,11 @@
 # Mossling March
 
 A puzzle game for the browser, made as a homage to the classic *Lemmings* (DMA Design / Psygnosis, 1991). Little round moss sprites with a sprout on their heads march out of a hollow log and walk straight on, over cliffs and into water. Give them jobs so that enough of them reach the round door.
-The terrain and the scenery are drawn by code as pixel art and the mosslings as smooth vector sprites, and all music and sound effects are synthesized with the Web Audio API. There are no external assets and no build step. The name, characters and levels are original.
+The terrain, the scenery and the mosslings are drawn by code with smooth, anti-aliased shapes, and all music and sound effects are synthesized with the Web Audio API. There are no external assets and no build step. The name, characters and levels are original.
 
 ## Features
 
-- **Eight jobs**, each with a clear icon and a short label in the panel (CLIMB, FLOAT, BOMB, BLOCK, BRIDGE, BASH, MINE, DIG):
+- **Eight jobs**, each with a clear icon and a short label in the panel (CLIMB, FLOAT, BOMB, BLOCK, BUILD, BASH, MINE, DIG):
   - **Climbers** scale walls.
   - **Floaters** glide down on a leaf.
   - **Bombers** count down and blast a crater.
@@ -14,7 +14,7 @@ The terrain and the scenery are drawn by code as pixel art and the mosslings as 
   - **Bashers** tunnel straight ahead.
   - **Miners** dig down at a slant.
   - **Diggers** dig straight down.
-- **Destructible pixel terrain:** every cell of the ground can be dug, bashed, mined or blown away, except steel. Stone with arrows only gives way in the direction of the arrows. Long falls are fatal, and water and lava are deadly.
+- **Destructible terrain:** every cell of the ground can be dug, bashed, mined or blown away, except steel. Stone with arrows only gives way in the direction of the arrows. Long falls are fatal, and water and lava are deadly.
 - **Twenty levels** in four ratings, each with its own landscape:
   - Sprout (meadow)
   - Sapling (forest)

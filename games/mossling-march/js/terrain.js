@@ -1,5 +1,6 @@
-/* Mossling March: the destructible terrain – one cell per pixel, painted from simple shapes,
-   textured by code and changed by digging, bashing, mining, building and blasts */
+/* Mossling March: the destructible terrain – a grid of cells, painted from simple shapes,
+   textured by code and changed by digging, bashing, mining, building and blasts. It is drawn
+   at three pixels per cell with smooth, anti-aliased edges and blended colours. */
 "use strict";
 
 (function (ML) {
@@ -82,17 +83,73 @@
         }
       }
     }
-    // canvas with one pixel per cell
-    const cv = document.createElement("canvas");
-    cv.width = w; cv.height = h;
-    t.cv = cv; t.ctx = cv.getContext("2d");
-    t.img = t.ctx.createImageData(w, h);
-    t.px = new Uint32Array(t.img.data.buffer);
+    // a colour per cell, and a canvas with R×R pixels per cell
+    t.px = new Uint32Array(w * h);
     for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) t.px[y * w + x] = colourAt(t, x, y);
+    const cv = document.createElement("canvas");
+    cv.width = w * R; cv.height = h * R;
+    t.cv = cv; t.ctx = cv.getContext("2d");
+    t.img = t.ctx.createImageData(w * R, h * R);
+    t.hp = new Uint32Array(t.img.data.buffer);
+    t.occ = new Float32Array(w * h);
+    soften(t, 0, 0, w - 1, h - 1);
+    paint(t, 0, 0, w - 1, h - 1);
     t.ctx.putImageData(t.img, 0, 0);
     t.dirty = null;
     return t;
   };
+
+  /* ---------- smooth painting: the cells are sampled bilinearly, so edges run diagonally
+     and get soft, and the earth texture blends instead of showing blocks ---------- */
+  const R = (T.R = 3);
+  const SHARP = new Set([STEEL, BRICK, ONE_L, ONE_R]);
+  // a softened copy of the ground (3×3 tent filter): it smooths gentle slopes that would
+  // otherwise show steps; half of it is mixed with the cells themselves, so thin parts stay
+  function soften(t, x0, y0, x1, y1) {
+    const w = t.w, h = t.h, type = t.type, occ = t.occ;
+    const at = (x, y) => (type[Math.max(0, Math.min(h - 1, y)) * w + Math.max(0, Math.min(w - 1, x))] !== EMPTY ? 1 : 0);
+    for (let y = Math.max(0, y0); y <= Math.min(h - 1, y1); y++) for (let x = Math.max(0, x0); x <= Math.min(w - 1, x1); x++) {
+      occ[y * w + x] = (at(x - 1, y - 1) + 2 * at(x, y - 1) + at(x + 1, y - 1) + 2 * at(x - 1, y) + 4 * at(x, y) + 2 * at(x + 1, y) + at(x - 1, y + 1) + 2 * at(x, y + 1) + at(x + 1, y + 1)) / 16;
+    }
+  }
+  function paint(t, x0, y0, x1, y1) {
+    const w = t.w, h = t.h, W2 = w * R, type = t.type, px = t.px, hp = t.hp, occ = t.occ;
+    const X0 = Math.max(0, x0 * R), X1 = Math.min(W2 - 1, (x1 + 1) * R - 1), Y0 = Math.max(0, y0 * R), Y1 = Math.min(h * R - 1, (y1 + 1) * R - 1);
+    const cs = [0, 0, 0, 0], ws = [0, 0, 0, 0], ms = [0, 0, 0, 0];
+    for (let Y = Y0; Y <= Y1; Y++) {
+      const fy = (Y + 0.5) / R - 0.5, j = Math.floor(fy), ty = fy - j;
+      const ja = Math.max(0, Math.min(h - 1, j)), jb = Math.max(0, Math.min(h - 1, j + 1));
+      for (let X = X0; X <= X1; X++) {
+        const fx = (X + 0.5) / R - 0.5, i = Math.floor(fx), tx = fx - i;
+        const ia = Math.max(0, Math.min(w - 1, i)), ib = Math.max(0, Math.min(w - 1, i + 1));
+        const idx = [ja * w + ia, ja * w + ib, jb * w + ia, jb * w + ib];
+        ws[0] = (1 - tx) * (1 - ty); ws[1] = tx * (1 - ty); ws[2] = (1 - tx) * ty; ws[3] = tx * ty;
+        let o = 0, ob = 0, sharp = false, best = -1, bw = -1;
+        for (let k = 0; k < 4; k++) {
+          ms[k] = type[idx[k]]; cs[k] = px[idx[k]]; ob += ws[k] * occ[idx[k]];
+          if (ms[k] !== EMPTY) { o += ws[k]; if (SHARP.has(ms[k])) sharp = true; if (ws[k] > bw) { bw = ws[k]; best = k; } }
+        }
+        const oc = o;
+        if (!sharp) o = (o + ob) / 2;
+        if (oc === 0) { hp[Y * W2 + X] = 0; continue; }
+        const out = Y * W2 + X;
+        if (o < 0.36) { hp[out] = 0; continue; }
+        const a = o >= 0.64 ? 255 : Math.round(((o - 0.36) / 0.28) * 255);
+        let r = 0, g = 0, b = 0;
+        if (sharp) {
+          // steel, bricks and arrows keep crisp lines: the colour of the nearest solid cell
+          const near = ms[(tx < 0.5 ? 0 : 1) + (ty < 0.5 ? 0 : 2)] !== EMPTY ? (tx < 0.5 ? 0 : 1) + (ty < 0.5 ? 0 : 2) : best;
+          const c = cs[near]; r = c & 255; g = (c >> 8) & 255; b = (c >> 16) & 255;
+        } else {
+          for (let k = 0; k < 4; k++) if (ms[k] !== EMPTY) { const c = cs[k], f = ws[k] / oc; r += (c & 255) * f; g += ((c >> 8) & 255) * f; b += ((c >> 16) & 255) * f; }
+          // a fine grain at screen resolution
+          const n = 0.94 + hash(X, Y, t.seed + 17) * 0.12;
+          r *= n; g *= n; b *= n;
+        }
+        hp[out] = (a << 24) | (Math.min(255, b | 0) << 16) | (Math.min(255, g | 0) << 8) | Math.min(255, r | 0);
+      }
+    }
+  }
 
   function colourAt(t, x, y) {
     const m = t.type[y * t.w + x], th = t.theme, s = t.seed;
@@ -167,7 +224,11 @@
   T.flush = function (t) {
     const d = t.dirty;
     if (!d) return;
-    t.ctx.putImageData(t.img, 0, 0, d.x0, d.y0, d.x1 - d.x0 + 1, d.y1 - d.y0 + 1);
+    // a changed cell also changes the softened ground and the blend around it
+    soften(t, d.x0 - 1, d.y0 - 1, d.x1 + 1, d.y1 + 1);
+    const x0 = Math.max(0, d.x0 - 2), y0 = Math.max(0, d.y0 - 2), x1 = Math.min(t.w - 1, d.x1 + 2), y1 = Math.min(t.h - 1, d.y1 + 2);
+    paint(t, x0, y0, x1, y1);
+    t.ctx.putImageData(t.img, 0, 0, x0 * R, y0 * R, (x1 - x0 + 1) * R, (y1 - y0 + 1) * R);
     t.dirty = null;
   };
 })(window.ML);
