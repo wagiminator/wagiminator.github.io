@@ -39,12 +39,39 @@
     audio.analyser.smoothingTimeConstant = 0.7;
     audio.gain.connect(audio.analyser);
     audio.analyser.connect(ctx.destination);
+    // the AudioWorklet; opened as a local file (file://) the browser refuses to load it,
+    // then a ScriptProcessor takes over
+    if (!ctx.audioWorklet) { scriptOutput(ctx); return Promise.resolve(); }
     var url = URL.createObjectURL(new Blob([WORKLET], { type: "application/javascript" }));
     return ctx.audioWorklet.addModule(url).then(function () {
-      audio.node = new AudioWorkletNode(ctx, "sid-out", { outputChannelCount: [2] });
-      audio.node.port.onmessage = onWorklet;
-      audio.node.connect(audio.gain);
-    });
+      var node = new AudioWorkletNode(ctx, "sid-out", { outputChannelCount: [2] });
+      node.port.onmessage = onWorklet;
+      node.connect(audio.gain);
+      audio.node = node;
+      audio.post = function (m, tr) { node.port.postMessage(m, tr); };
+    }, function () { scriptOutput(ctx); });
+  }
+  function scriptOutput(ctx) {
+    var sp = ctx.createScriptProcessor(2048, 0, 2), q = [], n = 0, g = 0, idx = 0;
+    sp.onaudioprocess = function (ev) {
+      var l = ev.outputBuffer.getChannelData(0), r = ev.outputBuffer.getChannelData(1), k = 0;
+      while (k < l.length && q.length) {
+        var c = q[0], m = Math.min(c.d.length - c.pos, l.length - k);
+        l.set(c.d.subarray(c.pos, c.pos + m), k);
+        c.pos += m; k += m; n -= m; idx = c.s + c.pos;
+        if (c.pos >= c.d.length) q.shift();
+      }
+      if (k < l.length) l.fill(0, k);
+      r.set(l);
+      onWorklet({ data: { g: g, played: idx, queued: Math.max(0, n) } });
+    };
+    sp.connect(audio.gain);
+    audio.node = sp;
+    audio.post = function (m) {
+      if (m.clear) { q = []; n = 0; g = m.clear; idx = 0; return; }
+      if (m.g !== g) return;
+      m.pos = 0; q.push(m); n += m.d.length;
+    };
   }
   function onWorklet(e) {
     var m = e.data;
@@ -68,7 +95,7 @@
           for (var i = 0; i < n; i++) ring[(p + i) & RMASK] = src[i];
         }
       }
-      audio.node.port.postMessage({ g: st.gen, s: st.ringPos, d: r.mix }, [r.mix.buffer]);
+      audio.post({ g: st.gen, s: st.ringPos, d: r.mix }, [r.mix.buffer]);
       st.ringPos += n;
       st.sent += n;
     }
@@ -77,7 +104,16 @@
   function clearAudio() {
     st.gen++;
     st.ringPos = 0; st.played = 0; st.playedAt = performance.now(); st.queued = 0; st.sent = 0;
-    if (audio.node) audio.node.port.postMessage({ clear: st.gen });
+    if (audio.post) audio.post({ clear: st.gen });
+  }
+  // browsers start the sound only after a click or a key press on the page
+  function resumeAudio() {
+    var ctx = audio.ctx;
+    if (!ctx || ctx.state === "running") return;
+    ctx.resume();
+    setTimeout(function () {
+      if (st.playing && ctx.state !== "running") { st.waitClick = true; message("Click anywhere on the page to start the sound."); }
+    }, 300);
   }
   function playedNow() {
     if (!st.playing) return st.played;
@@ -117,7 +153,7 @@
     showTune(t);
     applyMutes();
     st.playing = true;
-    if (audio.ctx.state === "suspended") audio.ctx.resume();
+    resumeAudio();
     updatePlayButton();
     feed();
     mediaSession(t);
@@ -696,6 +732,13 @@
     else if (k === "ArrowDown") { e.preventDefault(); nextTune(1); }
     else if (k === "0") { st.solo = null; st.mute = [0, 0, 0]; applyMutes(); }
     else if (k >= "1" && k <= "9") { var n = +k - 1; if (n < V.length * 3) toggleMute((n / 3) | 0, n % 3); }
+  });
+  ["pointerdown", "keydown"].forEach(function (ev) {
+    document.addEventListener(ev, function () {
+      if (audio.ctx && audio.ctx.state === "suspended" && st.playing) {
+        audio.ctx.resume().then(function () { if (st.waitClick) { st.waitClick = false; message(""); } });
+      }
+    }, true);
   });
   requestAnimationFrame(frame);
 })();
