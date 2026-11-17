@@ -65,6 +65,8 @@
     this.denLatch = false;
     this.vff = true;
     this.bad = false;
+    this.ySeen = 0;       // YSCROLL as the bad line logic sees it (a CPU write counts from the next cycle)
+    this.baStart = 99;    // first cycle of this line with BA low (bad line), for the DMA delay
     this.mc = new Uint8Array(8);
     this.mcbase = new Uint8Array(8);
     this.expFF = new Uint8Array([1, 1, 1, 1, 1, 1, 1, 1]);
@@ -100,7 +102,7 @@
 
   P.badlineCond = function () {
     var r = this.raster;
-    return r >= 0x30 && r <= 0xF7 && this.denLatch && (r & 7) === (this.regs[0x11] & 7);
+    return r >= 0x30 && r <= 0xF7 && this.denLatch && (r & 7) === this.ySeen;
   };
 
   // Is the CPU stopped in the coming cycle?
@@ -130,11 +132,12 @@
       for (n = 0; n < 8; n++) this.sCur[n] = this.sNext[n];
       this.checkRasterIrq();
       if (this.raster === 0x30) this.denLatch = false;
+      this.baStart = 99;
     }
     if (this.raster === 0x30 && (regs[0x11] & 0x10)) this.denLatch = true;
 
     this.bad = this.badlineCond();
-    if (this.bad) this.idle = false;
+    if (this.bad && this.baStart === 99) this.baStart = c < 12 ? 12 : c;
 
     if (c === 12) {
       // start of the visible part: background fill
@@ -183,11 +186,20 @@
       }
     }
 
-    // graphics: g-access (first phase) and c-access (second phase)
+    // graphics: g-access (first phase) and c-access (second phase). A bad line that starts in
+    // the middle of a line (DMA delay, "VSP") switches to display state only after this cycle's
+    // g-access; its first three c-accesses come while the CPU still has the bus and read $FF
+    // (the colour is the low nibble of the CPU's next opcode).
     if (c >= 16 && c <= 55) this.gAccess(c);
+    if (this.bad) this.idle = false;
     if (c >= 15 && c <= 54 && this.bad) {
-      this.vm[this.vmli] = this.rd(this.vmBase | this.vc);
-      this.cm[this.vmli] = this.m.colorRam[this.vc] & 15;
+      if (c < this.baStart + 3) {
+        this.vm[this.vmli] = 0xFF;
+        this.cm[this.vmli] = this.m.ram[this.m.cpu.pc] & 15;
+      } else {
+        this.vm[this.vmli] = this.rd(this.vmBase | this.vc);
+        this.cm[this.vmli] = this.m.colorRam[this.vc] & 15;
+      }
     }
 
     // border color for the 8 pixels of this cycle
@@ -196,6 +208,7 @@
       for (var i = 0; i < 8; i++) this.brd[x0 + i] = bc;
     }
 
+    this.ySeen = regs[0x11] & 7;
     if (c === 63) {
       this.endLine();
       this.cyc = 1;
@@ -426,7 +439,8 @@
       idle: this.idle, denLatch: this.denLatch, vff: this.vff, mc: Array.from(this.mc), mcbase: Array.from(this.mcbase),
       expFF: Array.from(this.expFF), dmaMask: this.dmaMask, dispMask: this.dispMask,
       sNext: Array.from(this.sNext), sCur: Array.from(this.sCur), showNext: this.showNext, showCur: this.showCur,
-      sprSpr: this.sprSpr, sprBg: this.sprBg, vm: Array.from(this.vm), cm: Array.from(this.cm), rasterIrqDone: this.rasterIrqDone
+      sprSpr: this.sprSpr, sprBg: this.sprBg, vm: Array.from(this.vm), cm: Array.from(this.cm), rasterIrqDone: this.rasterIrqDone,
+      ySeen: this.ySeen, baStart: this.baStart
     };
   };
   P.loadState = function (o) {
@@ -435,6 +449,8 @@
      "dmaMask", "dispMask", "showNext", "showCur", "sprSpr", "sprBg", "rasterIrqDone"].forEach(function (k) { self[k] = o[k]; });
     this.regs.set(o.regs); this.mc.set(o.mc); this.mcbase.set(o.mcbase); this.expFF.set(o.expFF);
     this.sNext.set(o.sNext); this.sCur.set(o.sCur); this.vm.set(o.vm); this.cm.set(o.cm);
+    this.ySeen = o.ySeen !== undefined ? o.ySeen : this.regs[0x11] & 7;
+    this.baStart = o.baStart !== undefined ? o.baStart : 99;
     this.updatePointers();
   };
 

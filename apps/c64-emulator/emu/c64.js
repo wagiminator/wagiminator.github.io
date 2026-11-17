@@ -53,7 +53,7 @@
     this.rmap = new Array(16);
     this.roff = new Int32Array(16);
     this.io = new Uint8Array(16);
-    this.clk = 0;
+    this.clk = 0; this.cycNow = 0; this.irqAt = 0; this.pollAt = -1;
     this.instrStart = 0;
     this.warp = false;
     this.onLed = null;
@@ -91,7 +91,7 @@
     this.updateMap();
     this.cpu.reset();
     if (this.drive) this.drive.reset();
-    this.clk = 0;
+    this.clk = 0; this.cycNow = 0; this.irqAt = 0; this.pollAt = -1;
     this.sid.clk = 0;
     if (this.drive) this.drive.syncBase(0);
   };
@@ -195,6 +195,7 @@
   };
 
   P.setIrq = function (bit, level) {
+    if (level && !this.cpu.irq) this.irqAt = this.cycNow;   // when the IRQ line went low
     if (level) this.cpu.irq |= bit; else this.cpu.irq &= ~bit;
   };
   P.setNmi = function (bit, level) {
@@ -245,12 +246,14 @@
     var n = t - this.clk;
     if (n <= 0) return;
     for (var i = 0; i < n; i++) {
+      this.cycNow = this.clk + i;
       vic.cycle();
       c1.tick();
       c2.tick();
     }
     if (tape && tape.running) tape.advance(n, this.cia1);
     this.clk = t;
+    this.cycNow = t;
     if (this.drive) this.drive.runTo(t);
   };
 
@@ -263,7 +266,10 @@
         if (cpu.pc === kernalTrap ? this.handleLoadTrap() : this.handleSaveTrap()) continue;
       }
       this.instrStart = this.clk;
+      // an IRQ that arrived after the poll of the last instruction waits one more instruction
+      cpu.irqHold = cpu.irq !== 0 && this.irqAt > this.pollAt;
       var n = cpu.step();
+      this.pollAt = this.instrStart + n - 2;
       this.syncTo(this.instrStart + n);
     }
     this.sid.clockTo(this.clk);
@@ -449,7 +455,7 @@
     this.ddr = s.ddr; this.port = s.port;
     this.cpu.loadState(s.cpu); this.vic.loadState(s.vic); this.sid.loadState(s.sid);
     this.cia1.loadState(s.cia1); this.cia2.loadState(s.cia2);
-    this.clk = s.clk; this.nmiSrc = s.nmiSrc; this.iec = Object.assign({}, s.iec); this.trapLoad = s.trapLoad;
+    this.clk = s.clk; this.cycNow = s.clk; this.irqAt = 0; this.pollAt = s.clk; this.nmiSrc = s.nmiSrc; this.iec = Object.assign({}, s.iec); this.trapLoad = s.trapLoad;
     if (this.cart && s.cart && this.cart.loadState) this.cart.loadState(s.cart);
     if (this.drive && s.drive) this.drive.loadState(s.drive);
     if (this.tape && s.tape) this.tape.loadState(s.tape);

@@ -30,6 +30,8 @@
     this.extra = 0;           // page-cross cycles of the current instruction
     this.op = 0;              // current opcode
     this.cyc = 2;             // base cycles of the current instruction
+    this.pollI = 1;           // I flag as seen by the interrupt poll of the last instruction
+    this.irqHold = false;     // set by the machine: the IRQ came too late for this poll
   }
   CPU.CYC = CYC;
 
@@ -40,6 +42,7 @@
     this.i = 1;
     this.jammed = false;
     this.nmiPending = false;
+    this.pollI = 1;
     this.pc = this.bus.read(0xFFFC) | (this.bus.read(0xFFFD) << 8);
   };
 
@@ -169,10 +172,15 @@
       this.interrupt(0xFFFA, false);
       return 7;
     }
-    if (this.irq && !this.i) {
+    // the 6502 polls IRQ in the second-to-last cycle of an instruction: an IRQ that comes
+    // later, or the I flag changed by CLI/SEI/PLP in their last cycle, only counts one
+    // instruction later
+    if (this.irq && !this.pollI && !this.irqHold) {
       this.interrupt(0xFFFE, false);
+      this.pollI = 1;
       return 7;
     }
+    var iBefore = this.i;
     if (this.jammed) return 2;
     var op = bus.read(this.pc);
     this.op = op;
@@ -460,6 +468,7 @@
       case 0x9C: t = this.abs(); this.shx(t, this.x, this.y); break;                                       // SHY
     }
     this.pc &= 0xFFFF;
+    this.pollI = (op === 0x58 || op === 0x78 || op === 0x28) ? iBefore : this.i;
     return this.cyc + this.extra;
   };
 
@@ -479,6 +488,7 @@
   P.loadState = function (o) {
     this.a = o.a; this.x = o.x; this.y = o.y; this.s = o.s; this.pc = o.pc; this.setP(o.p);
     this.irq = o.irq; this.nmiLine = o.nmiLine; this.nmiPending = o.nmiPending; this.jammed = o.jammed;
+    this.pollI = this.i ? 1 : 0; this.irqHold = false;
   };
 
   global.CPU6502 = CPU;
