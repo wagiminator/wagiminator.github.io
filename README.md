@@ -46,6 +46,7 @@ games/
   feather-frenzy/       Feather Frenzy (grouse-shooting arcade game)
   starlane-command/     Starlane Command (real-time fleet command game)
   mossling-march/       Mossling March (Lemmings-style puzzle game)
+  mole-mayhem/          Mole Mayhem (turn-based artillery game)
 ```
 
 Every app lives in its own folder under `apps/` and is reachable at `https://wagiminator.github.io/apps/<app-name>/`. Apps are plain HTML, CSS and JavaScript without a build step and run entirely in the browser. Browser games live in the same way under `games/<game-name>/` and are listed under "Games" on the start page.
@@ -426,6 +427,19 @@ Puzzle game as a homage to the classic Lemmings (DMA Design / Psygnosis, 1991). 
 - Mouse and touch, keyboard and gamepad controls, fullscreen mode (F); progress is saved in the browser.
 
 Code: `js/terrain.js` (destructible terrain), `js/sprites.js` (mosslings, hatch and door), `js/game.js` (simulation and jobs), `js/levels.js` (levels), `js/play.js` (playfield, job panel, minimap, input), `js/draw.js` (drawing helpers and widgets), `js/audio.js` (music, sound and voice), `js/ui.js` (screens), `js/main.js` (main loop); see `games/mossling-march/README.md`.
+
+### Mole Mayhem
+
+Turn-based artillery game as a homage to the classic Worms (Team17, 1995). Teams of round, pink-nosed moles in coloured helmets fight on a crumbling island. All graphics are drawn by code, music and sound effects are synthesized with the Web Audio API; names and characters are original.
+
+- Destructible islands generated from noise in four landscapes (meadow, desert, arctic, volcano) with caves, floating rocks, barrels and optional mines; every blast tears a crater and throws moles around; falls hurt and the sea is deadly.
+- Two to four teams with two to six moles each, played by humans on one device or by computer players at three levels; a turn clock with a short retreat after firing, wind that changes every turn, crates with health or weapons, and sudden death with a rising sea.
+- Seventeen weapons and tools: bazooka, homing missile, grenade, cluster bomb, shotgun, baseball bat, dynamite, mine, air strike, drill, blowtorch, girder, teleport, jetpack, grappling hook, skip turn and surrender.
+- Computer players fly every possible shot with the game's own physics, weigh damage to rivals against damage to their own team and aim with a level-dependent error.
+- Tracker-style soundtracks for every landscape and for sudden death, sound effects and short voice calls (Web Speech API, can be switched off).
+- Keyboard, mouse, touch (on-screen buttons) and gamepad controls, zoom, drag the map to look around, fullscreen mode (F).
+
+Code: `js/terrain.js` (island generator, textures, craters), `js/moles.js` (moles, weapons, objects), `js/game.js` (turns, physics, weapons, explosions), `js/ai.js` (computer players), `js/play.js` (camera, HUD, weapon menu, controls), `js/draw.js` (drawing helpers and widgets), `js/audio.js` (music, sound and voice), `js/ui.js` (screens), `js/main.js` (main loop); see `games/mole-mayhem/README.md`.
 
 ## Start page
 
