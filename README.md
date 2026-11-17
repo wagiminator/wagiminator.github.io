@@ -21,6 +21,7 @@ apps/
   tap-transfer/         C64 Tape Transfer
   cart-builder/         C64 Cartridge Builder
   c64-emulator/         C64 Emulator (CPU, VIC-II, SID, CIAs, 1541 drive, datasette)
+  sid-player/           SID Player (C64 music player and analyser)
   gameconsole/          Game Console Flasher
   rvprog/               WCH RISC-V Programmer
   chprog/               WCH USB Programmer
@@ -144,6 +145,18 @@ A Commodore 64 (PAL) emulator written from scratch in plain JavaScript, no build
 - System ROMs: the free [MEGA65 Open ROMs](https://github.com/MEGA65/open-roms) (LGPL 3, in `roms/`) are built in. They run most games, but their BASIC is incomplete; a small bug in their serial output (`CIOUT`) is patched when they are loaded. The original KERNAL, BASIC, character and 1541 ROMs can be loaded once and are kept in the browser's IndexedDB; they are not part of this repository.
 
 Code: `emu/cpu6502.js`, `emu/vic.js`, `emu/sid.js`, `emu/cia.js`, `emu/c64.js` (memory map, scheduler, fast loader), `emu/drive1541.js` (1541 with VIAs), `emu/media.js` (image formats, GCR), `emu/tape.js`, `emu/cart.js`; `app.js` is the user interface. The emulator core also runs in Node.js.
+
+### SID Player
+
+A player and analyser for C64 music (PSID and RSID files, versions 1 to 4), running the tunes on the C64 emulator core of the C64 Emulator app.
+
+- PSID tunes are played like SIDPLAY does: the player calls their init and play routines on the screen interrupt (50/60 Hz) or the CIA timer. RSID tunes run in a full C64 environment (Open ROMs, CIAs, VIC-II) with their own interrupts, including BASIC programs. Tunes for two or three SIDs (PSID v3/v4) are supported; PAL and NTSC clocks, SID model 6581/8580 from the file or chosen by hand.
+- A live oscilloscope for every voice (triggered on rising edges, about three periods wide), with note name, waveform, gate/sync/ring/test bits, pulse width, envelope level and ADSR; filter cutoff, resonance, mode and volume per chip.
+- Keyboard view of the sounding notes, a tracker log with one row per play call (new notes, control register, ADSR, pulse width, filter), a register table that highlights changes, and a spectrum of the output.
+- Mute and solo per voice (also for the WAV export), playlist with drag and drop, song selection, automatic advance after a set time, media keys, and WAV export of a chosen length.
+- Includes "Blue Circuit", an original demo tune with its own small 6502 player (source and build script in `demo/`). No other music is part of the repository.
+
+Code: `js/psid.js` (file format), `js/player.js` (machine, multi-SID routing, PSID driver, tick recording), `emu/` (CPU, VIC-II, CIAs and C64 core from the C64 Emulator; `sid.js` extended by single-voice outputs and muting), `app.js` (audio worklet, views, export).
 
 ### Game Console Flasher
 
