@@ -47,6 +47,7 @@ games/
   starlane-command/     Starlane Command (real-time fleet command game)
   mossling-march/       Mossling March (Lemmings-style puzzle game)
   mole-mayhem/          Mole Mayhem (turn-based artillery game)
+  pearl-panic/          Pearl Panic (marble-shooting puzzle game)
 ```
 
 Every app lives in its own folder under `apps/` and is reachable at `https://wagiminator.github.io/apps/<app-name>/`. Apps are plain HTML, CSS and JavaScript without a build step and run entirely in the browser. Browser games live in the same way under `games/<game-name>/` and are listed under "Games" on the start page.
@@ -440,6 +441,19 @@ Turn-based artillery game as a homage to the classic Worms (Team17, 1995). Teams
 - Keyboard, mouse, touch (on-screen buttons) and gamepad controls, zoom, drag the map to look around, fullscreen mode (F).
 
 Code: `js/terrain.js` (island generator, textures, craters), `js/moles.js` (moles, weapons, objects), `js/game.js` (turns, physics, weapons, explosions), `js/ai.js` (computer players), `js/play.js` (camera, HUD, weapon menu, controls), `js/draw.js` (drawing helpers and widgets), `js/audio.js` (music, sound and voice), `js/ui.js` (screens), `js/main.js` (main loop); see `games/mole-mayhem/README.md`.
+
+### Pearl Panic
+
+Marble-shooting puzzle game as a homage to the classic Zuma (PopCap, 2003). Chains of pearls roll along winding grooves towards a giant clam; Puff the pufferfish spits pearls into the chains, and three or more of the same colour pop. All graphics are drawn by code, music and sound effects are synthesized with the Web Audio API; names and characters are original.
+
+- 20 levels in four worlds (Coral Reef, Kelp Forest, Sunken Ruins, The Abyss) with spirals, snakes, starfish swirls, square mazes and levels with two chains; later worlds bring more colours and faster chains.
+- Chain reactions: when a gap closes with the same colour on both sides, the front part rolls back, and a new match counts as a combo; Puff only offers colours that are still on the board.
+- Power pearls (slow down, reverse, sharp eye with a laser sight, blast), gold coins and an extra life every 10,000 points.
+- Up to three stars per level (cleared, no life lost, ace time), clear, time and perfect bonuses; best scores and stars are saved in the browser, and every cleared level unlocks the next.
+- Tracker-style soundtrack for every world, a fast tune when the chain gets close to the clam, sound effects and short voice calls (Web Speech API, can be switched off).
+- Mouse, touch, keyboard and gamepad controls, fullscreen mode (F); every pearl colour also carries its own symbol.
+
+Code: `js/levels.js` (track shapes, worlds, levels), `js/game.js` (chains, shots, matches, combos, power pearls), `js/sprites.js` (pearls, Puff, clam, backdrops, grooves), `js/play.js` (level screen, HUD, controls), `js/draw.js` (drawing helpers and widgets), `js/audio.js` (music, sound and voice), `js/ui.js` (screens), `js/main.js` (main loop); see `games/pearl-panic/README.md`.
 
 ## Start page
 
