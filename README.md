@@ -48,6 +48,7 @@ games/
   mossling-march/       Mossling March (Lemmings-style puzzle game)
   mole-mayhem/          Mole Mayhem (turn-based artillery game)
   pearl-panic/          Pearl Panic (marble-shooting puzzle game)
+  woolly-wallop/        Woolly Wallop (slingshot physics game)
 ```
 
 Every app lives in its own folder under `apps/` and is reachable at `https://wagiminator.github.io/apps/<app-name>/`. Apps are plain HTML, CSS and JavaScript without a build step and run entirely in the browser. Browser games live in the same way under `games/<game-name>/` and are listed under "Games" on the start page.
@@ -454,6 +455,21 @@ Marble-shooting puzzle game as a homage to the classic Zuma (PopCap, 2003). Chai
 - Mouse, touch, keyboard and gamepad controls, fullscreen mode (F); every pearl colour also carries its own symbol.
 
 Code: `js/levels.js` (track shapes, worlds, levels), `js/game.js` (chains, shots, matches, combos, power pearls), `js/sprites.js` (pearls, Puff, clam, backdrops, grooves), `js/play.js` (level screen, HUD, controls), `js/draw.js` (drawing helpers and widgets), `js/audio.js` (music, sound and voice), `js/ui.js` (screens), `js/main.js` (main loop); see `games/pearl-panic/README.md`.
+
+### Woolly Wallop
+
+Slingshot physics game as a homage to the slingshot games of the early smartphone era such as Angry Birds (Rovio, 2009). A flock of sheep strikes back: load a sheep into the slingshot, pull back and send it flying into the forts of the wolves; a level is won once every wolf is out. All graphics are drawn by code, music and sound effects are synthesized with the Web Audio API; names, characters and tunes are original.
+
+- A small rigid-body physics engine of its own (boxes and circles, sequential impulses with warm starting, friction, bounce, sleeping bodies); towers sway, topple and collapse, and every impact deals damage according to its strength.
+- Five kinds of sheep with tricks in flight: Woolly, Lambkins (split into three), Zoomer (burst of speed), Boomer (thunderclap) and the heavy Bruiser (stomp).
+- Forts of ice, wood and stone, exploding firework crates, and pups, wolves and a tough alpha.
+- 20 levels in four landscapes (Green Meadow, Autumn Woods, Snowy Peaks, Dusk Farm), each one solved by a test bot.
+- Points for broken blocks, damage, wolves and every sheep left over, up to three stars per level; best scores and stars are saved in the browser, and every cleared level unlocks the next.
+- Camera that shows the whole level while aiming and follows the flying sheep, a trajectory guide and the trail of the last shot.
+- Tracker-style soundtrack for every landscape, bleating sheep and crashing blocks, short voice calls (Web Speech API, can be switched off).
+- Mouse, touch, keyboard and gamepad controls, fullscreen mode (F).
+
+Code: `js/physics.js` (rigid-body engine), `js/levels.js` (materials, sheep and wolves, landscapes, levels), `js/game.js` (slingshot, flight, tricks, damage, scoring), `js/sprites.js` (flock, wolves, blocks, landscapes), `js/play.js` (level screen, camera, HUD, controls), `js/draw.js` (drawing helpers and widgets), `js/audio.js` (music, sound and voice), `js/ui.js` (screens), `js/main.js` (main loop); see `games/woolly-wallop/README.md`.
 
 ## Start page
 
