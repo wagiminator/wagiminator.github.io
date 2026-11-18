@@ -21,7 +21,7 @@ apps/
   tap-transfer/         C64 Tape Transfer
   cart-builder/         C64 Cartridge Builder
   c64-emulator/         C64 Emulator (CPU, VIC-II, SID, CIAs, 1541 drive, datasette)
-  sid-player/           SID Player (C64 music player and analyser)
+  sid-player/           C64 SID Player (music player and analyser)
   gameconsole/          Game Console Flasher
   rvprog/               WCH RISC-V Programmer
   chprog/               WCH USB Programmer
@@ -151,7 +151,7 @@ A Commodore 64 (PAL) emulator written from scratch in plain JavaScript, no build
 
 Code: `emu/cpu6502.js`, `emu/vic.js`, `emu/sid.js`, `emu/cia.js`, `emu/c64.js` (memory map, scheduler, fast loader), `emu/drive1541.js` (1541 with VIAs), `emu/media.js` (image formats, GCR), `emu/tape.js`, `emu/cart.js`, `emu/disasm.js` (disassembler and assembler); `app.js` is the user interface, `debugger.js` the monitor and debugger, `sprites.js` the sprite viewer, `charset.js` the character set viewer, `music.js` and `emu/sidrip.js` the WAV recorder and SID ripper. The emulator core also runs in Node.js.
 
-### SID Player
+### C64 SID Player
 
 A player and analyser for C64 music (PSID and RSID files, versions 1 to 4), running the tunes on the C64 emulator core of the C64 Emulator app.
 
