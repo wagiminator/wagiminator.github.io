@@ -78,6 +78,7 @@
     this.showCur = 0;
     this.sprSpr = 0; this.sprBg = 0;
     this.sprTrace = false; this.sprCur = []; this.sprFrame = []; this.sprSeen = {};
+    this.chrTrace = false; this.chrCur = []; this.chrFrame = [];
     this.frameDone = false;
     this.frame = 0;
     this.rasterIrqDone = false;
@@ -148,6 +149,7 @@
     }
 
     if (c === 14) {
+      if (this.chrTrace && this.raster >= 0x30 && this.raster <= 0xF7) this.traceChars();
       this.vc = this.vcbase;
       this.vmli = 0;
       if (this.bad) this.rc = 0;
@@ -291,6 +293,17 @@
     }
   };
 
+  // Character set viewer: which character sets, screens and modes the lines of this frame use
+  P.traceChars = function () {
+    var r = this.regs, bank = this.m.vicBank, chr = bank | this.chBase, scr = bank | this.vmBase;
+    var mode = (r[0x11] & 0x60) | (r[0x16] & 0x10);
+    var cols = (r[0x21] & 15) | ((r[0x22] & 15) << 4) | ((r[0x23] & 15) << 8) | ((r[0x24] & 15) << 12);
+    var list = this.chrCur, last = list[list.length - 1];
+    if (last && last.chr === chr && last.scr === scr && last.mode === mode && last.cols === cols) { last.to = this.raster; return; }
+    list.push({ chr: chr, scr: scr, mode: mode, cols: cols, rom: (bank & 0x4000) === 0 && (this.chBase & 0x3000) === 0x1000,
+      from: this.raster, to: this.raster, ys: r[0x11] & 7 });
+  };
+
   // Sprite viewer: remember every sprite that starts in this frame (also multiplexed ones)
   P.traceSprite = function (n, ptr) {
     var regs = this.regs, bit = 1 << n, bank = this.m.vicBank;
@@ -403,6 +416,7 @@
         this.sprFrame = this.sprCur; this.sprCur = []; this.sprSeen = {};
         if (this.onSprites) this.onSprites(this.sprFrame);
       }
+      if (this.chrTrace) { this.chrFrame = this.chrCur; this.chrCur = []; }
       this.frame++;
     }
     this.raster = r;

@@ -63,6 +63,7 @@
   var snapshot = null;
   var debug = null;                 // monitor and debugger (debugger.js)
   var spriteView = null;            // sprite viewer (sprites.js)
+  var charView = null;              // character set viewer (charset.js)
 
   // ------------------------------------------------------------------ messages
   function showError(msg) { var e = $("error"); e.textContent = msg; e.hidden = !msg; }
@@ -88,6 +89,7 @@
     c64.reset(true);
     if (debug) debug.attach(c64);
     if (spriteView) spriteView.attach(c64);
+    if (charView) charView.attach(c64);
     updateRomStatus();
     updateMediaUi();
   }
@@ -801,6 +803,18 @@
     $("btn-sprites").setAttribute("aria-pressed", on ? "true" : "false");
     if (on) $("sprites").scrollIntoView({ block: "nearest", behavior: "smooth" });
   }
+  function setCharset(on) {
+    if (!charView) return;
+    settings.charset = !!on; saveSettings();
+    charView.setOpen(!!on);
+    $("btn-charset").setAttribute("aria-pressed", on ? "true" : "false");
+    if (on) $("charset").scrollIntoView({ block: "nearest", behavior: "smooth" });
+  }
+  function initCharset() {
+    if (!window.C64Charset) return;
+    charView = window.C64Charset({ toggle: setCharset });
+    $("btn-charset").addEventListener("click", function () { setCharset(!charView.isOpen()); });
+  }
   function initSprites() {
     if (!window.C64Sprites) return;
     spriteView = window.C64Sprites({ toggle: setSprites });
@@ -932,9 +946,11 @@
     $("btn-load-state").disabled = !snapshot;
     initDebugger();
     initSprites();
+    initCharset();
     buildMachine();
     if (settings.debugger) setDebugger(true);
     if (settings.sprites) setSprites(true);
+    if (settings.charset) setCharset(true);
     applyDisplay();
     updateSoundUi();
     updateJoyStatus();
