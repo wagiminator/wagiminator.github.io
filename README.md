@@ -24,6 +24,7 @@ apps/
   sid-player/           C64 SID Player (music player and analyser)
   sid-tracker/          C64 SID Tracker (composing SID music)
   pixel-studio/         C64 Pixel Studio (sprites, characters, levels, bitmaps)
+  c64-packer/           C64 Packer (Exomizer and TSCrunch formats, tape images)
   gameconsole/          Game Console Flasher
   rvprog/               WCH RISC-V Programmer
   chprog/               WCH USB Programmer
@@ -191,6 +192,18 @@ A graphics editor for C64 programs: sprites, sprite objects, character sets, til
 - Export: sprites as raw data (64 bytes each, colour in byte 63), PRG with load address, SpritePad 1.x (.spd), assembler source and PNG; object tables as assembler source and frames as PNG; the character set as raw data, .64c with load address, colours, assembler source and PNG; tiles and levels as raw data (tile numbers, or screen codes and colours character by character), assembler source and PNG; bitmaps as Koala Painter (.koa), Art Studio (.aas), raw parts and PNG. Import reads the project, SpritePad 1.x, Koala and Art Studio pictures, pictures for the converter and raw data (sprites, characters, colours, tiles, level, with or without load address).
 
 Code: `js/gfx.js` (C64 colours, pixel formats, bitmap colour rules), `js/model.js` (project, undo, project file), `js/editor.js` (pixel editor and tools), `js/formats.js` (file formats), `js/convert.js` (picture converter), `js/core.js` and `js/ui-*.js` (the views), `js/io.js` (export, import, converter dialog), `app.js` (tabs, keyboard); `roms/chargen.js` is the character ROM of the MEGA65 Open ROMs (LGPL-3.0).
+
+### C64 Packer
+
+Packs C64 programs in the browser. The result starts with RUN like the original, unpacks itself and starts the program.
+
+- Two formats: the Exomizer 3 bit stream (protocol flags 39, packs smallest) and the TSCrunch byte format (unpacks fastest). Both are packed with an optimal parse; the TSCrunch packer is a port of the TSCrunch 1.3 encoder and gives the same bytes.
+- Self-extracting PRG: a BASIC line SYS 2061, an unpacker that moves itself to $FC00 and the packed data right below it, unpacking in place with a safety check; programs up to $FBFF, also under the ROMs. Start with JMP to an address (a SYS line is found by itself) or with RUN for BASIC programs. Every result is unpacked on an emulated 6502 before saving, which also gives the unpack time.
+- Packed data for own code: TSCrunch (like `tscrunch -p`), Exomizer raw forward and backwards (like `exomizer raw` and `exomizer raw -b`).
+- Tape images (.tap) with a fast loader: a normal KERNAL file carries the loader in its header and starts it through the CHRIN vector after LOAD; the loader reads the program in turbo format (about 400 bytes per second) and starts it with JMP or RUN.
+- A memory map shows where the program, the packed data and the unpacker are while unpacking.
+
+Code: `js/tscrunch.js` and `js/exomizer.js` (the formats, packing and unpacking), `js/packer.js` (program analysis, in-place safety, self-extracting files, checks), `js/tap.js` (tape images), `js/cpu6502.js` (from the C64 Emulator), `app.js` (user interface); `asm/sfx.asm` (unpackers and start) and `asm/turbo.asm` (tape loader) for 64tass, built into `js/sfx.js` by `asm/build.js`. `js/LICENSE-tscrunch.txt` is the Apache 2.0 license of TSCrunch.
 
 ### Game Console Flasher
 
