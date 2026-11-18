@@ -61,6 +61,7 @@
   var media = { disks: [], diskIndex: -1, tape: null, cart: null, t64: null };
   var running = true, warp = false;
   var snapshot = null;
+  var debug = null;                 // monitor and debugger (debugger.js)
 
   // ------------------------------------------------------------------ messages
   function showError(msg) { var e = $("error"); e.textContent = msg; e.hidden = !msg; }
@@ -84,6 +85,7 @@
     c64.drive.onLed = setLed;
     remount();
     c64.reset(true);
+    if (debug) debug.attach(c64);
     updateRomStatus();
     updateMediaUi();
   }
@@ -107,6 +109,7 @@
     c64.releaseAllKeys();
     keyState = {};
     running = true; updatePauseUi();
+    if (debug) debug.afterReset();
   }
 
   // ------------------------------------------------------------------ loading media
@@ -330,6 +333,7 @@
     if (!c64) return;
     image.data.set(new Uint8ClampedArray(c64.vic.fb.buffer));
     ctx.putImageData(image, -crop.x, -crop.y);
+    if (debug) debug.overlay(ctx, crop);
   }
 
   function layoutFullscreen() {
@@ -444,12 +448,12 @@
     var frames = 0;
     if (warp) {
       var t0 = performance.now();
-      do { runOne(); frames++; } while (performance.now() - t0 < 14);
+      do { runOne(); frames++; } while (running && performance.now() - t0 < 14);
       c64.sid.takeSamples();
     } else {
       // the picture always follows the clock; the sound adapts to it (see feedAudio)
       acc += dt * FRAME_HZ / 1000;
-      while (acc >= 1 && frames < 4) { runOne(); feedAudio(); acc -= 1; frames++; }
+      while (running && acc >= 1 && frames < 4) { runOne(); feedAudio(); acc -= 1; frames++; }
       if (acc > 2) acc = 0;
     }
     frameCount += frames;
@@ -462,7 +466,8 @@
   }
   function runOne() {
     processKeyQueue();
-    c64.runFrame();
+    // false: the debugger stopped the C64 in the middle of the frame
+    if (c64.runFrame() === false && debug) debug.onStop();
   }
   // Hand the samples of one frame to the audio output. The display refresh and the
   // sound card run on different clocks, so the SID output rate is nudged by up to
@@ -500,6 +505,12 @@
   }
 
   function setPaused(p) {
+    // with the debugger open, Pause stops at the next instruction and Resume goes on from there
+    if (debug && debug.isOpen()) {
+      if (p && running) debug.breakNow();
+      else if (!p && debug.isStopped()) debug.cont();
+      return;
+    }
     running = !p;
     if (!running) clearAudio();
     updatePauseUi();
@@ -747,6 +758,7 @@
     if (audio.ctx) c64.sid.setSampleRate(audio.rate);
     clearAudio();
     running = true; updatePauseUi();
+    if (debug) debug.afterReset();
     draw();
     notice("State loaded.", 2000);
   }
@@ -758,6 +770,27 @@
     a.href = url; a.download = name;
     document.body.appendChild(a); a.click(); a.remove();
     setTimeout(function () { URL.revokeObjectURL(url); }, 2000);
+  }
+
+  // ------------------------------------------------------------------ debugger
+  function setDebugger(on) {
+    if (!debug) return;
+    settings.debugger = !!on; saveSettings();
+    debug.setOpen(!!on);
+    $("btn-debug").setAttribute("aria-pressed", on ? "true" : "false");
+    if (on) $("debugger").scrollIntoView({ block: "nearest", behavior: "smooth" });
+    draw();
+  }
+  function initDebugger() {
+    if (!window.C64Debugger) return;
+    debug = window.C64Debugger({
+      stop: function () { running = false; clearAudio(); updatePauseUi(); updateWakeLock(); draw(); },
+      resume: function () { running = true; last = performance.now(); acc = 0; clearAudio(); updatePauseUi(); updateWakeLock(); draw(); },
+      toggle: setDebugger,
+      download: download,
+      reset: function () { hardReset(); draw(); }
+    });
+    $("btn-debug").addEventListener("click", function () { setDebugger(!debug.isOpen()); });
   }
 
   // ------------------------------------------------------------------ wiring
@@ -883,7 +916,9 @@
     }
     snapshot = (await store.get("state")) || null;
     $("btn-load-state").disabled = !snapshot;
+    initDebugger();
     buildMachine();
+    if (settings.debugger) setDebugger(true);
     applyDisplay();
     updateSoundUi();
     updateJoyStatus();
