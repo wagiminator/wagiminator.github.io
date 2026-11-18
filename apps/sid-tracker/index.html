@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>C64 SID Tracker</title>
+  <meta name="description" content="Compose music for the C64 SID chip in the browser: a tracker with patterns, an order list and instruments with wave programs, pulse sweeps, vibrato and filter. Exports .sid, .prg and WAV files.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chivo:wght@400;700&display=swap">
+  <link rel="stylesheet" href="../../assets/css/site.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav class="site-bar" aria-label="Breadcrumb">
+    <a href="../../">wagiminator</a><span class="sep">/</span><span>Apps</span><span class="sep">/</span><span>C64 SID Tracker</span>
+  </nav>
+
+  <main class="app">
+    <header class="app-head">
+      <h1>C64 SID Tracker</h1>
+      <p>Compose music for the SID chip of the C64. Write notes into patterns for the three voices, line the patterns up in the order list and shape the sound with instruments. The song plays on an emulated C64 and is saved as a SID file, as a C64 program or as a sound file.</p>
+    </header>
+
+    <!-- song -->
+    <section class="panel projbar" aria-label="Song">
+      <div class="proj-fields">
+        <label class="pf"><span>Title</span><input type="text" id="s-name" maxlength="32" spellcheck="false"></label>
+        <label class="pf"><span>Author</span><input type="text" id="s-author" maxlength="32" spellcheck="false"></label>
+        <label class="pf"><span>Released</span><input type="text" id="s-released" maxlength="32" spellcheck="false"></label>
+      </div>
+      <div class="proj-actions">
+        <button type="button" class="btn" id="btn-new">New</button>
+        <button type="button" class="btn" id="btn-open">Open…</button>
+        <button type="button" class="btn" id="btn-save" title="Save the song as a file (Ctrl+S)">Save song</button>
+        <button type="button" class="btn" id="btn-demo">Demo song</button>
+        <button type="button" class="btn btn-primary" id="btn-export">Export…</button>
+      </div>
+      <div class="proj-undo">
+        <button type="button" class="icon-btn" id="btn-undo" title="Undo (Ctrl+Z)" aria-label="Undo">↶</button>
+        <button type="button" class="icon-btn" id="btn-redo" title="Redo (Ctrl+Y)" aria-label="Redo">↷</button>
+        <span class="saved" id="saved" aria-live="polite"></span>
+      </div>
+      <div class="proj-settings">
+        <label class="mini" title="Frames per row at the start of the song (command F changes it)">Speed <input type="number" id="s-speed" min="1" max="31"></label>
+        <label class="mini" title="Rows in every pattern">Rows <input type="number" id="s-rows" min="1" max="64"></label>
+        <label class="mini" title="How often the music is played in a frame (CIA timer)">Calls per frame
+          <select id="s-multi"><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option></select></label>
+        <label class="mini">SID chip <select id="s-model"><option value="6581">6581 (old)</option><option value="8580">8580 (new)</option></select></label>
+        <label class="mini" title="Where the player and the song go in the C64 memory">Load address $<input type="text" id="s-load" class="hexin" maxlength="4" spellcheck="false"></label>
+        <span class="size-info" id="size-info"></span>
+      </div>
+      <input type="file" id="file-open" accept=".json,.c64trk" hidden>
+    </section>
+
+    <!-- transport -->
+    <section class="panel transport" aria-label="Playback">
+      <div class="tp-btns" role="group" aria-label="Play">
+        <button type="button" class="btn btn-primary" id="b-play" title="Play the song from the start (F5)"><span aria-hidden="true">▶</span> Play song</button>
+        <button type="button" class="btn" id="b-playhere" title="Play the song from the cursor (F6, or Space)"><span aria-hidden="true">▶</span> From the cursor</button>
+        <button type="button" class="btn" id="b-loop" title="Play the patterns of this position again and again (F7)"><span aria-hidden="true">↻</span> Loop position</button>
+        <button type="button" class="btn" id="b-stop" title="Stop (F8 or Esc)"><span aria-hidden="true">■</span> Stop</button>
+      </div>
+      <div class="tp-where" aria-live="off"><span>Position <b id="w-pos">00</b></span><span>Row <b id="w-row">00</b></span></div>
+      <div class="tp-opts">
+        <label class="mini" title="Octave of the note keys (* and / on the number pad)">Octave <select id="o-oct"></select></label>
+        <label class="mini" title="Rows the cursor moves after a note">Step <input type="number" id="o-step" min="0" max="16" value="1"></label>
+        <label class="choice"><input type="checkbox" id="o-follow" checked> Follow the song</label>
+        <label class="mini vol">Volume <input type="range" id="o-vol" min="0" max="100" value="80"></label>
+      </div>
+      <p class="note" id="msg" role="status" hidden></p>
+    </section>
+
+    <div class="desk">
+      <!-- order list -->
+      <section class="panel order-panel" aria-labelledby="order-h">
+        <div class="panel-head">
+          <h2 id="order-h">Order list</h2>
+          <span class="count" id="order-count"></span>
+        </div>
+        <div class="order-wrap">
+          <div class="order-head" aria-hidden="true"><span>Pos</span><span class="c1">V1</span><span class="c2">V2</span><span class="c3">V3</span></div>
+          <div class="order" id="order" role="listbox" aria-label="Positions of the song" tabindex="0"></div>
+        </div>
+        <div class="ord-btns">
+          <button type="button" class="btn sm" id="ord-add" title="New position after this one, with the same patterns">Repeat</button>
+          <button type="button" class="btn sm" id="ord-new" title="New position after this one, with new empty patterns">New</button>
+          <button type="button" class="icon-btn" id="ord-up" title="Move up" aria-label="Move the position up">↑</button>
+          <button type="button" class="icon-btn" id="ord-down" title="Move down" aria-label="Move the position down">↓</button>
+          <button type="button" class="icon-btn remove" id="ord-del" title="Remove the position" aria-label="Remove the position">✕</button>
+        </div>
+        <div class="ord-edit" id="ord-edit">
+          <h3>Position <span id="oe-pos">00</span></h3>
+          <div class="oe-grid" id="oe-grid"></div>
+          <label class="choice"><input type="checkbox" id="oe-loop"> The song loops back to here</label>
+        </div>
+      </section>
+
+      <!-- patterns -->
+      <section class="panel pattern-panel" aria-label="Patterns">
+        <div class="voices" id="voices"></div>
+        <div class="pattern" id="pattern" tabindex="0" role="grid" aria-label="Pattern editor: notes, instrument, command and parameter of the three voices" aria-describedby="pat-status"></div>
+        <p class="status" id="pat-status"> </p>
+        <div class="pat-tools">
+          <button type="button" class="btn sm" id="pt-copy" title="Copy the selection (Ctrl+C)">Copy</button>
+          <button type="button" class="btn sm" id="pt-cut" title="Cut the selection (Ctrl+X)">Cut</button>
+          <button type="button" class="btn sm" id="pt-paste" title="Paste at the cursor (Ctrl+V)">Paste</button>
+          <span class="sep"></span>
+          <button type="button" class="btn sm" id="pt-down12" title="Transpose an octave down">−12</button>
+          <button type="button" class="btn sm" id="pt-down1" title="Transpose a semitone down (Ctrl+F1)">−1</button>
+          <button type="button" class="btn sm" id="pt-up1" title="Transpose a semitone up (Ctrl+F2)">+1</button>
+          <button type="button" class="btn sm" id="pt-up12" title="Transpose an octave up">+12</button>
+          <span class="sep"></span>
+          <button type="button" class="btn sm" id="pt-ins" title="Insert an empty row at the cursor (Insert)">Insert row</button>
+          <button type="button" class="btn sm" id="pt-delrow" title="Remove the row at the cursor (Backspace)">Remove row</button>
+          <button type="button" class="btn sm danger" id="pt-clear" title="Clear the selection, or the whole pattern of the voice">Clear</button>
+        </div>
+      </section>
+
+      <!-- instruments -->
+      <section class="panel ins-panel" aria-labelledby="ins-h">
+        <div class="panel-head">
+          <h2 id="ins-h">Instruments</h2>
+          <div class="head-actions">
+            <button type="button" class="btn sm" id="ins-new">New</button>
+            <button type="button" class="btn sm" id="ins-dup">Copy</button>
+            <button type="button" class="icon-btn remove" id="ins-del" title="Delete the instrument" aria-label="Delete the instrument">✕</button>
+          </div>
+        </div>
+        <ol class="ins-list" id="ins-list" aria-label="Instruments"></ol>
+        <div class="ins-edit" id="ins-edit">
+          <label class="ie-name"><span id="ie-num">01</span><input type="text" id="ie-name" maxlength="24" spellcheck="false" aria-label="Name of the instrument"></label>
+
+          <h3>Envelope</h3>
+          <div class="env">
+            <canvas id="ie-env" width="300" height="70" aria-label="Shape of the envelope"></canvas>
+            <div class="sliders">
+              <label class="slider">Attack <input type="range" min="0" max="15" id="ie-a"><output id="ie-a-v"></output></label>
+              <label class="slider">Decay <input type="range" min="0" max="15" id="ie-d"><output id="ie-d-v"></output></label>
+              <label class="slider">Sustain <input type="range" min="0" max="15" id="ie-s"><output id="ie-s-v"></output></label>
+              <label class="slider">Release <input type="range" min="0" max="15" id="ie-r"><output id="ie-r-v"></output></label>
+            </div>
+          </div>
+          <label class="choice" title="Gate off and a short envelope two frames before each note: the notes start the same every time"><input type="checkbox" id="ie-hr"> Hard restart</label>
+
+          <h3>Wave program <small>one step per frame</small></h3>
+          <div class="wave" id="ie-wave"></div>
+          <div class="wave-foot">
+            <button type="button" class="btn sm" id="ie-wadd">Add step</button>
+            <label class="mini">Then <select id="ie-loop"></select></label>
+          </div>
+
+          <h3>Pulse width <small>for the pulse wave</small></h3>
+          <div class="grid2">
+            <label class="mini" title="0 keeps the width of the note before">Start <input type="number" id="ie-pw" min="0" max="4095"></label>
+            <label class="mini" title="Change per frame, 0: no sweep">Sweep <input type="number" id="ie-ps" min="0" max="255"></label>
+            <label class="mini">From <input type="number" id="ie-pmin" min="0" max="4095"></label>
+            <label class="mini">To <input type="number" id="ie-pmax" min="0" max="4095"></label>
+          </div>
+
+          <h3>Vibrato</h3>
+          <div class="grid3">
+            <label class="mini" title="Frames before the vibrato starts">Delay <input type="number" id="ie-vdel" min="0" max="255"></label>
+            <label class="mini" title="Frames for half a swing">Speed <input type="number" id="ie-vspd" min="0" max="31"></label>
+            <label class="mini">Depth <input type="number" id="ie-vdep" min="0" max="15"></label>
+          </div>
+
+          <h3><label class="choice"><input type="checkbox" id="ie-filter"> Filter</label></h3>
+          <div class="filt" id="ie-filt">
+            <div class="ftypes" role="group" aria-label="Filter type">
+              <label class="choice"><input type="checkbox" id="ie-flp"> Low pass</label>
+              <label class="choice"><input type="checkbox" id="ie-fbp"> Band pass</label>
+              <label class="choice"><input type="checkbox" id="ie-fhp"> High pass</label>
+            </div>
+            <label class="slider">Cutoff <input type="range" min="0" max="255" id="ie-fcut"><output id="ie-fcut-v"></output></label>
+            <label class="slider">Resonance <input type="range" min="0" max="15" id="ie-fres"><output id="ie-fres-v"></output></label>
+            <label class="slider" title="Change of the cutoff per frame">Sweep <input type="range" min="-32" max="32" id="ie-fswp"><output id="ie-fswp-v"></output></label>
+            <p class="hint">The SID has one filter: the last note that starts with a filter instrument sets it for all voices that use the filter.</p>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- keyboard -->
+    <section class="panel keys-panel" aria-labelledby="keys-h">
+      <div class="panel-head">
+        <h2 id="keys-h">Keyboard</h2>
+        <label class="choice"><input type="checkbox" id="k-write" checked> Write notes into the pattern</label>
+        <span class="hint" id="k-hint">Plays the selected instrument on the voice of the cursor.</span>
+      </div>
+      <div class="piano" id="piano" aria-label="Piano keyboard"></div>
+      <div class="hexpad" id="hexpad" aria-label="Keys for the pattern"></div>
+    </section>
+
+    <section class="panel help" aria-labelledby="help-h">
+      <h2 id="help-h">Good to know</h2>
+      <div class="help-cols">
+        <div>
+          <h3>Writing notes</h3>
+          <ul>
+            <li>Click into the pattern and play notes on the computer keyboard like on a piano: <kbd>Z</kbd> <kbd>S</kbd> <kbd>X</kbd> <kbd>D</kbd> <kbd>C</kbd> … for one octave, <kbd>Q</kbd> <kbd>2</kbd> <kbd>W</kbd> <kbd>3</kbd> <kbd>E</kbd> … for the octave above. <kbd>A</kbd> or <kbd>1</kbd> releases the note (===).</li>
+            <li>In the other columns type hexadecimal digits (0–9, A–F): the instrument, the command and its parameter. <kbd>Delete</kbd> clears, <kbd>Insert</kbd> and <kbd>Backspace</kbd> move the rows below.</li>
+            <li>Move with the arrow keys, <kbd>Tab</kbd> to the next voice, <kbd>Page Up</kbd> / <kbd>Page Down</kbd>. <kbd>Shift</kbd> with the arrows selects; <kbd>Ctrl</kbd>+<kbd>C</kbd>, <kbd>X</kbd>, <kbd>V</kbd> copy, cut and paste.</li>
+            <li><kbd>Space</kbd> plays from the cursor or stops, <kbd>Esc</kbd> stops. <kbd>[</kbd> and <kbd>]</kbd> choose the instrument, <kbd>*</kbd> and <kbd>/</kbd> the octave.</li>
+            <li>The song is kept in this browser. Save it as a file to keep it for good. Changes made while the song plays are heard from the next row on.</li>
+          </ul>
+        </div>
+        <div>
+          <h3>Commands</h3>
+          <table class="cmds">
+            <tbody>
+              <tr><th>1xx</th><td>Slide up by xx per frame, in its rows</td></tr>
+              <tr><th>2xx</th><td>Slide down by xx per frame, in its rows</td></tr>
+              <tr><th>3xx</th><td>Slide to the note of the row, speed xx</td></tr>
+              <tr><th>4xy</th><td>Vibrato: speed x, depth y, until the next note</td></tr>
+              <tr><th>5xy</th><td>Attack x, decay y</td></tr>
+              <tr><th>6xy</th><td>Sustain x, release y</td></tr>
+              <tr><th>7xx</th><td>Waveform (control register), stops the wave program</td></tr>
+              <tr><th>8xy</th><td>Arpeggio: note, +x, +y semitones, until the next note</td></tr>
+              <tr><th>9xx</th><td>Pulse width xx × 16</td></tr>
+              <tr><th>Axx</th><td>Filter cutoff</td></tr>
+              <tr><th>Bxy</th><td>Filter resonance x, type y (1 low, 2 band, 4 high pass)</td></tr>
+              <tr><th>Cxx</th><td>Volume (0–F)</td></tr>
+              <tr><th>Dxx</th><td>Filter sweep per frame (80–FF go down)</td></tr>
+              <tr><th>Fxx</th><td>Speed: frames per row</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <dialog class="dlg" id="dlg-export" aria-labelledby="dlg-export-h">
+    <form method="dialog">
+      <h2 id="dlg-export-h">Export</h2>
+      <div class="ex">
+        <h3>SID file <small>.sid, for SID players and music collections</small></h3>
+        <div class="ex-btns"><button type="button" class="btn btn-primary" id="ex-sid">Save .sid</button></div>
+      </div>
+      <div class="ex">
+        <h3>Music for your own program <small>.prg</small></h3>
+        <p class="hint" id="ex-prg-hint"></p>
+        <div class="ex-btns"><button type="button" class="btn" id="ex-prg">Save .prg</button></div>
+      </div>
+      <div class="ex">
+        <h3>Program to RUN on a C64 <small>.prg, for emulators and real machines</small></h3>
+        <p class="hint">Load it and type RUN: the music plays in the background, BASIC stays usable.</p>
+        <div class="ex-btns"><button type="button" class="btn" id="ex-run">Save .prg</button></div>
+      </div>
+      <div class="ex">
+        <h3>Sound file <small>.wav</small></h3>
+        <div class="ex-btns">
+          <select id="ex-wavlen" aria-label="How long"><option value="1">The song once</option><option value="2">Twice, fading out</option></select>
+          <button type="button" class="btn" id="ex-wav">Save .wav</button>
+          <progress id="ex-prog" max="1" value="0" hidden></progress>
+        </div>
+      </div>
+      <p class="note" id="ex-msg" hidden></p>
+      <div class="dlg-foot"><button class="btn" value="close">Close</button></div>
+    </form>
+  </dialog>
+
+  <footer class="site-footer">
+    C64 SID Tracker by <a href="https://github.com/wagiminator">wagiminator</a>. The C64 runs on the free <a href="https://github.com/MEGA65/open-roms">Open ROMs</a>.
+  </footer>
+
+  <script src="roms/openroms.js"></script>
+  <script src="emu/cpu6502.js"></script>
+  <script src="emu/cia.js"></script>
+  <script src="emu/vic.js"></script>
+  <script src="emu/sid.js"></script>
+  <script src="emu/c64.js"></script>
+  <script src="js/psid.js"></script>
+  <script src="js/player.js"></script>
+  <script src="js/driver.js"></script>
+  <script src="js/song.js"></script>
+  <script src="js/build.js"></script>
+  <script src="js/demo.js"></script>
+  <script src="js/engine.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

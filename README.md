@@ -22,6 +22,7 @@ apps/
   cart-builder/         C64 Cartridge Builder
   c64-emulator/         C64 Emulator (CPU, VIC-II, SID, CIAs, 1541 drive, datasette)
   sid-player/           C64 SID Player (music player and analyser)
+  sid-tracker/          C64 SID Tracker (composing SID music)
   pixel-studio/         C64 Pixel Studio (sprites, characters, levels, bitmaps)
   gameconsole/          Game Console Flasher
   rvprog/               WCH RISC-V Programmer
@@ -163,6 +164,19 @@ A player and analyser for C64 music (PSID and RSID files, versions 1 to 4), runn
 - Includes "Blue Circuit", an original demo tune with its own small 6502 player (source and build script in `demo/`). No other music is part of the repository.
 
 Code: `js/psid.js` (file format), `js/player.js` (machine, multi-SID routing, PSID driver, tick recording), `emu/` (CPU, VIC-II, CIAs and C64 core from the C64 Emulator; `sid.js` extended by single-voice outputs and muting), `app.js` (audio worklet, views, export).
+
+### C64 SID Tracker
+
+A tracker for composing music for the SID chip. The song runs as 6502 machine code on the C64 emulator core of the C64 SID Player, so what you hear in the browser is what the exported files play on a C64.
+
+- Three voices with their own patterns (1–64 rows) and an order list of up to 100 positions with a pattern and a transpose per voice and a loop position; up to 128 patterns.
+- Pattern editor with piano keys on the computer keyboard, hexadecimal entry for instrument, command and parameter, edit step, selection, copy, cut, paste, transpose, inserting and removing rows; an on-screen piano and keys for touch screens.
+- Up to 31 instruments: ADSR with an envelope picture, hard restart, a wave program (waveform, sync, ring, test bit and a relative or fixed note for every frame, with stop or loop), pulse width with sweep between two limits, vibrato with delay, and the filter (low, band, high pass, resonance, cutoff, sweep).
+- Commands: slide up and down, tone portamento, vibrato, attack/decay, sustain/release, waveform, arpeggio, pulse width, filter cutoff, resonance and type, volume, filter sweep, speed.
+- Play the song, play from the cursor or loop one position; notes typed or played are heard right away. Changes made while the song plays are put in at the next row, and the sounding notes go on. Oscilloscope, mute and solo per voice; 6581 or 8580; 1–4 calls per frame.
+- Export: PSID (.sid), the music with its load address (.prg, init and play address, no zero page used), a program to RUN on a C64 that plays the music from an interrupt, and WAV. Songs are kept in the browser and saved as JSON files. Includes the demo song "Harbour Lights".
+
+Code: `driver/driver.asm` (the 6502 player, 64tass) and `driver/build.js` (assembles it twice and finds the bytes to relocate) make `js/driver.js`; `js/song.js` (song, file, undo), `js/build.js` (packed patterns, tables, relocation, .sid and .prg files), `js/engine.js` (audio, playing, notes from the keyboard, changes while playing, WAV), `js/demo.js` (instruments and demo song), `app.js` (user interface); `emu/`, `roms/`, `js/psid.js` and `js/player.js` come from the C64 SID Player.
 
 ### C64 Pixel Studio
 
