@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Signal Analyzer</title>
+  <meta name="description" content="A logic analyzer and simple oscilloscope in the browser for cheap hardware: Raspberry Pi Pico, FX2 logic analyzers and the sound card, with decoders for UART, I²C, SPI, 1-Wire, WS2812, IR remote controls and the C64 serial bus.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chivo:wght@400;700&display=swap">
+  <link rel="stylesheet" href="../../assets/css/site.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav class="site-bar" aria-label="Breadcrumb">
+    <a href="../../">wagiminator</a><span class="sep">/</span><span>Apps</span><span class="sep">/</span><span>Signal Analyzer</span>
+  </nav>
+
+  <main class="app">
+    <header class="app-head">
+      <h1>Signal Analyzer</h1>
+      <p>A logic analyzer in the browser for hardware that costs a few euros: a Raspberry Pi Pico, one of the small FX2 logic analyzers, or simply the sound card. Decoders read UART, I²C, SPI, 1-Wire, NeoPixels, IR remote controls and the C64 serial bus.</p>
+    </header>
+
+    <p class="banner" id="unsupported" hidden>This browser cannot reach USB or serial devices. Open the page in Chrome, Edge or Opera on a computer to capture signals; files and demos work everywhere.</p>
+
+    <div class="main-col">
+    <section class="panel wave-panel" aria-label="Waveforms">
+      <div class="wave-bar">
+        <div class="bar-group">
+          <button type="button" class="btn btn-small" id="btn-open" title="Open a sigrok session (.sr), VCD or CSV file">Open…</button>
+          <button type="button" class="btn btn-small" id="btn-save" title="Save as sigrok session for PulseView">Save .sr</button>
+          <label class="mini"><span class="vh">Export</span><select id="export" title="Export">
+            <option value="">Export …</option><option value="vcd">VCD file</option><option value="csv">CSV file</option>
+            <option value="txt">Decoded data (text)</option><option value="png">Picture (PNG)</option></select></label>
+          <label class="mini"><span>Demo</span><select id="demo" title="Generated signals to try the app without hardware"></select></label>
+        </div>
+        <div class="bar-group zoom" role="group" aria-label="Zoom">
+          <button type="button" class="btn btn-small" id="z-out" title="Zoom out (−)" aria-label="Zoom out">−</button>
+          <button type="button" class="btn btn-small" id="z-in" title="Zoom in (+)" aria-label="Zoom in">+</button>
+          <button type="button" class="btn btn-small" id="z-fit" title="Show everything (F)">All</button>
+          <button type="button" class="btn btn-small" id="z-cur" title="Zoom to cursors A and B" disabled>A–B</button>
+          <button type="button" class="btn btn-small" id="btn-hidden" hidden></button>
+        </div>
+      </div>
+      <div class="wave" id="wave"></div>
+      <div class="readout" id="readout" aria-live="polite">
+        <span id="ro-cur" class="ro-cur">Click to place cursor A, Shift+click for B. Wheel or pinch zooms, drag moves.</span>
+        <span id="ro-hover" class="ro-hover"></span>
+      </div>
+      <p class="cap-info" id="cap-info"></p>
+    </section>
+
+    <section class="panel dec-panel" aria-labelledby="dec-h">
+      <div class="dec-head">
+        <h2 id="dec-h">Decoders</h2>
+        <label class="mini"><span class="vh">Add a decoder</span><select id="dec-add"><option value="">Add a decoder …</option></select></label>
+      </div>
+      <div class="dec-list" id="dec-list"></div>
+      <div class="results">
+        <div class="res-head">
+          <h3>Decoded data</h3>
+          <input type="search" id="res-filter" placeholder="Filter" aria-label="Filter the decoded data" spellcheck="false">
+          <span class="res-count" id="res-count"></span>
+        </div>
+        <div class="res-table" id="res-table" role="table" aria-label="Decoded data"></div>
+      </div>
+    </section>
+    </div>
+
+    <aside class="side">
+      <section class="panel src-panel" aria-labelledby="src-h">
+        <h2 id="src-h">Capture</h2>
+        <div class="seg" role="tablist" aria-label="Hardware">
+          <button type="button" role="tab" data-src="pico" aria-selected="true">Pico</button>
+          <button type="button" role="tab" data-src="fx2" aria-selected="false">FX2</button>
+          <button type="button" role="tab" data-src="sound" aria-selected="false">Sound card</button>
+        </div>
+        <p class="src-note" id="src-note"></p>
+        <p class="conn"><span class="dot" id="conn-dot"></span><span id="conn-text">Not connected</span></p>
+        <button type="button" class="btn btn-primary btn-wide" id="btn-connect">Connect</button>
+
+        <div class="fields" id="src-opts"></div>
+        <label class="field"><span>Sample rate</span><select id="rate"></select></label>
+        <label class="field"><span>Samples</span><select id="samples"></select></label>
+        <p class="dur" id="dur"></p>
+
+        <fieldset class="trig">
+          <legend>Trigger</legend>
+          <label class="field"><span>Channel</span><select id="trig-ch"></select></label>
+          <div class="trig-row">
+            <label class="field"><span>When</span><select id="trig-type"></select></label>
+            <label class="field" id="trig-level-f" hidden><span>Level</span><input type="number" id="trig-level" step="0.05" value="0"></label>
+            <label class="field"><span>Before</span><select id="trig-pre">
+              <option value="0">0 %</option><option value="0.1" selected>10 %</option><option value="0.25">25 %</option><option value="0.5">50 %</option><option value="0.75">75 %</option></select></label>
+          </div>
+        </fieldset>
+
+        <div class="run">
+          <button type="button" class="btn btn-primary" id="btn-run" disabled>Capture</button>
+          <button type="button" class="btn" id="btn-stop" disabled>Stop</button>
+          <label class="check" title="Capture again and again, like an oscilloscope"><input type="checkbox" id="repeat"> Repeat</label>
+        </div>
+        <p class="status" id="status" aria-live="polite"></p>
+      </section>
+    </aside>
+
+    <section class="panel help" aria-labelledby="help-h">
+      <h2 id="help-h">Hardware and tips</h2>
+      <div class="help-cols">
+        <div>
+          <h3>Raspberry Pi Pico</h3>
+          <p>Hold BOOTSEL, plug the Pico in and copy the <a href="https://github.com/pico-coder/sigrok-pico">sigrok-pico</a> UF2 file onto it. Inputs are GP2 to GP22 (3.3 V only, use a level shifter for 5 V) and the ADC inputs GP26 to GP28 for analog signals. Without a trigger the Pico samples into its memory at up to 120 MS/s; with a trigger the data is streamed, which works up to a few hundred kS/s.</p>
+          <h3>FX2 logic analyzers</h3>
+          <p>The small “24 MHz 8 channel” boxes and the Cypress FX2 mini boards. The app loads the free fx2lafw firmware into them each time they are plugged in. They have no memory of their own, so the computer must take the data as fast as it comes; 8 to 12 MS/s is usually safe. On Windows install the WinUSB driver with <a href="https://zadig.akeo.ie/">Zadig</a> once, as for PulseView; on Linux the user needs access to the USB device (udev rule).</p>
+        </div>
+        <div>
+          <h3>Sound card</h3>
+          <p>A microphone or line input records two analog channels at 44.1 to 192 kHz. The input only passes alternating signals of about ±1 V: use a resistor divider and a capacitor in front of it. Fine for audio, IR receivers and slow serial data. Click a channel name and make a digital channel from it to use the decoders.</p>
+          <h3>Using the view</h3>
+          <ul>
+            <li>Wheel or pinch zooms, dragging moves, the overview bar jumps. Keys: arrows, + and −, F for everything.</li>
+            <li>Click places cursor A, Shift+click cursor B; both snap to nearby edges. Hovering a digital channel measures the pulse under the pointer.</li>
+            <li>Click a channel name to rename, recolour or hide it. Files: sigrok sessions (.sr) from PulseView and sigrok-cli, VCD and CSV.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div class="pop" id="pop" hidden role="dialog" aria-modal="false" aria-labelledby="pop-title"></div>
+  <input type="file" id="file" accept=".sr,.zip,.vcd,.csv,.txt" hidden>
+
+  <footer class="site-footer">
+    Signal Analyzer by <a href="https://github.com/wagiminator">wagiminator</a>. FX2 support loads the <a href="https://sigrok.org/wiki/Fx2lafw">fx2lafw</a> firmware (GPL, see <a href="fw/COPYING-fx2lafw.txt">license</a>); the Pico runs <a href="https://github.com/pico-coder/sigrok-pico">sigrok-pico</a>. Everything stays in your browser.
+  </footer>
+
+  <script src="js/capture.js"></script>
+  <script src="js/files.js"></script>
+  <script src="js/decoders.js"></script>
+  <script src="js/demo.js"></script>
+  <script src="js/view.js"></script>
+  <script src="js/sources.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
