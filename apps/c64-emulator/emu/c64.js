@@ -258,6 +258,7 @@
   };
 
   P.runFrame = function () {
+    if (this.dbg) return this.runFrameDebug();
     var cpu = this.cpu, vic = this.vic, kernalTrap = this.trapLoad;
     vic.frameDone = false;
     while (!vic.frameDone) {
@@ -272,10 +273,148 @@
       this.pollAt = this.instrStart + n - 2;
       this.syncTo(this.instrStart + n);
     }
+    this.endFrame();
+    return true;
+  };
+  P.endFrame = function () {
     this.sid.clockTo(this.clk);
     this.cia1.todTick();
     this.cia2.todTick();
     this.frameTasks();
+  };
+
+  // ---------------------------------------------------------------- debugger
+  // With a debugger attached (this.dbg, see newDebugState) the frame runs through this
+  // slower loop, which checks breakpoints, watchpoints and step modes around every
+  // instruction. It returns false when the machine stops (dbg.reason says why); the
+  // next call continues exactly there.
+  var HIST = 4096;
+  C64.newDebugState = function () {
+    return {
+      exec: new Uint8Array(0x10000),    // 1 = stop before the instruction at this address
+      watch: new Uint8Array(0x10000),   // bit 0 = stop after a read, bit 1 = after a write
+      raster: new Uint8Array(312),      // 1 = stop when the beam reaches this line
+      stopIrq: false, stopNmi: false, stopBrk: false, stopJam: true,
+      mode: "run",                      // run | step | over | out | line | frame
+      skip: -1,                         // address to pass once when continuing from a breakpoint
+      tempAt: -1, tempS: 0, outS: 0,    // step over / run to / step out
+      lastLine: -1, fetchLo: 0, fetchHi: 0, hit: null, reason: null,
+      hist: { pc: new Int32Array(HIST), a: new Uint8Array(HIST), x: new Uint8Array(HIST), y: new Uint8Array(HIST),
+              s: new Uint8Array(HIST), p: new Uint8Array(HIST), kind: new Uint8Array(HIST), line: new Uint16Array(HIST),
+              clk: new Float64Array(HIST), pos: 0, count: 0, size: HIST }
+    };
+  };
+
+  P.runFrameDebug = function () {
+    var cpu = this.cpu, vic = this.vic, D = this.dbg, H = D.hist, lens = global.C64Disasm.LENGTHS;
+    vic.frameDone = false;
+    while (!vic.frameDone) {
+      if (vic.baNow()) {
+        this.syncTo(this.clk + 1);
+        if (vic.raster !== D.lastLine && this.lineCheck()) return false;
+        continue;
+      }
+      var kernalTrap = this.trapLoad;
+      if (kernalTrap && (cpu.pc === kernalTrap || cpu.pc === this.trapSave) && this.rmap[0xF] === this.kernal) {
+        if (cpu.pc === kernalTrap ? this.handleLoadTrap() : this.handleSaveTrap()) continue;
+      }
+      this.instrStart = this.clk;
+      cpu.irqHold = cpu.irq !== 0 && this.irqAt > this.pollAt;
+      var nmi = cpu.nmiPending, intr = nmi || (cpu.irq !== 0 && !cpu.pollI && !cpu.irqHold);
+      var pc = cpu.pc, op = 0;
+      if (!intr) {
+        op = this.peek(pc);
+        if (pc === D.skip) D.skip = -1;
+        else if (D.exec[pc]) return this.dbgStop({ kind: "break", addr: pc });
+        else if (op === 0x00 && D.stopBrk) return this.dbgStop({ kind: "brk", addr: pc });
+        if (pc === D.tempAt && cpu.s >= D.tempS) return this.dbgStop({ kind: D.mode === "over" ? "step" : "cursor", addr: pc });
+        D.skip = -1;
+        D.fetchLo = pc; D.fetchHi = pc + lens[op];
+      } else D.fetchLo = D.fetchHi = -1;
+      // history of executed instructions (registers before the instruction)
+      var k = H.pos;
+      H.pc[k] = pc; H.a[k] = cpu.a; H.x[k] = cpu.x; H.y[k] = cpu.y; H.s[k] = cpu.s; H.p[k] = cpu.getP(false);
+      H.kind[k] = intr ? (nmi ? 2 : 1) : 0; H.clk[k] = this.clk; H.line[k] = vic.raster;
+      H.pos = (k + 1) % H.size; if (H.count < H.size) H.count++;
+      var wasJammed = cpu.jammed;
+      D.hit = null;
+      var n = cpu.step();
+      this.pollAt = this.instrStart + n - 2;
+      this.syncTo(this.instrStart + n);
+      // after the instruction
+      var why = null;
+      if (D.hit) why = D.hit;
+      else if (cpu.jammed && !wasJammed && D.stopJam) why = { kind: "jam", addr: pc };
+      else if (intr && nmi && D.stopNmi) why = { kind: "nmi", addr: cpu.pc };
+      else if (intr && !nmi && D.stopIrq) why = { kind: "irq", addr: cpu.pc };
+      else if (D.mode === "step") why = { kind: "step", addr: cpu.pc };
+      else if (D.mode === "out" && !intr && (op === 0x60 || op === 0x40) && cpu.s > D.outS) why = { kind: "out", addr: cpu.pc };
+      if (why) {
+        if (vic.frameDone) this.endFrame();
+        return this.dbgStop(why);
+      }
+      if (vic.raster !== D.lastLine && this.lineCheck()) {
+        if (vic.frameDone) this.endFrame();
+        return false;
+      }
+    }
+    this.endFrame();
+    if (D.mode === "frame") return this.dbgStop({ kind: "frame", addr: cpu.pc });
+    return true;
+  };
+  // The beam started a new line: raster breakpoint or "next line"
+  P.lineCheck = function () {
+    var D = this.dbg, line = this.vic.raster;
+    D.lastLine = line;
+    if (D.mode === "line") { this.dbgStop({ kind: "line", line: line, addr: this.cpu.pc }); return true; }
+    if (D.raster[line]) { this.dbgStop({ kind: "raster", line: line, addr: this.cpu.pc }); return true; }
+    return false;
+  };
+  P.dbgStop = function (why) {
+    var D = this.dbg;
+    D.reason = why;
+    D.mode = "run"; D.tempAt = -1; D.hit = null;
+    this.sid.clockTo(this.clk);
+    return false;
+  };
+
+  // Memory watchpoints: the read/write functions of this machine are wrapped while any are set
+  P.setWatching = function (on) {
+    var self = this;
+    if (!on) { delete this.read; delete this.write; return; }
+    var rd = P.read, wr = P.write;
+    this.read = function (a) {
+      var v = rd.call(self, a), D = self.dbg;
+      if (D && (D.watch[a] & 1) && !(a >= D.fetchLo && a < D.fetchHi) && !D.hit) D.hit = { kind: "load", addr: self.instrPc(), mem: a, value: v };
+      return v;
+    };
+    this.write = function (a, v) {
+      var D = self.dbg;
+      if (D && (D.watch[a] & 2) && !D.hit) D.hit = { kind: "store", addr: self.instrPc(), mem: a, value: v & 0xFF, old: self.peek(a) };
+      wr.call(self, a, v);
+    };
+  };
+  P.instrPc = function () { return this.dbg && this.dbg.fetchLo >= 0 ? this.dbg.fetchLo : this.cpu.pc; };
+
+  // Read memory as the CPU sees it, without side effects (no I/O register is touched)
+  P.peek = function (a) {
+    a &= 0xFFFF;
+    if (a < 2) return P.read.call(this, a);
+    var p = a >> 12, arr = this.rmap[p];
+    if (arr !== null) return arr[a - this.roff[p]];
+    if (this.io[p] === 2) return 0xFF;
+    switch ((a >> 8) & 0x0F) {
+      case 0x0: case 0x1: case 0x2: case 0x3:
+        var r = a & 0x3F;
+        if (r === 0x1E) return this.vic.sprSpr;
+        if (r === 0x1F) return this.vic.sprBg;
+        return this.vic.read(r);
+      case 0x4: case 0x5: case 0x6: case 0x7: return this.sid.read(a);
+      case 0x8: case 0x9: case 0xA: case 0xB: return (this.colorRam[a & 0x3FF] & 0x0F) | 0xF0;
+      case 0xC: return this.cia1.peek(a);
+      case 0xD: return this.cia2.peek(a);
+    }
+    return 0xFF;
   };
 
   P.frameTasks = function () {

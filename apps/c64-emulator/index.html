@@ -7,7 +7,7 @@
   <meta name="description" content="A Commodore 64 emulator that runs in your browser: PRG, D64, G64, T64, TAP, CRT and ZIP files, 1541 drive, datasette, joystick, gamepad, sound and fullscreen.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chivo:wght@400;700&family=Press+Start+2P&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chivo:wght@400;700&family=IBM+Plex+Mono:wght@400;600&family=Press+Start+2P&display=swap">
   <link rel="stylesheet" href="../../assets/css/site.css">
   <link rel="stylesheet" href="style.css">
 </head>
@@ -52,6 +52,7 @@
         <button type="button" class="btn" id="btn-save-state">Save state</button>
         <button type="button" class="btn" id="btn-load-state" disabled>Load state</button>
         <button type="button" class="btn" id="btn-paste">Paste text</button>
+        <button type="button" class="btn" id="btn-debug" aria-pressed="false" aria-controls="debugger">Debugger</button>
         <input type="file" id="file-input" accept=".prg,.p00,.d64,.g64,.t64,.tap,.crt,.zip,.bin" hidden>
       </div>
 
@@ -74,6 +75,8 @@
       <p class="error" id="error" role="alert" hidden></p>
       <p class="notice" id="notice" hidden></p>
     </section>
+
+    <section class="debugger" id="debugger" aria-labelledby="dbg-title" hidden></section>
 
     <aside class="side">
       <section class="panel" aria-labelledby="media-title">
@@ -187,6 +190,7 @@
         <div><dt>Ctrl+F12</dt><dd>Reset</dd></div>
         <div><dt>F11</dt><dd>Fullscreen</dd></div>
       </dl>
+      <p>The <strong>Debugger</strong> button opens a monitor below the screen: stop the C64 at any instruction, step through the code, set breakpoints on addresses, memory reads and writes or raster lines, and look at memory, the stack and the VIC, CIA and SID registers. Its command line understands the usual monitor commands (type <code>help</code>).</p>
       <p class="small">Built-in ROMs: the free <a href="https://github.com/MEGA65/open-roms">MEGA65 Open ROMs</a> (LGPL&nbsp;3). They run most games, but their BASIC is incomplete. Without a 1541 ROM a virtual drive loads the disks; it also runs drive code that programs upload, so most fast loaders work. For full compatibility load the original C64 ROMs (KERNAL, BASIC, character ROM) and the 1541 DOS ROM once; they are stored only in this browser.</p>
     </section>
   </main>
@@ -203,8 +207,10 @@
   <script src="emu/tape.js"></script>
   <script src="emu/cart.js"></script>
   <script src="emu/drive1541.js"></script>
+  <script src="emu/disasm.js"></script>
   <script src="emu/c64.js"></script>
   <script src="roms/openroms.js"></script>
+  <script src="debugger.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
