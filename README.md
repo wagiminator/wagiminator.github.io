@@ -24,6 +24,7 @@ apps/
   sid-player/           C64 SID Player (music player and analyser)
   sid-tracker/          C64 SID Tracker (composing SID music)
   pixel-studio/         C64 Pixel Studio (sprites, characters, levels, bitmaps)
+  c64-assembler/        C64 Assembler (6502 editor, assembler and debugger)
   c64-packer/           C64 Packer (Exomizer and TSCrunch formats, tape images)
   gameconsole/          Game Console Flasher
   rvprog/               WCH RISC-V Programmer
@@ -192,6 +193,17 @@ A graphics editor for C64 programs: sprites, sprite objects, character sets, til
 - Export: sprites as raw data (64 bytes each, colour in byte 63), PRG with load address, SpritePad 1.x (.spd), assembler source and PNG; object tables as assembler source and frames as PNG; the character set as raw data, .64c with load address, colours, assembler source and PNG; tiles and levels as raw data (tile numbers, or screen codes and colours character by character), assembler source and PNG; bitmaps as Koala Painter (.koa), Art Studio (.aas), raw parts and PNG. Import reads the project, SpritePad 1.x, Koala and Art Studio pictures, pictures for the converter and raw data (sprites, characters, colours, tiles, level, with or without load address).
 
 Code: `js/gfx.js` (C64 colours, pixel formats, bitmap colour rules), `js/model.js` (project, undo, project file), `js/editor.js` (pixel editor and tools), `js/formats.js` (file formats), `js/convert.js` (picture converter), `js/core.js` and `js/ui-*.js` (the views), `js/io.js` (export, import, converter dialog), `app.js` (tabs, keyboard); `roms/chargen.js` is the character ROM of the MEGA65 Open ROMs (LGPL-3.0).
+
+### C64 Assembler
+
+A 6502 assembler with an editor and a C64 next to it that runs the program.
+
+- Editor: highlighting for instructions, undocumented opcodes, directives, labels, numbers and strings; line numbers, marks for errors and warnings, Tab and Shift+Tab to indent, auto-indent, Ctrl+/ to comment lines out; several files per project (`.include`) and binary files (`.binary`).
+- Assembler (syntax close to 64tass): labels with or without colon, local labels (`_name`, `@name`), anonymous labels (`-`, `+`), constants, expressions with `<` and `>`, all 6502 addressing modes with zero page chosen by itself (`@w`/`@b` to force), the undocumented opcodes of the 6510, `.byte .word .text .screen .ascii .null .fill .align .basic .binary .include .if .elif .else .endif .macro .rept .for .logical .cpu .assert .error .warn`; several passes for labels defined later, a strict last pass with clear messages. It gives the same bytes as 64tass for the 6502 sources of this repository.
+- The C64 (the core of the C64 Emulator, Open ROMs): Ctrl+Enter assembles and runs the program (RUN for a `.basic` line, else SYS), with screen, sound, keyboard and the number pad as joystick. Breakpoints by clicking a line number, pause, step, step over, step out; the source line of the PC is marked; registers, disassembly, memory, labels and listing in tabs.
+- Saves the program as .prg or .bin, labels for the VICE monitor, and the project as JSON; the project is kept in the browser. Five original examples (text, raster bars, a sprite, a tune, a scroller).
+
+Code: `js/asm.js` (assembler), `js/editor.js` (code editor), `js/machine.js` (C64 with screen, sound, keyboard and debugger), `js/examples.js`, `app.js` (user interface); `emu/` and `roms/` are from the C64 Emulator.
 
 ### C64 Packer
 

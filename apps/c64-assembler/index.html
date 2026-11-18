@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>C64 Assembler</title>
+  <meta name="description" content="Write 6502 machine code for the C64 in the browser: an editor with highlighting, an assembler with macros and loops, and a C64 that runs the program with breakpoints and single steps.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chivo:wght@400;700&display=swap">
+  <link rel="stylesheet" href="../../assets/css/site.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav class="site-bar" aria-label="Breadcrumb">
+    <a href="../../">wagiminator</a><span class="sep">/</span><span>Apps</span><span class="sep">/</span><span>C64 Assembler</span>
+  </nav>
+
+  <main class="app">
+    <header class="app-head">
+      <h1>C64 Assembler</h1>
+      <p>Write machine code for the C64: an editor for 6502 assembly language, an assembler with macros, loops and conditions, and a C64 next to it that runs the program at once. Breakpoints and single steps show what the processor does.</p>
+    </header>
+
+    <section class="panel projbar" aria-label="Project">
+      <label class="proj-name"><span>Project</span><input type="text" id="p-name" maxlength="40" spellcheck="false"></label>
+      <div class="proj-actions">
+        <button type="button" class="btn" id="btn-new">New</button>
+        <button type="button" class="btn" id="btn-open" title="Open source files, a project or binary files for .binary">Open…</button>
+        <button type="button" class="btn" id="btn-save" title="Save the project with all files (Ctrl+S)">Save project</button>
+        <label class="mini">Examples <select id="examples"><option value="">Choose …</option></select></label>
+      </div>
+      <div class="proj-out">
+        <button type="button" class="btn" id="ex-prg" title="The program with its load address">Save .prg</button>
+        <button type="button" class="btn" id="ex-bin" title="The bytes without load address">.bin</button>
+        <button type="button" class="btn" id="ex-lbl" title="Labels for the VICE monitor">Labels</button>
+      </div>
+      <span class="saved" id="saved" aria-live="polite"></span>
+      <input type="file" id="file-open" multiple hidden>
+    </section>
+
+    <div class="desk">
+      <!-- editor -->
+      <section class="panel edit-panel" aria-label="Editor">
+        <div class="tabs" id="tabs" role="tablist" aria-label="Files"></div>
+        <div class="editor" id="editor"></div>
+        <div class="bin-view" id="bin-view" hidden></div>
+        <div class="ed-status">
+          <span id="caret">Line 1, column 1</span>
+          <span id="asm-sum"></span>
+        </div>
+      </section>
+
+      <!-- the C64 -->
+      <div class="side">
+        <section class="panel c64-panel" aria-label="C64">
+          <div class="screen-wrap">
+            <canvas id="screen" tabindex="0" aria-label="C64 screen. Click it to type on the C64."></canvas>
+            <div class="screen-hint" id="screen-hint" hidden>Click here to type on the C64</div>
+          </div>
+          <div class="run-bar">
+            <button type="button" class="btn btn-primary" id="b-run" title="Assemble and run (Ctrl+Enter or F5)">▶ Assemble &amp; run</button>
+            <button type="button" class="btn" id="b-asm" title="Assemble only (Ctrl+B)">Assemble</button>
+            <button type="button" class="btn" id="b-reset" title="Reset the C64">Reset</button>
+          </div>
+          <div class="dbg-bar">
+            <button type="button" class="btn sm" id="b-pause" title="Stop the program (F9)">Pause</button>
+            <button type="button" class="btn sm" id="b-cont" title="Go on (F9)" disabled>Continue</button>
+            <button type="button" class="btn sm" id="b-step" title="One instruction (F11)" disabled>Step</button>
+            <button type="button" class="btn sm" id="b-over" title="One instruction, a subroutine as a whole (F10)" disabled>Step over</button>
+            <button type="button" class="btn sm" id="b-out" title="Until the subroutine returns (Shift+F11)" disabled>Step out</button>
+            <button type="button" class="icon-btn" id="b-sound" aria-pressed="true" title="Sound on or off" aria-label="Sound">♪</button>
+          </div>
+          <p class="run-state" id="run-state">The C64 is ready.</p>
+        </section>
+
+        <section class="panel info-panel" aria-label="Output">
+          <div class="itabs" role="tablist">
+            <button type="button" role="tab" data-t="msg" aria-selected="true">Messages <span class="badge" id="msg-count" hidden></span></button>
+            <button type="button" role="tab" data-t="cpu" aria-selected="false">CPU</button>
+            <button type="button" role="tab" data-t="mem" aria-selected="false">Memory</button>
+            <button type="button" role="tab" data-t="lbl" aria-selected="false">Labels</button>
+            <button type="button" role="tab" data-t="lst" aria-selected="false">Listing</button>
+          </div>
+          <div class="ipane" id="t-msg"><ul class="msgs" id="msgs"><li class="m-info">Press <kbd>Ctrl</kbd>+<kbd>Enter</kbd> to assemble and run the program.</li></ul></div>
+          <div class="ipane" id="t-cpu" hidden>
+            <div class="regs" id="regs"></div>
+            <div class="disasm" id="disasm"></div>
+          </div>
+          <div class="ipane" id="t-mem" hidden>
+            <label class="mini">Address $<input type="text" id="mem-addr" class="hexin" maxlength="4" value="0801" spellcheck="false"></label>
+            <pre class="hexdump" id="hexdump"></pre>
+          </div>
+          <div class="ipane" id="t-lbl" hidden><table class="lbls" id="lbls"></table></div>
+          <div class="ipane" id="t-lst" hidden><pre class="listing" id="listing"></pre></div>
+        </section>
+      </div>
+    </div>
+
+    <section class="panel help" aria-labelledby="help-h">
+      <h2 id="help-h">Good to know</h2>
+      <div class="help-cols">
+        <div>
+          <h3>Writing</h3>
+          <ul>
+            <li>A label starts at the beginning of a line (a colon after it is allowed); instructions are indented. Labels starting with <code>_</code> or <code>@</code> belong to the label before them; <code>-</code> and <code>+</code> are labels without a name (<code>bne -</code> jumps back to the last one, <code>++</code> to the second one ahead).</li>
+            <li>Numbers: <code>$c000</code> hexadecimal, <code>%1010</code> binary, <code>49152</code> decimal, <code>'a'</code> a character. <code>&lt;</code> and <code>&gt;</code> give the low and high byte, <code>*</code> the current address.</li>
+            <li>Keys: <kbd>Tab</kbd> and <kbd>Shift</kbd>+<kbd>Tab</kbd> indent, <kbd>Ctrl</kbd>+<kbd>/</kbd> comments lines out, <kbd>Ctrl</kbd>+<kbd>Enter</kbd> runs, a click on a line number sets a breakpoint.</li>
+            <li>The program starts with RUN when it begins with <code>.basic</code>, otherwise with SYS at the label <code>start</code> or at its first byte. Click the C64 screen to type on it; the number pad is a joystick in port 2.</li>
+            <li>The project is kept in this browser. Save it as a file to keep it for good.</li>
+          </ul>
+        </div>
+        <div>
+          <h3>Directives</h3>
+          <table class="dirs">
+            <tbody>
+              <tr><th>* = $1000</th><td>where the next bytes go</td></tr>
+              <tr><th>name = 5</th><td>a constant</td></tr>
+              <tr><th>.basic</th><td>a BASIC line 10 SYS to the code after it (at $0801)</td></tr>
+              <tr><th>.byte .word</th><td>bytes and 16-bit words</td></tr>
+              <tr><th>.text .null</th><td>text in PETSCII (.null adds a 0)</td></tr>
+              <tr><th>.screen .ascii</th><td>text in screen codes, or as typed</td></tr>
+              <tr><th>.fill n, v &nbsp;.align n</th><td>n bytes; up to a multiple of n</td></tr>
+              <tr><th>.include .binary</th><td>another file of the project</td></tr>
+              <tr><th>.if .elif .else .endif</th><td>assemble only when true</td></tr>
+              <tr><th>name .macro a, b</th><td>a macro; <code>\a</code> in it is the argument (<code>.endm</code>)</td></tr>
+              <tr><th>.rept n</th><td>the lines up to <code>.endr</code> n times</td></tr>
+              <tr><th>.for i = 0 to 7</th><td>a loop up to <code>.endfor</code></td></tr>
+              <tr><th>.logical $c000</th><td>code that will run elsewhere (<code>.endlogical</code>)</td></tr>
+              <tr><th>.cpu "6502"</th><td>no undocumented opcodes</td></tr>
+              <tr><th>.assert .error .warn</th><td>checks and messages</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    C64 Assembler by <a href="https://github.com/wagiminator">wagiminator</a>. The C64 runs on the free <a href="https://github.com/MEGA65/open-roms">Open ROMs</a>.
+  </footer>
+
+  <script src="emu/cpu6502.js"></script>
+  <script src="emu/cia.js"></script>
+  <script src="emu/vic.js"></script>
+  <script src="emu/sid.js"></script>
+  <script src="emu/disasm.js"></script>
+  <script src="emu/c64.js"></script>
+  <script src="roms/openroms.js"></script>
+  <script src="js/asm.js"></script>
+  <script src="js/editor.js"></script>
+  <script src="js/machine.js"></script>
+  <script src="js/examples.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
