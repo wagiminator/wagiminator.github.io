@@ -293,11 +293,11 @@
 /* ---------- Debugger ---------- */
 
 /* tool panels (debugger, sprites) take the full width below the screen */
-.app.debugging .side, .app.spriting .side { grid-row: 2; }
-.debugger, .sprites { grid-column: 1 / -1; }
-.app.debugging .help, .app.spriting .help { grid-row: auto; }
+.app.debugging .side, .app.spriting .side, .app.charsetting .side { grid-row: 2; }
+.debugger, .sprites, .charset { grid-column: 1 / -1; }
+.app.debugging .help, .app.spriting .help, .app.charsetting .help { grid-row: auto; }
 
-.debugger, .sprites {
+.debugger, .sprites, .charset {
   --dbg-bg: #1a1640;
   --dbg-pane: #221e52;
   --dbg-line: #37317a;
@@ -484,7 +484,7 @@ button.flag:disabled { cursor: default; }
 
 /* ---------- Sprite viewer ---------- */
 
-.sprites .dbg-head { grid-template-columns: auto minmax(0, 1fr) auto; }
+.sprites .dbg-head, .charset .dbg-head { grid-template-columns: auto minmax(0, 1fr) auto; }
 .spr-tabs { margin: 0; border-bottom: 0; }
 .spr-grid { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 0.75rem; margin-top: 0.8rem; align-items: start; }
 .spr-main .pane-head h3 { margin-right: auto; }
@@ -512,16 +512,38 @@ button.flag:disabled { cursor: default; }
 .spr-msg { margin: 0.4rem 0 0; min-height: 1.2em; color: var(--dbg-chg); font-size: 0.8125rem; }
 #spr-tools .dbg-chk select { margin-left: 0.2rem; }
 
+/* the tool panels use display rules that would override [hidden] */
+.debugger [hidden], .sprites [hidden], .charset [hidden] { display: none !important; }
+
+/* ---------- Character set viewer ---------- */
+
+.chr-segs { display: flex; flex-wrap: wrap; gap: 0.35rem; margin-bottom: 0.55rem; }
+.chr-seg {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 0.1rem;
+  padding: 0.3rem 0.6rem; font: 0.75rem/1.3 var(--mono); color: var(--dbg-soft);
+  background: var(--dbg-bg); border: 1px solid var(--dbg-line); border-radius: 5px; cursor: pointer;
+}
+.chr-seg b { color: var(--dbg-ink); font-size: 0.8125rem; }
+.chr-seg span { font-family: var(--font); }
+.chr-seg[aria-pressed="true"] { border-color: var(--dbg-chg); box-shadow: 0 0 0 1px var(--dbg-chg); }
+.chr-wrap { overflow-x: auto; }
+.chr-wrap canvas { display: block; width: 100%; max-width: 640px; min-width: 420px; height: auto; image-rendering: pixelated; image-rendering: crisp-edges; cursor: pointer; border-radius: 4px; }
+.chr-big-row { display: flex; gap: 0.6rem; align-items: center; }
+.chr-big { flex: 0 1 192px; padding: 0.4rem; }
+.chr-big canvas { max-width: 192px; image-rendering: pixelated; image-rendering: crisp-edges; }
+.chr-bytes { margin: 0; font: 0.75rem/1.55 var(--mono); color: var(--dbg-soft); white-space: pre; }
+.chr-dl-label { margin: 0.55rem 0 0.3rem; color: var(--dbg-dim); font-size: 0.75rem; }
+
 @media (max-width: 1100px) {
   .dbg-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-areas: "dis dis" "cpu bps" "mem mem" "tabs tabs" "con con"; }
 }
 @media (max-width: 980px) {
-  .debugger, .sprites { grid-column: 1; }
-  .app.debugging .side, .app.spriting .side { grid-row: auto; }
+  .debugger, .sprites, .charset { grid-column: 1; }
+  .app.debugging .side, .app.spriting .side, .app.charsetting .side { grid-row: auto; }
 }
 @media (max-width: 860px) {
   .spr-grid { grid-template-columns: minmax(0, 1fr); }
-  .sprites .dbg-head { grid-template-columns: minmax(0, 1fr) auto; }
+  .sprites .dbg-head, .charset .dbg-head { grid-template-columns: minmax(0, 1fr) auto; }
   .spr-tabs { grid-column: 1 / -1; grid-row: 2; }
 }
 @media (max-width: 720px) {
@@ -529,6 +551,7 @@ button.flag:disabled { cursor: default; }
   .dl { grid-template-columns: 1.1rem 3.2rem 6.4rem minmax(0, 1fr); }
   .dl .lb { display: none; }
   .mr canvas { width: 128px; height: 8px; }
+  .chr-wrap canvas { min-width: 0; }
   .dbg-head { grid-template-columns: minmax(0, 1fr) auto; }
   .dbg-state { grid-column: 1 / -1; grid-row: 2; }
 }
