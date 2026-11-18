@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>C64 Packer</title>
+  <meta name="description" content="Pack C64 programs in the browser: self-extracting PRG files in the Exomizer or TSCrunch format that start with RUN, packed data for your own code, and tape images with a fast loader.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chivo:wght@400;700&display=swap">
+  <link rel="stylesheet" href="../../assets/css/site.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav class="site-bar" aria-label="Breadcrumb">
+    <a href="../../">wagiminator</a><span class="sep">/</span><span>Apps</span><span class="sep">/</span><span>C64 Packer</span>
+  </nav>
+
+  <main class="app">
+    <header class="app-head">
+      <h1>C64 Packer</h1>
+      <p>Makes C64 programs smaller. The packed program starts with RUN like before, unpacks itself and starts the original. Two formats: Exomizer packs smallest, TSCrunch unpacks fastest. Programs can also go on a tape image with a fast loader.</p>
+    </header>
+
+    <!-- the program -->
+    <section class="panel prog" aria-labelledby="prog-h">
+      <h2 id="prog-h">Program</h2>
+      <div class="drop" id="drop">
+        <p><strong>Drop a .prg file here</strong> or</p>
+        <label class="btn btn-primary">Open a program<input type="file" id="file" accept=".prg,.p00,.bin,.64c" hidden></label>
+        <p class="hint">C64 programs with a load address. Nothing leaves your computer.</p>
+      </div>
+      <div class="prog-info" id="prog-info" hidden>
+        <div class="pi-main">
+          <div class="pi-name" id="pi-name"></div>
+          <ul class="facts" id="pi-facts"></ul>
+        </div>
+        <fieldset class="start">
+          <legend>Start after unpacking</legend>
+          <label class="choice"><input type="radio" name="start" value="run" id="st-run"> RUN <small>(a BASIC program)</small></label>
+          <label class="choice"><input type="radio" name="start" value="jmp" id="st-jmp"> Jump to $<input type="text" id="st-addr" class="hexin" maxlength="4" spellcheck="false" aria-label="Start address (hexadecimal)"></label>
+          <p class="hint" id="st-hint"></p>
+        </fieldset>
+        <button type="button" class="btn" id="btn-other">Open another</button>
+      </div>
+    </section>
+
+    <!-- packing -->
+    <section class="panel pack" id="pack" aria-labelledby="pack-h" hidden>
+      <div class="panel-head">
+        <h2 id="pack-h">Packing</h2>
+        <label class="choice small"><input type="checkbox" id="opt-blank"> Screen off while unpacking <small>(a little faster)</small></label>
+      </div>
+      <div class="formats" role="radiogroup" aria-label="Format">
+        <label class="fmt" id="fmt-exomizer">
+          <input type="radio" name="fmt" value="exomizer">
+          <span class="fmt-head"><b>Exomizer</b><span class="tag">smallest</span></span>
+          <span class="fmt-size"><span class="num" data-k="size">…</span> <span class="unit">bytes</span></span>
+          <span class="bar"><i data-k="bar"></i></span>
+          <span class="fmt-meta" data-k="meta">packing …</span>
+        </label>
+        <label class="fmt" id="fmt-tscrunch">
+          <input type="radio" name="fmt" value="tscrunch">
+          <span class="fmt-head"><b>TSCrunch</b><span class="tag">fastest</span></span>
+          <span class="fmt-size"><span class="num" data-k="size">…</span> <span class="unit">bytes</span></span>
+          <span class="bar"><i data-k="bar"></i></span>
+          <span class="fmt-meta" data-k="meta">packing …</span>
+        </label>
+      </div>
+      <p class="orig" id="orig"></p>
+      <figure class="memmap">
+        <figcaption>Memory while unpacking</figcaption>
+        <div class="map" id="map" role="img" aria-label="Memory map"></div>
+        <div class="map-scale" aria-hidden="true"><span>$0000</span><span>$4000</span><span>$8000</span><span>$C000</span><span>$FFFF</span></div>
+        <ul class="legend" id="legend"></ul>
+      </figure>
+      <p class="note" id="pack-msg" hidden></p>
+    </section>
+
+    <!-- saving -->
+    <section class="panel save" id="save" aria-labelledby="save-h" hidden>
+      <h2 id="save-h">Save</h2>
+      <div class="out">
+        <div class="out-text">
+          <h3>Packed program <small>.prg</small></h3>
+          <p>Load and RUN it like the original: on a C64, in an emulator, on a disk or a cartridge.</p>
+        </div>
+        <button type="button" class="btn btn-primary" id="sv-prg">Save .prg</button>
+      </div>
+      <div class="out">
+        <div class="out-text">
+          <h3>Tape image with a fast loader <small>.tap</small></h3>
+          <p>A normal tape file loads the fast loader, which then reads the program about eight times faster and starts it. <span id="tap-time"></span></p>
+          <div class="tap-opts">
+            <label class="mini">Name on the tape <input type="text" id="tap-name" maxlength="16" spellcheck="false"></label>
+            <label class="mini">Program
+              <select id="tap-what"><option value="packed">packed</option><option value="plain">not packed</option></select></label>
+          </div>
+        </div>
+        <button type="button" class="btn" id="sv-tap">Save .tap</button>
+      </div>
+      <div class="out">
+        <div class="out-text">
+          <h3>Packed data for your own program</h3>
+          <p>Only the packed bytes, without unpacker and load address, for the unpacking routines that come with the packers.</p>
+          <ul class="raw-list">
+            <li><button type="button" class="btn sm" id="sv-tsc">TSCrunch</button> <span>like <code>tscrunch -p</code>: one byte zero run length first; for <code>decrunch.asm</code></span></li>
+            <li><button type="button" class="btn sm" id="sv-exo">Exomizer</button> <span>like <code>exomizer raw</code> (protocol 39), read forward</span></li>
+            <li><button type="button" class="btn sm" id="sv-exob">Exomizer, backwards</button> <span>like <code>exomizer raw -b</code>, read from the end; for <code>exodecrunch.s</code></span></li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel help" aria-labelledby="help-h">
+      <h2 id="help-h">Good to know</h2>
+      <ul>
+        <li>The packed program has a BASIC line <code>10 SYS2061</code>. It moves the packed data and the unpacker to the top of the memory, unpacks the program to its own address and starts it. A BASIC program that is only a SYS line is started at the SYS address directly.</li>
+        <li>While it unpacks, the whole memory is RAM; the unpacker sits at $FC00. So programs can reach up to $FBFF, including $A000–$FFFF under the ROMs.</li>
+        <li>Exomizer and TSCrunch are packers by Magnus Lind and Antonio Savona. The packed data here has their formats; the packing and the unpackers in the self-extracting file are written for this app. Every packed program is unpacked once on an emulated 6502 before you can save it, to check it.</li>
+        <li>The tape image starts loading with LOAD (or Shift+Run/Stop): the loader is in the tape header and starts by itself. It reads the program at about 400 bytes per second with the screen off.</li>
+      </ul>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    C64 Packer by <a href="https://github.com/wagiminator">wagiminator</a>. Formats of <a href="https://bitbucket.org/magli143/exomizer/wiki/Home">Exomizer</a> and <a href="https://github.com/tonysavon/TSCrunch">TSCrunch</a>.
+  </footer>
+
+  <script src="js/cpu6502.js"></script>
+  <script src="js/sfx.js"></script>
+  <script src="js/tscrunch.js"></script>
+  <script src="js/exomizer.js"></script>
+  <script src="js/packer.js"></script>
+  <script src="js/tap.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
