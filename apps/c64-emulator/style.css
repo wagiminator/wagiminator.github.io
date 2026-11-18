@@ -293,11 +293,11 @@
 /* ---------- Debugger ---------- */
 
 /* tool panels (debugger, sprites) take the full width below the screen */
-.app.debugging .side, .app.spriting .side, .app.charsetting .side { grid-row: 2; }
-.debugger, .sprites, .charset { grid-column: 1 / -1; }
-.app.debugging .help, .app.spriting .help, .app.charsetting .help { grid-row: auto; }
+.app.debugging .side, .app.spriting .side, .app.charsetting .side, .app.musicking .side { grid-row: 2; }
+.debugger, .sprites, .charset, .music { grid-column: 1 / -1; }
+.app.debugging .help, .app.spriting .help, .app.charsetting .help, .app.musicking .help { grid-row: auto; }
 
-.debugger, .sprites, .charset {
+.debugger, .sprites, .charset, .music {
   --dbg-bg: #1a1640;
   --dbg-pane: #221e52;
   --dbg-line: #37317a;
@@ -484,7 +484,7 @@ button.flag:disabled { cursor: default; }
 
 /* ---------- Sprite viewer ---------- */
 
-.sprites .dbg-head, .charset .dbg-head { grid-template-columns: auto minmax(0, 1fr) auto; }
+.sprites .dbg-head, .charset .dbg-head, .music .dbg-head { grid-template-columns: auto minmax(0, 1fr) auto; }
 .spr-tabs { margin: 0; border-bottom: 0; }
 .spr-grid { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 0.75rem; margin-top: 0.8rem; align-items: start; }
 .spr-main .pane-head h3 { margin-right: auto; }
@@ -513,7 +513,7 @@ button.flag:disabled { cursor: default; }
 #spr-tools .dbg-chk select { margin-left: 0.2rem; }
 
 /* the tool panels use display rules that would override [hidden] */
-.debugger [hidden], .sprites [hidden], .charset [hidden] { display: none !important; }
+.debugger [hidden], .sprites [hidden], .charset [hidden], .music [hidden] { display: none !important; }
 
 /* ---------- Character set viewer ---------- */
 
@@ -534,12 +534,51 @@ button.flag:disabled { cursor: default; }
 .chr-bytes { margin: 0; font: 0.75rem/1.55 var(--mono); color: var(--dbg-soft); white-space: pre; }
 .chr-dl-label { margin: 0.55rem 0 0.3rem; color: var(--dbg-dim); font-size: 0.75rem; }
 
+/* ---------- Music tools ---------- */
+
+.mus-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr); gap: 0.75rem; margin-top: 0.8rem; align-items: start; }
+.mus-text { margin: 0 0 0.7rem; color: var(--dbg-soft); max-width: 62ch; }
+.mus-note { margin: 0.6rem 0 0; min-height: 1.2em; color: var(--dbg-chg); font-size: 0.8125rem; }
+.mus-err { margin: 0.6rem 0 0.3rem; color: var(--dbg-bp); }
+.rec-row { display: flex; align-items: center; gap: 1rem; }
+.rec-btn {
+  display: inline-flex; align-items: center; gap: 0.55rem; padding: 0.6rem 1rem;
+  font: inherit; font-weight: 700; color: var(--dbg-ink); background: var(--dbg-bg);
+  border: 1px solid var(--dbg-line); border-radius: 999px; cursor: pointer;
+}
+.rec-btn:hover { border-color: var(--dbg-soft); }
+.rec-dot { width: 0.9rem; height: 0.9rem; border-radius: 50%; background: var(--dbg-bp); }
+.rec-btn.on { color: #14122e; background: var(--dbg-bp); border-color: var(--dbg-bp); }
+.rec-btn.on .rec-dot { border-radius: 2px; background: #14122e; animation: rec-blink 1s steps(2) infinite; }
+@keyframes rec-blink { 50% { opacity: 0.35; } }
+@media (prefers-reduced-motion: reduce) { .rec-btn.on .rec-dot { animation: none; } }
+.rec-info { display: grid; grid-template-columns: auto auto; gap: 0.2rem 0.8rem; align-items: baseline; flex: 1; }
+.rec-time { font: 600 1.6rem/1 var(--mono); color: #fff; font-variant-numeric: tabular-nums; }
+.rec-size { color: var(--dbg-dim); font-family: var(--mono); font-size: 0.8125rem; }
+.rec-meter { grid-column: 1 / -1; height: 6px; background: var(--dbg-bg); border-radius: 3px; overflow: hidden; }
+.rec-meter i { display: block; height: 100%; width: 0; background: var(--dbg-run); transition: width 0.15s; }
+.mus-primary { color: #fff; background: var(--dbg-pc); border-color: var(--dbg-pc); }
+.mus-primary:hover:not(:disabled) { filter: brightness(1.1); }
+.rip-row { display: flex; align-items: center; gap: 0.8rem; flex-wrap: wrap; }
+.rip-bar { flex: 1; min-width: 6rem; height: 6px; background: var(--dbg-bg); border-radius: 3px; overflow: hidden; }
+.rip-bar i { display: block; height: 100%; width: 0; background: var(--dbg-pc); }
+.rip-out { margin-top: 0.7rem; }
+.rip-facts div { grid-template-columns: 7.5rem minmax(0, 1fr); }
+.rip-fields { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.5rem; margin: 0.8rem 0; }
+.rip-fields label { display: flex; flex-direction: column; gap: 0.2rem; color: var(--dbg-soft); font-size: 0.8125rem; }
+.rip-fields input.dbg-in { width: 100%; font-family: var(--font); font-size: 0.875rem; }
+
+@media (max-width: 860px) {
+  .mus-grid { grid-template-columns: minmax(0, 1fr); }
+  .rip-fields { grid-template-columns: minmax(0, 1fr); }
+}
+
 @media (max-width: 1100px) {
   .dbg-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-areas: "dis dis" "cpu bps" "mem mem" "tabs tabs" "con con"; }
 }
 @media (max-width: 980px) {
-  .debugger, .sprites, .charset { grid-column: 1; }
-  .app.debugging .side, .app.spriting .side, .app.charsetting .side { grid-row: auto; }
+  .debugger, .sprites, .charset, .music { grid-column: 1; }
+  .app.debugging .side, .app.spriting .side, .app.charsetting .side, .app.musicking .side { grid-row: auto; }
 }
 @media (max-width: 860px) {
   .spr-grid { grid-template-columns: minmax(0, 1fr); }
