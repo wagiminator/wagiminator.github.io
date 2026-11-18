@@ -44,24 +44,50 @@
       var type = G.identify(e.name, text);
       if (type !== "ignore" || G.isGerber(text)) {
         if (type === "ignore") return;
-        gerbers.push({ name: e.name, text: latin.decode(e.data), type: type });
+        gerbers.push({ name: e.name, text: latin.decode(e.data), type: type, data: e.data });
         return;
       }
       var t = I.table(I.decode(e.data)), k = t && I.kind(t);
-      if (k === "bom") boms.push({ name: e.name, t: t });
+      if (k === "bom") boms.push({ name: e.name, t: t, data: e.data });
       else if (k === "cpl" || k === "cpl-eagle") cpls.push({ name: e.name, t: t, k: k });
     });
     return { gerbers: gerbers, boms: boms, cpls: cpls };
   }
-  async function open(entries, key, name) {
+  // pick-and-place data that comes with the app, found by the EasyEDA id in the Gerber header
+  var bundled = null;
+  // (a script, loaded when needed: it also works when the page is opened from disk)
+  function bundledIndex() {
+    if (!bundled) bundled = new Promise(function (resolve) {
+      if (window.IBOM_DATA) { resolve(window.IBOM_DATA); return; }
+      var s = document.createElement("script");
+      s.src = "js/cpl-data.js";
+      s.onload = function () { resolve(window.IBOM_DATA || null); };
+      s.onerror = function () { bundled = null; resolve(null); };
+      document.head.appendChild(s);
+    });
+    return bundled;
+  }
+  async function bundledCpl(gerbers) {
+    var ids = [];
+    gerbers.forEach(function (g) { var m = /G04 ([0-9a-f]{32}),[0-9a-f]{32}/.exec(g.text.slice(0, 3000)); if (m && ids.indexOf(m[1]) < 0) ids.push(m[1]); });
+    if (!ids.length) return null;
+    var idx = await bundledIndex(), e = null;
+    ids.some(function (id) { e = idx && idx.byId[id]; return !!e; });
+    if (!e) return null;
+    var t = I.table(e.csv);
+    return t ? { name: e.file.split("/").pop(), t: t, k: I.kind(t), bundled: true } : null;
+  }
+  async function open(entries, key, name, src) {
     var c = classify(entries);
+    if (c.gerbers.length && !c.cpls.length) { var bc = await bundledCpl(c.gerbers); if (bc) c.cpls.push(bc); }
     if (!c.gerbers.length && !st.board) {
       status(c.boms.length || c.cpls.length ? "Open the Gerber files (ZIP) together with the BOM: the board picture comes from them." : "No Gerber files, BOM or pick-and-place file found.", "err");
       return;
     }
     if (c.gerbers.length) {
       st.key = key; st.name = name;
-      st.files = c.gerbers; st.lines = []; st.cpl = {}; st.cplCount = 0; st.off = [0, 0]; st.sel = -1; st.focus = null; st.bomName = "";
+      st.files = c.gerbers; st.lines = []; st.cpl = {}; st.cplCount = 0; st.off = [0, 0]; st.sel = -1; st.focus = null; st.bomName = ""; st.bomData = null;
+      st.src = src || {}; st.cplBundled = false;
       var saved = load("ibom:" + key, {});
       st.taught = saved.taught || {}; st.placed = {}; (saved.placed || []).forEach(function (r) { st.placed[r] = true; });
       status("Drawing the board …");
@@ -79,10 +105,10 @@
       view.fitted = false;
       view.setBoard(st.board, look());
     }
-    if (c.boms.length) { st.lines = I.readBom(c.boms[0].t); st.bomName = c.boms[0].name; }
+    if (c.boms.length) { st.lines = I.readBom(c.boms[0].t); st.bomName = c.boms[0].name; st.bomData = c.boms[0].data; }
     if (c.cpls.length) {
       var r = I.readCpl(c.cpls[0].t, c.cpls[0].k);
-      st.cpl = r.parts; st.cplCount = r.count; st.cplName = c.cpls[0].name;
+      st.cpl = r.parts; st.cplCount = r.count; st.cplName = c.cpls[0].name; st.cplBundled = !!c.cpls[0].bundled;
       align();
     }
     if (!st.lines.length && st.cplCount) linesFromCpl();
@@ -94,7 +120,9 @@
     msg.push(st.name + ": " + st.lines.length + " BOM lines, " + st.order.length + " parts");
     if (!st.lines.length) msg = [st.name + ": no BOM yet. Add the BOM file (drop it here)."];
     if (st.order.length) msg.push(have === st.order.length ? "all positions known" : have ? have + " positions known, " + (st.order.length - have) + " missing" : "no positions: add the pick-and-place file, or teach them");
+    if (st.cplBundled && have) msg.push("positions from the pick-and-place data that comes with this app");
     status(msg.join(", ") + (st.alignMsg ? ". " + st.alignMsg : "") + ".", st.order.length && have < st.order.length ? "warn" : "");
+    saveUi();
     render();
   }
   function linesFromCpl() {
@@ -142,7 +170,9 @@
       var key = "file:" + list.map(function (f) { return f.name + ":" + f.size; }).sort().join("|");
       var name = gz.name.replace(/\.zip$/i, "").replace(/[_-]?gerber/i, "") || "Board";
       var hasGerber = classify(entries).gerbers.length;
-      await open(entries, hasGerber ? key : st.key, hasGerber ? name : st.name);
+      var zf = list.filter(function (f) { return /\.zip$/i.test(f.name); })[0];
+      var src = zf ? { zipName: zf.name, zip: new Uint8Array(await zf.arrayBuffer()), from: list.map(function (f) { return f.name; }).join(", ") } : { from: list.map(function (f) { return f.name; }).join(", ") };
+      await open(entries, hasGerber ? key : st.key, hasGerber ? name : st.name, hasGerber ? src : st.src);
       if (hasGerber) history.replaceState(null, "", location.pathname);
     } catch (e) { status("Cannot read the files: " + e.message, "err"); }
   }
@@ -171,7 +201,9 @@
     $("gh").value = repo;
     status("Looking into " + repo + " …");
     try {
-      var r = await I.repoBoards(repo);
+      var r;
+      try { r = await I.repoBoards(repo); }
+      catch (e) { r = await indexBoards(repo); if (!r) throw e; }
       gh = { repo: repo, branch: r.branch, boards: r.boards };
       if (!r.boards.length) { status("No Gerber ZIP found in " + repo + ".", "err"); $("gh-board-f").hidden = true; return; }
       $("gh-board").innerHTML = r.boards.map(function (b, i) { return '<option value="' + i + '">' + esc(b.name) + "</option>"; }).join("");
@@ -181,14 +213,27 @@
       await loadBoard(r.boards[i]);
     } catch (e) { status(e.message, "err"); }
   }
+  // the boards of wagiminator's repositories as listed with the app (when GitHub does not answer)
+  async function indexBoards(repo) {
+    var idx = await bundledIndex(), m = /^wagiminator\/(.+)$/i.exec(repo);
+    if (!idx || !m) return null;
+    var key = Object.keys(idx.repos).filter(function (k) { return k.toLowerCase() === m[1].toLowerCase(); })[0];
+    if (!key) return null;
+    var e = idx.repos[key];
+    return { branch: e.branch, boards: e.boards.map(function (b) {
+      var dir = b.gerber.slice(0, b.gerber.lastIndexOf("/") + 1);
+      return { name: b.gerber.split("/").pop().replace(/[_-]?gerber/i, "").replace(/\.zip$/i, "").replace(/_/g, " "), dir: dir, gerber: b.gerber, bom: b.bom || null, cpl: null };
+    }) };
+  }
   async function loadBoard(b) {
     status("Loading " + b.name + " from GitHub …");
     try {
       var get = async function (p) { var res = await fetch(I.raw(gh.repo, gh.branch, p)); if (!res.ok) throw new Error(p + ": " + res.status); return new Uint8Array(await res.arrayBuffer()); };
-      var z = await get(b.gerber), entries = (await G.unzip(z.buffer)).map(function (e) { return { name: e.name, data: e.data }; });
+      var z = await get(b.gerber), entries = (await G.unzip(z.buffer.slice(0))).map(function (e) { return { name: e.name, data: e.data }; });
       if (b.bom) entries.push({ name: b.bom.split("/").pop(), data: await get(b.bom) });
       if (b.cpl) entries.push({ name: b.cpl.split("/").pop(), data: await get(b.cpl) });
-      await open(entries, "gh:" + gh.repo + ":" + b.gerber, gh.repo.split("/")[1] + (gh.boards.length > 1 ? " · " + b.name : ""));
+      await open(entries, "gh:" + gh.repo + ":" + b.gerber, gh.repo.split("/")[1] + (gh.boards.length > 1 ? " · " + b.name : ""),
+        { zipName: b.gerber.split("/").pop(), zip: z, from: "github.com/" + gh.repo + "/" + b.dir });
       var u = new URL(location.href);
       u.searchParams.set("repo", gh.repo);
       if (gh.boards.length > 1) u.searchParams.set("board", b.gerber); else u.searchParams.delete("board");
@@ -245,6 +290,7 @@
     $("bom-foot").textContent = !st.lines.length ? "" : miss ? miss + " part" + (miss > 1 ? "s have" : " has") + " no position (dashed). Teach them on the board or add the pick-and-place file." : "";
     parts();
     teachUi();
+    saveUi();
   }
   // what the board view shows
   function parts() {
@@ -368,11 +414,59 @@
   $("t-del").addEventListener("click", function () { if (st.tref) { delete st.taught[st.tref]; save(); render(); } });
   $("t-done").addEventListener("click", function () { st.teach = false; render(); });
   $("t-save").addEventListener("click", function () {
-    var list = st.order.map(function (r) { var p = pos(r); return p ? { ref: r, x: p.x, y: p.y, side: p.side, rot: p.rot || 0 } : null; }).filter(Boolean);
-    var base = st.bomName ? st.bomName.replace(/\.[^.]+$/, "").replace(/bom/i, "CPL") : (st.name || "board").replace(/\s+/g, "_") + "_CPL";
-    if (base === st.bomName.replace(/\.[^.]+$/, "")) base += "_CPL";
-    download(base + ".csv", I.writeCpl(list));
-    status("Saved " + base + ".csv with " + list.length + " positions" + (st.ghDir ? ". Put it into " + st.ghDir + " of the repository; the app finds it there next time." : ". Open it together with the Gerber ZIP and the BOM next time."));
+    var list = cplList(), name = cplName();
+    download(name, I.writeCpl(list));
+    status("Saved " + name + " with " + list.length + " positions" + (st.ghDir ? ". Put it into " + st.ghDir + " of the repository; the app finds it there next time." : ". Open it together with the Gerber ZIP and the BOM next time."));
+  });
+
+  // ================================================================ export
+  function saveUi() { ["dl-gerber", "dl-bom", "dl-cpl", "dl-sheet"].forEach(function (id) { $(id).disabled = !st.board; }); $("dl-bom").disabled = !st.board || !st.lines.length; $("dl-cpl").disabled = !st.board || !st.order.some(pos); }
+  function saveBlob(name, blob) {
+    var a = document.createElement("a"), url = URL.createObjectURL(blob);
+    a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function () { URL.revokeObjectURL(url); }, 4000);
+  }
+  function baseName() { return (st.src && st.src.zipName ? st.src.zipName.replace(/\.zip$/i, "").replace(/[_-]?gerber.*$/i, "") : "") || (st.name || "board").replace(/[^\w.-]+/g, "_"); }
+  $("dl-gerber").addEventListener("click", function () {
+    if (st.src && st.src.zip) { saveBlob(st.src.zipName, new Blob([st.src.zip], { type: "application/zip" })); return; }
+    saveBlob(baseName() + "_gerber.zip", I.zip(st.files.map(function (f) { return { name: f.name.split("/").pop(), data: f.data }; })));
+  });
+  $("dl-bom").addEventListener("click", function () {
+    if (st.bomData) { saveBlob(st.bomName.split("/").pop(), new Blob([st.bomData])); return; }
+    var rows = [["Comment", "Designator", "Footprint", "Quantity", "LCSC"]].concat(st.lines.map(function (l) { return [l.value, l.refs.join(","), l.footprint, l.refs.length, l.lcsc]; }));
+    saveBlob(baseName() + "_BOM.csv", new Blob([rows.map(function (r) { return r.map(function (v) { v = String(v == null ? "" : v); return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; }).join(","); }).join("\r\n") + "\r\n"], { type: "text/csv" }));
+  });
+  function cplList() { return st.order.map(function (r) { var p = pos(r); return p ? { ref: r, x: p.x, y: p.y, side: p.side, rot: p.rot || 0 } : null; }).filter(Boolean); }
+  function cplName() {
+    var base = st.bomName ? st.bomName.split("/").pop().replace(/\.[^.]+$/, "").replace(/bom/i, "CPL") : baseName() + "_CPL";
+    if (st.bomName && base === st.bomName.split("/").pop().replace(/\.[^.]+$/, "")) base += "_CPL";
+    return base + ".csv";
+  }
+  $("dl-cpl").addEventListener("click", function () { var l = cplList(); saveBlob(cplName(), new Blob([I.writeCpl(l)], { type: "text/csv" })); status("Saved " + cplName() + " with " + l.length + " positions."); });
+  function sheetLines() {
+    var idx = st.lines.map(function (l, i) { return i; }), s = S.sort;
+    if (s === "small") idx.sort(function (a, b) { return st.lines[a].r - st.lines[b].r || a - b; });
+    else if (s === "count") idx.sort(function (a, b) { return st.lines[b].refs.length - st.lines[a].refs.length || a - b; });
+    else if (s === "ref") idx.sort(function (a, b) { return I.natCmp(st.lines[a].refs[0], st.lines[b].refs[0]); });
+    return idx;
+  }
+  $("dl-sheet").addEventListener("click", function () {
+    var btn = this; btn.disabled = true; status("Making the A4 sheet …");
+    setTimeout(function () {
+      try {
+        var order = sheetLines(), lines = order.map(function (i) { return st.lines[i]; }), b = st.board.bbox;
+        var miss = st.order.filter(function (r) { return !pos(r); }).length;
+        var blob = I.sheet({
+          title: st.name || "Board", board: st.board, lines: lines, pos: pos,
+          radius: function (i) { return lines[i].r; },
+          info: st.order.length + " parts in " + st.lines.length + " lines · board " + (b.x1 - b.x0).toFixed(1) + " × " + (b.y1 - b.y0).toFixed(1) + " mm" + (miss ? " · " + miss + " without position" : ""),
+          source: (st.src && st.src.from) || "", date: new Date().toISOString().slice(0, 10)
+        });
+        saveBlob(baseName() + "_soldering_sheet.pdf", blob);
+        status("Saved " + baseName() + "_soldering_sheet.pdf.");
+      } catch (e) { status("Cannot make the sheet: " + e.message, "err"); }
+      btn.disabled = false;
+    }, 30);
   });
 
   // ================================================================ keys
@@ -401,7 +495,7 @@
 
   // ================================================================ start
   I.app = { st: st, view: view };        // for the browser console
-  render(); hover(null);
+  render(); hover(null); saveUi();
   var q = new URLSearchParams(location.search);
   if (q.get("repo")) openRepo(q.get("repo"), q.get("board"));
 })();
