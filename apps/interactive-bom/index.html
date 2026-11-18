@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Interactive BOM</title>
+  <meta name="description" content="Hand soldering made easy: the bill of materials next to a picture of the board made from its Gerber files. Click a line and its parts light up on the board; tick them off as you solder.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chivo:wght@400;700&display=swap">
+  <link rel="stylesheet" href="../../assets/css/site.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav class="site-bar" aria-label="Breadcrumb">
+    <a href="../../">wagiminator</a><span class="sep">/</span><span>Apps</span><span class="sep">/</span><span>Interactive BOM</span>
+  </nav>
+
+  <main class="app">
+    <header class="app-head">
+      <h1>Interactive BOM</h1>
+      <p>For soldering a board by hand: the bill of materials next to a picture of the board made from its Gerber files. Choose a line and its parts light up on the board; tick them off as you go. Works with the files of EasyEDA, KiCad and JLCPCB, and with the projects on GitHub.</p>
+    </header>
+
+    <section class="panel loadbar" aria-label="Open a board">
+      <div class="lb-files">
+        <button type="button" class="btn btn-primary" id="btn-open">Open files…</button>
+        <span class="lb-hint">Gerber ZIP, BOM and pick-and-place file, or drop them here</span>
+      </div>
+      <form class="lb-gh" id="gh-form" autocomplete="off">
+        <label class="field"><span>Project on GitHub</span><input type="text" id="gh" list="gh-list" placeholder="wagiminator/CH552-USB-OLED" spellcheck="false"></label>
+        <datalist id="gh-list"></datalist>
+        <label class="field" id="gh-board-f" hidden><span>Board</span><select id="gh-board"></select></label>
+        <button type="submit" class="btn" id="btn-gh">Load</button>
+      </form>
+      <p class="lb-status" id="status" aria-live="polite"></p>
+    </section>
+
+    <div class="work" id="work">
+      <section class="panel bom-panel" aria-labelledby="bom-h">
+        <div class="bom-head">
+          <h2 id="bom-h">Parts</h2>
+          <div class="progress" id="progress" hidden>
+            <div class="bar"><i id="bar"></i></div>
+            <span id="prog-text"></span>
+          </div>
+        </div>
+        <div class="bom-tools">
+          <input type="search" id="filter" placeholder="Filter: value, R5, 0603 …" aria-label="Filter the parts" spellcheck="false">
+          <select id="sort" aria-label="Order">
+            <option value="bom">BOM order</option>
+            <option value="small">Small parts first</option>
+            <option value="count">Most parts first</option>
+            <option value="ref">By designator</option>
+          </select>
+          <label class="check"><input type="checkbox" id="hide-placed"> Hide placed</label>
+          <button type="button" class="btn btn-small" id="btn-next" title="Next line that is not placed yet (N)">Next</button>
+        </div>
+        <div class="bom" id="bom" role="table" aria-label="Bill of materials"></div>
+        <p class="bom-foot" id="bom-foot"></p>
+      </section>
+
+      <section class="panel board-panel" aria-labelledby="board-h">
+        <div class="board-head">
+          <h2 id="board-h" class="vh">Board</h2>
+          <div class="seg" role="group" aria-label="Side">
+            <button type="button" id="side-top" aria-pressed="true">Top</button>
+            <button type="button" id="side-bottom" aria-pressed="false">Bottom</button>
+          </div>
+          <label class="check"><input type="checkbox" id="labels"> Designators</label>
+          <label class="check"><input type="checkbox" id="placed-marks" checked> Placed</label>
+          <select id="mask" aria-label="Solder mask colour" title="Solder mask colour"></select>
+          <div class="zoom">
+            <button type="button" class="btn btn-small" id="z-out" aria-label="Zoom out">−</button>
+            <button type="button" class="btn btn-small" id="z-in" aria-label="Zoom in">+</button>
+            <button type="button" class="btn btn-small" id="z-fit">Fit</button>
+          </div>
+          <button type="button" class="btn btn-small" id="btn-teach" aria-pressed="false" title="Show where the parts are by clicking them on the board">Teach positions</button>
+        </div>
+        <div class="teach" id="teach" hidden>
+          <p class="teach-q" id="teach-q"></p>
+          <div class="teach-b">
+            <button type="button" class="btn btn-small" id="t-skip">Skip</button>
+            <button type="button" class="btn btn-small" id="t-undo">Undo</button>
+            <button type="button" class="btn btn-small" id="t-del" title="Forget the taught position of this part">Forget</button>
+            <button type="button" class="btn btn-small btn-primary" id="t-save">Save CPL file</button>
+            <button type="button" class="btn btn-small" id="t-done">Done</button>
+          </div>
+          <p class="teach-h">Click the middle of the part; the click snaps to its pads (Alt+click: no snapping). Click a designator in the list to teach that one next.</p>
+        </div>
+        <div class="board-wrap" id="board-wrap">
+          <canvas id="board" aria-label="Picture of the board"></canvas>
+          <div class="empty" id="empty">
+            <p><b>No board yet.</b> Open the Gerber ZIP together with the BOM, or load a project from GitHub.</p>
+            <div class="try" id="try"></div>
+          </div>
+        </div>
+        <p class="hover" id="hover" aria-live="off"></p>
+      </section>
+    </div>
+
+    <section class="panel help" aria-labelledby="help-h">
+      <h2 id="help-h">Good to know</h2>
+      <div class="help-cols">
+        <ul>
+          <li><b>Files:</b> the Gerber files (as ZIP or single files), the BOM (EasyEDA .tsv, KiCad .csv, JLCPCB .csv) and the pick-and-place file (EasyEDA, JLCPCB CPL, KiCad .pos/.csv, Eagle .mnt). Everything is read in the browser; nothing is uploaded.</li>
+          <li><b>Without pick-and-place file</b> the app does not know where the parts are. Switch on <i>Teach positions</i> and click each part once on the board; save the result as CPL file next to the BOM, and the next time it is found by itself.</li>
+          <li><b>GitHub:</b> the app looks for Gerber ZIP, BOM and CPL files in the repository. Links like <code>?repo=wagiminator/CH552-USB-OLED</code> open a project directly.</li>
+        </ul>
+        <ul>
+          <li><b>Soldering:</b> choose a line (or press N for the next one), its parts light up. Tick the line when it is done; the progress is kept in this browser for each board. “Small parts first” is a good order for hand soldering.</li>
+          <li><b>View:</b> wheel or pinch zooms, dragging moves, double click zooms in. Click a part on the board to find its line. Keys: ↑/↓ choose the line, Space ticks it, T and B switch the side.</li>
+          <li>The board picture is drawn by the same code as the <a href="../gerber-viewer/">Gerber Viewer</a>.</li>
+        </ul>
+      </div>
+    </section>
+  </main>
+
+  <input type="file" id="file" multiple hidden>
+
+  <footer class="site-footer">
+    Interactive BOM by <a href="https://github.com/wagiminator">wagiminator</a>. Inspired by InteractiveHtmlBom; all files stay on your computer.
+  </footer>
+
+  <script src="../gerber-viewer/gerber.js"></script>
+  <script src="js/parts.js"></script>
+  <script src="js/board.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

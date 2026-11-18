@@ -40,6 +40,7 @@ apps/
   serial-terminal/      Serial Terminal
   mt3608-sepic/         MT3608 SEPIC Voltage Calculator
   gerber-viewer/        Gerber Viewer
+  interactive-bom/      Interactive BOM (parts list and board picture for hand soldering)
 games/
   ironfall/             Ironfall (run-and-gun action platformer)
   x-abyss/              X-Abyss (underwater shoot'em-up)
@@ -380,6 +381,19 @@ Shows the top and bottom side of a printed circuit board from its Gerber and dri
 - Download: each side as a PNG with a transparent background at 300, 600 or 1200 dpi (limited to about 50 megapixels).
 
 Code: `gerber.js` reads ZIP archives, recognizes layers, parses Gerber and Excellon files and draws the board, `app.js` is the user interface (no dependencies).
+
+### Interactive BOM
+
+A helper for soldering a board by hand, in the spirit of InteractiveHtmlBom: the bill of materials next to a picture of the board drawn from its Gerber files. Everything runs in the browser; no file is uploaded.
+
+- Input: Gerber ZIP (or single Gerber and drill files), BOM (EasyEDA .tsv in UTF-16 or UTF-8, KiCad .csv, JLCPCB .csv) and pick-and-place file (EasyEDA, JLCPCB CPL, KiCad .pos/.csv, Eagle .mnt; mm, mil and inch), by file dialog or drag and drop. Designator ranges like `C5-C7` are expanded; a pick-and-place file whose origin does not match the Gerber files is moved onto the board.
+- GitHub: a repository name (or link) is searched for Gerber ZIP, BOM and CPL files, which are matched by folder and file name; repositories with several boards offer a choice. `?repo=wagiminator/CH552-USB-OLED` (and `&board=`) opens a project directly.
+- Parts list: filter, order (BOM, small parts first, most parts first, by designator), hide placed lines, LCSC part numbers as links. Choosing a line lights up its parts on the board and dims the rest; the view switches to the side the parts are on. Clicking a part on the board selects its line. Ticked lines and the progress are kept in the browser for each board.
+- Board: top and bottom side (the bottom as seen from below), solder mask colour, designators, marks for placed parts, zoom and pan with wheel, drag and pinch.
+- Teach mode for boards without a pick-and-place file: the app asks for one part after the other, the click snaps to the middle of the part's pads (found on the solder mask layer), with skip, undo and forget. The taught positions are kept in the browser and can be saved as a JLCPCB-style CPL file to put next to the BOM, where the GitHub loader finds it.
+- Keys: ↑/↓ choose the line, Space ticks it, N next open line, T/B side, +/−/F zoom, Esc leaves the teach mode.
+
+Code: `js/parts.js` (BOM and pick-and-place readers, CPL writer, part sizes, GitHub search), `js/board.js` (pad finder, snapping, board view), `app.js` (user interface); the board is drawn by `../gerber-viewer/gerber.js`. No other dependencies.
 
 ## Games
 
