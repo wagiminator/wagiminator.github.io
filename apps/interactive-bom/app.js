@@ -55,22 +55,27 @@
   }
   // pick-and-place data that comes with the app, found by the EasyEDA id in the Gerber header
   var bundled = null;
+  // (a script, loaded when needed: it also works when the page is opened from disk)
   function bundledIndex() {
-    if (!bundled) bundled = fetch("cpl/index.json").then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; });
+    if (!bundled) bundled = new Promise(function (resolve) {
+      if (window.IBOM_DATA) { resolve(window.IBOM_DATA); return; }
+      var s = document.createElement("script");
+      s.src = "js/cpl-data.js";
+      s.onload = function () { resolve(window.IBOM_DATA || null); };
+      s.onerror = function () { bundled = null; resolve(null); };
+      document.head.appendChild(s);
+    });
     return bundled;
   }
   async function bundledCpl(gerbers) {
-    var id = null;
-    gerbers.some(function (g) { var m = /G04 ([0-9a-f]{32}),[0-9a-f]{32}/.exec(g.text.slice(0, 3000)); if (m) id = m[1]; return !!m; });
-    if (!id) return null;
-    var idx = await bundledIndex(), rel = idx && idx.byId[id];
-    if (!rel) return null;
-    try {
-      var r = await fetch("cpl/" + rel.split("/").map(encodeURIComponent).join("/"));
-      if (!r.ok) return null;
-      var t = I.table(await r.text());
-      return t ? { name: rel.split("/").pop(), t: t, k: I.kind(t), bundled: true } : null;
-    } catch (e) { return null; }
+    var ids = [];
+    gerbers.forEach(function (g) { var m = /G04 ([0-9a-f]{32}),[0-9a-f]{32}/.exec(g.text.slice(0, 3000)); if (m && ids.indexOf(m[1]) < 0) ids.push(m[1]); });
+    if (!ids.length) return null;
+    var idx = await bundledIndex(), e = null;
+    ids.some(function (id) { e = idx && idx.byId[id]; return !!e; });
+    if (!e) return null;
+    var t = I.table(e.csv);
+    return t ? { name: e.file.split("/").pop(), t: t, k: I.kind(t), bundled: true } : null;
   }
   async function open(entries, key, name, src) {
     var c = classify(entries);
