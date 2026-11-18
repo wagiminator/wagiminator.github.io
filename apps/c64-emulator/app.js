@@ -62,6 +62,7 @@
   var running = true, warp = false;
   var snapshot = null;
   var debug = null;                 // monitor and debugger (debugger.js)
+  var spriteView = null;            // sprite viewer (sprites.js)
 
   // ------------------------------------------------------------------ messages
   function showError(msg) { var e = $("error"); e.textContent = msg; e.hidden = !msg; }
@@ -86,6 +87,7 @@
     remount();
     c64.reset(true);
     if (debug) debug.attach(c64);
+    if (spriteView) spriteView.attach(c64);
     updateRomStatus();
     updateMediaUi();
   }
@@ -792,6 +794,18 @@
     });
     $("btn-debug").addEventListener("click", function () { setDebugger(!debug.isOpen()); });
   }
+  function setSprites(on) {
+    if (!spriteView) return;
+    settings.sprites = !!on; saveSettings();
+    spriteView.setOpen(!!on);
+    $("btn-sprites").setAttribute("aria-pressed", on ? "true" : "false");
+    if (on) $("sprites").scrollIntoView({ block: "nearest", behavior: "smooth" });
+  }
+  function initSprites() {
+    if (!window.C64Sprites) return;
+    spriteView = window.C64Sprites({ toggle: setSprites });
+    $("btn-sprites").addEventListener("click", function () { setSprites(!spriteView.isOpen()); });
+  }
 
   // ------------------------------------------------------------------ wiring
   function act(name) {
@@ -917,8 +931,10 @@
     snapshot = (await store.get("state")) || null;
     $("btn-load-state").disabled = !snapshot;
     initDebugger();
+    initSprites();
     buildMachine();
     if (settings.debugger) setDebugger(true);
+    if (settings.sprites) setSprites(true);
     applyDisplay();
     updateSoundUi();
     updateJoyStatus();

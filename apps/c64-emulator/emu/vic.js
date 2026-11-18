@@ -77,6 +77,7 @@
     this.showNext = 0;
     this.showCur = 0;
     this.sprSpr = 0; this.sprBg = 0;
+    this.sprTrace = false; this.sprCur = []; this.sprFrame = []; this.sprSeen = {};
     this.frameDone = false;
     this.frame = 0;
     this.rasterIrqDone = false;
@@ -182,6 +183,7 @@
           this.sNext[n] = (this.rd(ptr | m) << 16) | (this.rd(ptr | ((m + 1) & 63)) << 8) | this.rd(ptr | ((m + 2) & 63));
           this.mc[n] = (m + 3) & 63;
           if (this.dispMask & b) this.showNext |= b;
+          if (m === 0 && this.sprTrace) this.traceSprite(n, ptr);
         }
       }
     }
@@ -289,6 +291,20 @@
     }
   };
 
+  // Sprite viewer: remember every sprite that starts in this frame (also multiplexed ones)
+  P.traceSprite = function (n, ptr) {
+    var regs = this.regs, bit = 1 << n, bank = this.m.vicBank;
+    var mc = regs[0x1C] & bit ? 1 : 0, col = regs[0x27 + n] & 15, mc0 = regs[0x25] & 15, mc1 = regs[0x26] & 15;
+    var key = (bank | ptr) + ":" + col + ":" + (mc ? mc0 + ":" + mc1 : "h") + ":" + n;
+    if (this.sprSeen[key]) return;
+    this.sprSeen[key] = 1;
+    var data = new Uint8Array(64);
+    for (var i = 0; i < 64; i++) data[i] = this.rd(ptr | i);
+    var x = regs[n * 2] | ((regs[0x10] & bit) ? 0x100 : 0);
+    this.sprCur.push({ n: n, addr: bank | ptr, data: data, line: this.raster, x: x, y: regs[n * 2 + 1], col: col, mc: mc, mc0: mc0, mc1: mc1,
+      xe: regs[0x1D] & bit ? 1 : 0, ye: regs[0x17] & bit ? 1 : 0, behind: regs[0x1B] & bit ? 1 : 0 });
+  };
+
   P.drawSprites = function () {
     var regs = this.regs, show = this.showCur;
     if (!show) return false;
@@ -383,6 +399,10 @@
       r = 0;
       this.vcbase = 0;
       this.frameDone = true;
+      if (this.sprTrace) {
+        this.sprFrame = this.sprCur; this.sprCur = []; this.sprSeen = {};
+        if (this.onSprites) this.onSprites(this.sprFrame);
+      }
       this.frame++;
     }
     this.raster = r;

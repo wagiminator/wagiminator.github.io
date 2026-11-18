@@ -292,11 +292,12 @@
 
 /* ---------- Debugger ---------- */
 
-.app.debugging .side { grid-row: 2; }
-.debugger { grid-column: 1 / -1; grid-row: 3; }
-.app.debugging .help { grid-row: 4; }
+/* tool panels (debugger, sprites) take the full width below the screen */
+.app.debugging .side, .app.spriting .side { grid-row: 2; }
+.debugger, .sprites { grid-column: 1 / -1; }
+.app.debugging .help, .app.spriting .help { grid-row: auto; }
 
-.debugger {
+.debugger, .sprites {
   --dbg-bg: #1a1640;
   --dbg-pane: #221e52;
   --dbg-line: #37317a;
@@ -481,12 +482,47 @@ button.flag:disabled { cursor: default; }
 .con-line label { color: var(--dbg-pc); font-weight: 600; white-space: nowrap; }
 .con-line input { flex: 1; min-width: 0; font: 0.875rem var(--mono); color: #fff; background: var(--dbg-bg); border: 1px solid var(--dbg-line); border-radius: 4px; padding: 0.35rem 0.5rem; }
 
+/* ---------- Sprite viewer ---------- */
+
+.sprites .dbg-head { grid-template-columns: auto minmax(0, 1fr) auto; }
+.spr-tabs { margin: 0; border-bottom: 0; }
+.spr-grid { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 0.75rem; margin-top: 0.8rem; align-items: start; }
+.spr-main .pane-head h3 { margin-right: auto; }
+.spr-gallery { display: flex; flex-wrap: wrap; gap: 0.5rem; min-height: 6rem; max-height: 30rem; overflow-y: auto; align-content: flex-start; }
+.spr-card {
+  display: flex; flex-direction: column; align-items: center; gap: 0.35rem;
+  width: 7.4rem; padding: 0.5rem 0.3rem 0.4rem;
+  font: 0.6875rem/1.35 var(--mono); color: var(--dbg-soft);
+  background: var(--dbg-bg); border: 1px solid var(--dbg-line); border-radius: 5px; cursor: pointer;
+}
+.spr-card:hover { border-color: var(--dbg-soft); }
+.spr-card.on { border-color: var(--dbg-chg); box-shadow: 0 0 0 1px var(--dbg-chg); color: var(--dbg-ink); }
+.spr-card canvas, .spr-memwrap canvas, .spr-big canvas { image-rendering: pixelated; image-rendering: crisp-edges; }
+.spr-card canvas {
+  width: 72px; height: 63px;
+  background: repeating-conic-gradient(#2a2560 0% 25%, #221e52 0% 50%) 0 0 / 12px 12px;
+}
+.spr-memwrap { overflow-x: auto; }
+.spr-memwrap canvas { display: block; width: 100%; min-width: 600px; height: auto; cursor: pointer; border-radius: 4px; }
+.spr-big { display: grid; place-items: center; padding: 0.6rem; border-radius: 5px; background: #000; }
+.spr-big.bg-checker { background: repeating-conic-gradient(#2a2560 0% 25%, #221e52 0% 50%) 0 0 / 20px 20px; }
+.spr-big canvas { display: block; width: 100%; max-width: 240px; height: auto; }
+.spr-opts { display: flex; flex-wrap: wrap; gap: 0.4rem 0.9rem; margin-top: 0.5rem; }
+.spr-dl { display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: center; }
+.spr-msg { margin: 0.4rem 0 0; min-height: 1.2em; color: var(--dbg-chg); font-size: 0.8125rem; }
+#spr-tools .dbg-chk select { margin-left: 0.2rem; }
+
 @media (max-width: 1100px) {
   .dbg-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-areas: "dis dis" "cpu bps" "mem mem" "tabs tabs" "con con"; }
 }
 @media (max-width: 980px) {
-  .debugger, .app.debugging .help { grid-column: 1; grid-row: auto; }
-  .app.debugging .side { grid-row: auto; }
+  .debugger, .sprites { grid-column: 1; }
+  .app.debugging .side, .app.spriting .side { grid-row: auto; }
+}
+@media (max-width: 860px) {
+  .spr-grid { grid-template-columns: minmax(0, 1fr); }
+  .sprites .dbg-head { grid-template-columns: minmax(0, 1fr) auto; }
+  .spr-tabs { grid-column: 1 / -1; grid-row: 2; }
 }
 @media (max-width: 720px) {
   .dbg-grid { grid-template-columns: minmax(0, 1fr); grid-template-areas: "dis" "cpu" "bps" "mem" "tabs" "con"; }
