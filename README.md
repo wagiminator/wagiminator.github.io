@@ -36,6 +36,7 @@ apps/
   avrisp/               AVR ISP Programmer
   tinypro/              XGecu Memory Programmer
   signal-analyzer/      Signal Analyzer (logic analyzer for Pico, FX2 and sound card)
+  power-analyzer/       Power Analyzer (control program for the ATtiny814 Power Analyzer)
   serial-terminal/      Serial Terminal
   mt3608-sepic/         MT3608 SEPIC Voltage Calculator
   gerber-viewer/        Gerber Viewer
@@ -338,6 +339,24 @@ A logic analyzer and simple oscilloscope in the browser for hardware that costs 
 - Files: sigrok sessions (.sr, read and write, for PulseView and sigrok-cli), VCD and CSV (read and write), decoded data as text, the view as PNG. Eight generated demo signals.
 
 Code: `js/capture.js` (data model and block summaries), `js/view.js` (waveform canvas), `js/sources.js` (Pico, FX2, sound card, trigger), `js/decoders.js`, `js/files.js` (ZIP, .sr, VCD, CSV), `js/demo.js`, `app.js` (user interface); no dependencies.
+
+### Power Analyzer
+
+The control program for the [ATtiny814 Power Analyzer](https://github.com/wagiminator/ATtiny814-Power-Analyzer), an electronic load with two INA219 power sensors, in place of the Python/Tkinter program. Uses the Web Serial API (115200 baud, the text protocol of the firmware).
+
+- Connection: finds the analyzer by its identification string and shows the firmware version. Live readings of both sensors (load side TEST-IN and supply side PWR-IN → PWR-OUT: voltage, current, power) a few times a second, and a constant current load to switch on and off.
+- All test programs of the firmware with a wiring picture and the parameter limits of the firmware:
+  - load test (voltage and power over current, maximum power, internal resistance)
+  - voltage regulation (load steps, voltage range, load regulation)
+  - efficiency test (efficiency over current, maximum efficiency)
+  - low frequency ripple test
+  - battery discharge (capacity, energy, duration; can be stopped)
+  - long-term multimeter (energy, charge, minimum/maximum/average; can be stopped)
+  - calibration, which works out the `ILCAL`/`ULCAL` factors from the readings of a multimeter
+- Live chart with two value axes and a crosshair; measurements are kept in the browser, can be renamed, drawn on top of each other for comparison, saved as CSV (with a header) and as a picture with the results. CSV files of this app and of the Python program (tab separated, the test is recognized from the columns) can be opened.
+- A simulated analyzer (a USB charger, a 12 V to 5 V converter and a lithium-ion cell behind the same firmware protocol) to try the app without hardware.
+
+Code: `js/device.js` (serial line protocol and the simulator), `js/tests.js` (test programs and their results), `js/chart.js` (chart), `app.js` (user interface); no dependencies.
 
 ### Serial Terminal
 
