@@ -1,0 +1,11 @@
+Designator,Mid X,Mid Y,Layer,Rotation
+X1,15.238mm,10.159mm,Top,270
+ICSP-IN,5.078mm,24.129mm,Top,90
+ICSP-OUT,26.033mm,16.509mm,Top,0
+R1,9.142mm,2.539mm,Top,0
+CLIP,5.078mm,10.159mm,Top,90
+LED1,15.238mm,2.539mm,Top,180
+C1,15.2381mm,18.414mm,Top,180
+ATTINY2,15.238mm,10.159mm,Top,0
+ATTINY1,15.238mm,25.399mm,Top,0
+C2,5.078mm,17.779mm,Top,0

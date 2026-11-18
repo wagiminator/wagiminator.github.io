@@ -1,0 +1,11 @@
+Designator,Mid X,Mid Y,Layer,Rotation
+KEY1,25.908mm,2.3314mm,Top,0
+OLED,1.905mm,6.349mm,Bottom,180
+R2,36.449mm,3.047mm,Top,90
+R1,38.227mm,9.651mm,Top,270
+U1,31.75mm,8.254mm,Top,270
+C1,36.449mm,9.651mm,Top,90
+C3,38.227mm,3.047mm,Top,270
+C2,26.543mm,9.27mm,Top,90
+U3,41.275mm,6.349mm,Bottom,90
+B1,14.224mm,6.73mm,Top,0

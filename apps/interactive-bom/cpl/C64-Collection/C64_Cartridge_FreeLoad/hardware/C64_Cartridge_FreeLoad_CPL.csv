@@ -1,0 +1,11 @@
+Designator,Mid X,Mid Y,Layer,Rotation
+R1,46.735mm,38.864mm,Top,0
+R2,46.735mm,41.404mm,Top,180
+C1,21.335mm,31.244mm,Top,90
+C2,21.335mm,21.084mm,Top,270
+U2,12.445mm,26.164mm,Top,270
+U1,42.925mm,26.164mm,Top,0
+BUSY,42.925mm,46.484mm,Top,270
+RESET1,13.715mm,45.214mm,Top,180
+CART1,34.035mm,4.32mm,Top,90
+ON/OFF,53.085mm,46.484mm,Top,0

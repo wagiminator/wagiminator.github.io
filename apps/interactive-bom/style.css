@@ -44,6 +44,8 @@ input[type="text"], input[type="search"], select {
 .lb-gh { display: flex; align-items: flex-end; gap: 0.5rem; flex-wrap: wrap; }
 .lb-gh input { width: 17rem; }
 .lb-gh select { max-width: 16rem; }
+.lb-save { display: flex; align-items: center; gap: 0.35rem; flex-wrap: wrap; margin-left: auto; }
+.lb-label { font-weight: 700; font-size: 0.8125rem; margin-right: 0.15rem; }
 .lb-status { flex-basis: 100%; margin: 0; font-size: 0.875rem; color: var(--ink-soft); min-height: 1.2em; }
 .lb-status:empty { display: none; }
 .lb-status.err { color: var(--danger); font-weight: 700; }
@@ -138,4 +140,5 @@ body.dragging .app { outline: 3px dashed var(--accent); outline-offset: 6px; }
   .line .fp { grid-column: 3; }
   .lb-gh input { width: 100%; }
   .lb-gh, .lb-gh .field { flex: 1 1 100%; }
+  .lb-save { margin-left: 0; }
 }

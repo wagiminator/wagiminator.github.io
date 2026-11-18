@@ -1,0 +1,12 @@
+Designator,Mid X,Mid Y,Layer,Rotation
+R3,1.6356mm,32.5615mm,Top,90
+R4,8.9127mm,11.4186mm,Top,180
+ATTINY,6.092mm,21.59mm,Top,180
+R1,7.2236mm,32.5615mm,Top,90
+R2,4.4524mm,32.4625mm,Top,270
+JP1,6.0158mm,40.64mm,Top,270
+ICSP,6.0437mm,4.8108mm,Top,0
+LED1,3.1507mm,11.43mm,Top,90
+C1,6.092mm,14.986mm,Top,180
+D2,4.441mm,28.3009mm,Top,0
+D1,10.5169mm,31.242mm,Top,270

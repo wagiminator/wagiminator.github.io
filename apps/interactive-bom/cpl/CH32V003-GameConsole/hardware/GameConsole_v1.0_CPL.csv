@@ -1,0 +1,21 @@
+Designator,Mid X,Mid Y,Layer,Rotation
+BUZZER1,31.114mm,-34.292mm,Top,90
+H1,17.779mm,-1.907mm,Top,0
+H2,34.289mm,-12.702mm,Top,90
+SW1,2.1581mm,-12.702mm,Top,90
+ACT,31.114mm,-43.817mm,Top,90
+DOWN,12.699mm,-46.992mm,Top,0
+LEFT,6.349mm,-40.642mm,Top,0
+UP,12.699mm,-34.292mm,Top,0
+RIGHT,19.049mm,-40.642mm,Top,0
+B1,17.779mm,-35.562mm,Bottom,270
+C1,11.429mm,-10.035mm,Bottom,90
+C2,8.889mm,-10.035mm,Bottom,270
+Q1,31.749mm,-20.322mm,Bottom,180
+R1,26.669mm,-20.322mm,Bottom,90
+R2,16.509mm,-20.322mm,Bottom,90
+R3,19.049mm,-20.322mm,Bottom,90
+R4,21.589mm,-20.322mm,Bottom,90
+R5,13.969mm,-20.322mm,Bottom,90
+R6,24.129mm,-20.322mm,Bottom,90
+U1,17.779mm,-12.702mm,Bottom,180

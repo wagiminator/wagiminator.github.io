@@ -1,0 +1,16 @@
+Designator,Mid X,Mid Y,Layer,Rotation
+LED1,7.622mm,-6.354mm,Top,270
+LED2,7.622mm,-11.434mm,Top,90
+SW1,21.592mm,-6.608mm,Top,0
+SW2,21.592mm,-11.18mm,Top,0
+USB1,3.1886mm,-8.894mm,Top,270
+U1,12.702mm,-8.894mm,Top,0
+R4,21.592mm,-11.18mm,Bottom,180
+C1,11.305mm,-6.354mm,Bottom,90
+C2,13.083mm,-6.354mm,Bottom,90
+C3,9.527mm,-6.354mm,Bottom,90
+R1,7.749mm,-6.354mm,Bottom,270
+R2,7.749mm,-11.434mm,Bottom,90
+R3,21.592mm,-6.608mm,Bottom,180
+H1,12.702mm,-16.514mm,Bottom,180
+H2,12.702mm,-1.274mm,Bottom,0

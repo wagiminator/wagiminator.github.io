@@ -33,6 +33,13 @@
         <label class="field" id="gh-board-f" hidden><span>Board</span><select id="gh-board"></select></label>
         <button type="submit" class="btn" id="btn-gh">Load</button>
       </form>
+      <div class="lb-save" role="group" aria-label="Download">
+        <span class="lb-label">Download</span>
+        <button type="button" class="btn btn-small" id="dl-gerber" disabled title="The Gerber files as ZIP">Gerber</button>
+        <button type="button" class="btn btn-small" id="dl-bom" disabled title="The bill of materials">BOM</button>
+        <button type="button" class="btn btn-small" id="dl-cpl" disabled title="The part positions as pick-and-place file (JLCPCB format), with the taught positions">CPL</button>
+        <button type="button" class="btn btn-small btn-primary" id="dl-sheet" disabled title="Board picture with numbered parts and the parts list on one A4 page, for soldering without a computer">A4 sheet (PDF)</button>
+      </div>
       <p class="lb-status" id="status" aria-live="polite"></p>
     </section>
 
@@ -105,11 +112,12 @@
         <ul>
           <li><b>Files:</b> the Gerber files (as ZIP or single files), the BOM (EasyEDA .tsv, KiCad .csv, JLCPCB .csv) and the pick-and-place file (EasyEDA, JLCPCB CPL, KiCad .pos/.csv, Eagle .mnt). Everything is read in the browser; nothing is uploaded.</li>
           <li><b>Without pick-and-place file</b> the app does not know where the parts are. Switch on <i>Teach positions</i> and click each part once on the board; save the result as CPL file next to the BOM, and the next time it is found by itself.</li>
-          <li><b>GitHub:</b> the app looks for Gerber ZIP, BOM and CPL files in the repository. Links like <code>?repo=wagiminator/CH552-USB-OLED</code> open a project directly.</li>
+          <li><b>GitHub:</b> the app looks for Gerber ZIP, BOM and CPL files in the repository. Links like <code>?repo=wagiminator/CH552-USB-OLED</code> open a project directly. For the boards of wagiminator's projects the part positions come with the app; they are found by the EasyEDA id in the Gerber files, also when you open the files from your computer.</li>
         </ul>
         <ul>
           <li><b>Soldering:</b> choose a line (or press N for the next one), its parts light up. Tick the line when it is done; the progress is kept in this browser for each board. “Small parts first” is a good order for hand soldering.</li>
           <li><b>View:</b> wheel or pinch zooms, dragging moves, double click zooms in. Click a part on the board to find its line. Keys: ↑/↓ choose the line, Space ticks it, T and B switch the side.</li>
+          <li><b>Download:</b> the Gerber ZIP, the BOM and the part positions as CPL file (JLCPCB format, with the taught positions). <i>A4 sheet</i> makes a PDF with the board picture, the parts numbered by line and the parts list with boxes to tick, for the workbench without a computer; it uses the order chosen above the list.</li>
           <li>The board picture is drawn by the same code as the <a href="../gerber-viewer/">Gerber Viewer</a>.</li>
         </ul>
       </div>
@@ -125,6 +133,7 @@
   <script src="../gerber-viewer/gerber.js"></script>
   <script src="js/parts.js"></script>
   <script src="js/board.js"></script>
+  <script src="js/export.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

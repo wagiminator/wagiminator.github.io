@@ -1,0 +1,17 @@
+Designator,Mid X,Mid Y,Layer,Rotation
+C2,17.785mm,3.81mm,Bottom,270
+UPDI,21.595mm,4.445mm,Top,90
+USB,3.18mm,7.62mm,Top,180
+SELFPRG,21.595mm,12.065mm,Top,0
+C1,8.514mm,1.905mm,Bottom,180
+C3,12.705mm,1.905mm,Top,180
+C4,8.26mm,1.905mm,Top,180
+PRG,12.705mm,11.43mm,Top,0
+PWR,12.705mm,13.335mm,Top,0
+R1,17.785mm,10.033mm,Bottom,90
+R2,17.15mm,2.54mm,Top,90
+R3,17.15mm,8.255mm,Top,270
+R4,8.26mm,13.335mm,Top,0
+R5,8.26mm,11.43mm,Top,0
+U1,10.8mm,8.255mm,Bottom,270
+U2,10.546mm,6.731mm,Top,0

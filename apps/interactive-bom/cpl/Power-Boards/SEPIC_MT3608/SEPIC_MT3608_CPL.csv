@@ -1,0 +1,14 @@
+Designator,Mid X,Mid Y,Layer,Rotation
+VOUT,2.54mm,16.509mm,Top,90
+VIN,20.32mm,16.509mm,Top,90
+L2,13.462mm,4.317mm,Top,0
+L1,9.652mm,16.001mm,Top,0
+R2,6.604mm,10.159mm,Top,270
+R1,4.572mm,10.159mm,Top,90
+U3,14.732mm,10.159mm,Top,270
+PWR1,20.32mm,6.349mm,Top,90
+C3,16.51mm,16.509mm,Top,90
+C1,8.636mm,10.159mm,Top,90
+C2,10.668mm,10.159mm,Top,90
+C4,2.794mm,4.063mm,Top,270
+D2,5.969mm,4.063mm,Top,90

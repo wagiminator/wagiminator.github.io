@@ -392,8 +392,10 @@ A helper for soldering a board by hand, in the spirit of InteractiveHtmlBom: the
 - Board: top and bottom side (the bottom as seen from below), solder mask colour, designators, marks for placed parts, zoom and pan with wheel, drag and pinch.
 - Teach mode for boards without a pick-and-place file: the app asks for one part after the other, the click snaps to the middle of the part's pads (found on the solder mask layer), with skip, undo and forget. The taught positions are kept in the browser and can be saved as a JLCPCB-style CPL file to put next to the BOM, where the GitHub loader finds it.
 - Keys: ↑/↓ choose the line, Space ticks it, N next open line, T/B side, +/−/F zoom, Esc leaves the teach mode.
+- Pick-and-place data for the boards of these projects comes with the app (`cpl/`, 198 boards, made from the EasyEDA projects). It is found by the EasyEDA id in the Gerber header, so it is used for boards loaded from GitHub and for Gerber ZIPs opened from the computer. `cpl/index.json` also lists the boards of each repository, which the app uses when the GitHub API does not answer (rate limit).
+- Download: the Gerber ZIP (the original, or a new ZIP of single files), the BOM and the positions as CPL file (JLCPCB format, with the taught positions). *A4 sheet* makes a PDF for the workbench: the board picture of both sides with the parts numbered and coloured by BOM line, and the parts list with boxes to tick, in the chosen order; long lists go into two columns.
 
-Code: `js/parts.js` (BOM and pick-and-place readers, CPL writer, part sizes, GitHub search), `js/board.js` (pad finder, snapping, board view), `app.js` (user interface); the board is drawn by `../gerber-viewer/gerber.js`. No other dependencies.
+Code: `js/parts.js` (BOM and pick-and-place readers, CPL writer, part sizes, GitHub search), `js/board.js` (pad finder, snapping, board view), `js/export.js` (ZIP and PDF writer, A4 sheet), `app.js` (user interface); the board is drawn by `../gerber-viewer/gerber.js`. No other dependencies.
 
 ## Games
 

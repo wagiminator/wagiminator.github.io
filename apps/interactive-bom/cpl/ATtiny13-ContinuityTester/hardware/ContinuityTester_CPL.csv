@@ -1,0 +1,10 @@
+Designator,Mid X,Mid Y,Layer,Rotation
+BUZZER,22.351mm,6.342mm,Top,180
+R1,13.969mm,2.024mm,Top,0
+R2,7.619mm,8.882mm,Top,270
+LED1,7.619mm,3.802mm,Top,270
+H2,24.129mm,1.262mm,Bottom,0
+C1,13.969mm,10.66mm,Top,180
+H1,2.539mm,6.342mm,Top,0
+U1,13.969mm,6.342mm,Top,0
+B1,15.112mm,6.723mm,Bottom,0
