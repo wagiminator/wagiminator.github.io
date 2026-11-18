@@ -35,6 +35,7 @@ apps/
   serialupdi/           AVR Serial UPDI Programmer
   avrisp/               AVR ISP Programmer
   tinypro/              XGecu Memory Programmer
+  signal-analyzer/      Signal Analyzer (logic analyzer for Pico, FX2 and sound card)
   serial-terminal/      Serial Terminal
   mt3608-sepic/         MT3608 SEPIC Voltage Calculator
   gerber-viewer/        Gerber Viewer
@@ -323,6 +324,20 @@ Reads, writes and verifies EPROMs, EEPROMs and flash memory with the XGecu TL866
 - Needs Chrome, Edge or Opera on a desktop computer. On Windows the TL866II+ and T48 work with the XGecu driver, the TL866A/CS needs WinUSB (Zadig); on Linux the udev rules shown in the app.
 
 Code: `tinypro.js` holds the programmer protocols, the memory operations and the chip database functions, `chips.js` the chip database (gzip and base64, generated from minipro's infoic.xml as in tinypro.py), `app.js` is the user interface; `/assets/js/firmware.js` is shared with other apps.
+
+### Signal Analyzer
+
+A logic analyzer and simple oscilloscope in the browser for hardware that costs a few euros, with protocol decoders.
+
+- Raspberry Pi Pico with the [sigrok-pico](https://github.com/pico-coder/sigrok-pico) firmware over Web Serial (the protocol of the raspberrypi-pico driver of libsigrok): up to 21 digital channels (GP2–GP22) and 3 analog inputs, sample rates from 5 kS/s to 120 MS/s into the Pico's memory, run-length coded transfer, streaming mode for triggered captures, check of the byte count.
+- FX2 logic analyzers (the "24 MHz 8 channel" Saleae Logic clones with 0925:3881, Cypress FX2 boards with 04b4:8613 and 16 channels, sigrok fx2grok) over WebUSB: the app loads the [fx2lafw](https://sigrok.org/wiki/Fx2lafw) firmware into the chip as sigrok does (built from source, version 0.1.7, GPL; `apps/signal-analyzer/fw/`), then streams 20 kS/s to 24 MS/s (16 channels up to 12 MS/s) with up to 32 transfers in flight and warns when the computer could not keep up.
+- Sound card over Web Audio: one or two analog channels at 44.1 to 192 kHz from any audio input.
+- Trigger on a digital edge or level or an analog level crossing, with 0 to 75 % of the samples before the trigger; single captures or repeated ones like an oscilloscope.
+- Waveform view for up to 100 million samples (block summaries for fast drawing): zoom with wheel, pinch or keys, pan by dragging, overview bar, time ruler relative to the trigger, two cursors that snap to edges with time difference and frequency, pulse width, period, frequency and duty cycle under the pointer. Channels can be renamed, recoloured (resistor colour code) and hidden; an analog channel becomes a digital one with a threshold and hysteresis.
+- Decoders: UART (auto baud rate, 5–9 data bits, parity, stop bits, inverted, text lines), I²C (start, repeated start, stop, 7/8-bit addresses, ACK/NACK, transfers), SPI (modes 0–3, 4–32 bit words, chip select), 1-Wire (reset, presence, ROM commands including Search ROM, ROM codes, DS18B20 functions), WS2812/SK6812 (GRB, RGB, GRBW, RGBW with colour swatches), IR remote controls (NEC, Samsung, Sony SIRC 12/15/20, Philips RC-5; raw 38 kHz carrier is removed) and the C64 serial bus (IEC: LISTEN/TALK/OPEN/CLOSE/DATA under ATN, EOI, turnaround). Results as rows in the view and as a filterable list; tested with captures from sigrok-dumps.
+- Files: sigrok sessions (.sr, read and write, for PulseView and sigrok-cli), VCD and CSV (read and write), decoded data as text, the view as PNG. Eight generated demo signals.
+
+Code: `js/capture.js` (data model and block summaries), `js/view.js` (waveform canvas), `js/sources.js` (Pico, FX2, sound card, trigger), `js/decoders.js`, `js/files.js` (ZIP, .sr, VCD, CSV), `js/demo.js`, `app.js` (user interface); no dependencies.
 
 ### Serial Terminal
 
