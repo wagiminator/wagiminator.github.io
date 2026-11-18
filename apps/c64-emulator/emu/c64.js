@@ -258,7 +258,7 @@
   };
 
   P.runFrame = function () {
-    if (this.dbg) return this.runFrameDebug();
+    if (this.dbg) return this.runFrameDebug();     // debugger open or a tracer (SID ripper) at work
     var cpu = this.cpu, vic = this.vic, kernalTrap = this.trapLoad;
     vic.frameDone = false;
     while (!vic.frameDone) {
@@ -336,11 +336,19 @@
       H.pc[k] = pc; H.a[k] = cpu.a; H.x[k] = cpu.x; H.y[k] = cpu.y; H.s[k] = cpu.s; H.p[k] = cpu.getP(false);
       H.kind[k] = intr ? (nmi ? 2 : 1) : 0; H.clk[k] = this.clk; H.line[k] = vic.raster;
       H.pos = (k + 1) % H.size; if (H.count < H.size) H.count++;
-      var wasJammed = cpu.jammed;
+      var wasJammed = cpu.jammed, T = this.tracer;
       D.hit = null;
+      if (T) T.before(cpu, intr, nmi, op);
       var n = cpu.step();
       this.pollAt = this.instrStart + n - 2;
       this.syncTo(this.instrStart + n);
+      if (T) {
+        T.after(cpu);
+        if (this.dbg !== D) {                     // the tracer is done and took its state away: on at full speed
+          if (vic.frameDone) { this.endFrame(); return true; }
+          return this.runFrame();
+        }
+      }
       // after the instruction
       var why = null;
       if (D.hit) why = D.hit;

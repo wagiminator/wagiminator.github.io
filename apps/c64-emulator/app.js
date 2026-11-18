@@ -64,6 +64,8 @@
   var debug = null;                 // monitor and debugger (debugger.js)
   var spriteView = null;            // sprite viewer (sprites.js)
   var charView = null;              // character set viewer (charset.js)
+  var musicTools = null;            // WAV recording and SID ripping (music.js)
+  var lastFileName = "";
 
   // ------------------------------------------------------------------ messages
   function showError(msg) { var e = $("error"); e.textContent = msg; e.hidden = !msg; }
@@ -90,6 +92,7 @@
     if (debug) debug.attach(c64);
     if (spriteView) spriteView.attach(c64);
     if (charView) charView.attach(c64);
+    if (musicTools) musicTools.attach(c64);
     updateRomStatus();
     updateMediaUi();
   }
@@ -130,6 +133,7 @@
     showError("");
     try {
       var bytes = await readFile(file);
+      lastFileName = file.name;
       var items = await Media.load(file.name, bytes);
       attach(items, settings.autostart);
     } catch (e) {
@@ -453,7 +457,8 @@
     if (warp) {
       var t0 = performance.now();
       do { runOne(); frames++; } while (running && performance.now() - t0 < 14);
-      c64.sid.takeSamples();
+      var ws = c64.sid.takeSamples();
+      if (musicTools) musicTools.samples(ws);
     } else {
       // the picture always follows the clock; the sound adapts to it (see feedAudio)
       acc += dt * FRAME_HZ / 1000;
@@ -478,6 +483,7 @@
   // 1 % to keep the audio buffer near its target instead of pacing the emulation by it.
   function feedAudio() {
     var s = c64.sid.takeSamples();
+    if (musicTools) musicTools.samples(s);
     if (!audioActive()) { audio.fill = 0; return; }
     var fill = audioBuffered();
     audio.fill = audio.fill ? audio.fill * 0.9 + fill * 0.1 : fill;
@@ -815,6 +821,23 @@
     charView = window.C64Charset({ toggle: setCharset });
     $("btn-charset").addEventListener("click", function () { setCharset(!charView.isOpen()); });
   }
+  function setMusic(on) {
+    if (!musicTools) return;
+    settings.music = !!on; saveSettings();
+    musicTools.setOpen(!!on);
+    $("btn-music").setAttribute("aria-pressed", on ? "true" : "false");
+    if (on) $("music").scrollIntoView({ block: "nearest", behavior: "smooth" });
+  }
+  function initMusic() {
+    if (!window.C64Music || !window.C64SidRip) return;
+    musicTools = window.C64Music({
+      toggle: setMusic,
+      download: download,
+      isRunning: function () { return running; },
+      fileName: function () { return lastFileName; }
+    });
+    $("btn-music").addEventListener("click", function () { setMusic(!musicTools.isOpen()); });
+  }
   function initSprites() {
     if (!window.C64Sprites) return;
     spriteView = window.C64Sprites({ toggle: setSprites });
@@ -947,10 +970,12 @@
     initDebugger();
     initSprites();
     initCharset();
+    initMusic();
     buildMachine();
     if (settings.debugger) setDebugger(true);
     if (settings.sprites) setSprites(true);
     if (settings.charset) setCharset(true);
+    if (settings.music) setMusic(true);
     applyDisplay();
     updateSoundUi();
     updateJoyStatus();

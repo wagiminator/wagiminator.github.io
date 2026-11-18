@@ -55,6 +55,7 @@
         <button type="button" class="btn" id="btn-debug" aria-pressed="false" aria-controls="debugger">Debugger</button>
         <button type="button" class="btn" id="btn-sprites" aria-pressed="false" aria-controls="sprites">Sprites</button>
         <button type="button" class="btn" id="btn-charset" aria-pressed="false" aria-controls="charset">Characters</button>
+        <button type="button" class="btn" id="btn-music" aria-pressed="false" aria-controls="music">Music</button>
         <input type="file" id="file-input" accept=".prg,.p00,.d64,.g64,.t64,.tap,.crt,.zip,.bin" hidden>
       </div>
 
@@ -81,6 +82,7 @@
     <section class="debugger" id="debugger" aria-labelledby="dbg-title" hidden></section>
     <section class="sprites" id="sprites" aria-labelledby="spr-title" hidden></section>
     <section class="charset" id="charset" aria-labelledby="chr-title" hidden></section>
+    <section class="music" id="music" aria-labelledby="mus-title" hidden></section>
 
     <aside class="side">
       <section class="panel" aria-labelledby="media-title">
@@ -197,6 +199,7 @@
       <p>The <strong>Debugger</strong> button opens a monitor below the screen: stop the C64 at any instruction, step through the code, set breakpoints on addresses, memory reads and writes or raster lines, and look at memory, the stack and the VIC, CIA and SID registers. Its command line understands the usual monitor commands (type <code>help</code>).</p>
       <p>The <strong>Sprites</strong> button shows the sprites on the screen, also those a game reuses further down (multiplexing), collects every sprite image while you play, and browses all 256 sprite slots of a VIC bank. Sprites can be saved as PNG, as raw data or as assembler source.</p>
       <p>The <strong>Characters</strong> button shows the character sets the screen uses (also several, when a game switches them further down) in the colours of the screen and marks the characters in use. Any character set in memory or in the ROM can be viewed too, and saved as PNG, raw data, a .64c file or assembler source.</p>
+      <p>The <strong>Music</strong> button records what the SID plays as a WAV file, or finds the music routine of the running program and saves the tune as a SID file for SID players.</p>
       <p class="small">Built-in ROMs: the free <a href="https://github.com/MEGA65/open-roms">MEGA65 Open ROMs</a> (LGPL&nbsp;3). They run most games, but their BASIC is incomplete. Without a 1541 ROM a virtual drive loads the disks; it also runs drive code that programs upload, so most fast loaders work. For full compatibility load the original C64 ROMs (KERNAL, BASIC, character ROM) and the 1541 DOS ROM once; they are stored only in this browser.</p>
     </section>
   </main>
@@ -215,10 +218,12 @@
   <script src="emu/drive1541.js"></script>
   <script src="emu/disasm.js"></script>
   <script src="emu/c64.js"></script>
+  <script src="emu/sidrip.js"></script>
   <script src="roms/openroms.js"></script>
   <script src="debugger.js"></script>
   <script src="sprites.js"></script>
   <script src="charset.js"></script>
+  <script src="music.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
