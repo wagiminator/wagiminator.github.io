@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Power Analyzer</title>
+  <meta name="description" content="Control the ATtiny814 Power Analyzer from the browser: live readings, electronic load, load, regulation, efficiency, ripple and battery tests and a long-term multimeter, with charts and CSV export.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chivo:wght@400;700&display=swap">
+  <link rel="stylesheet" href="../../assets/css/site.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav class="site-bar" aria-label="Breadcrumb">
+    <a href="../../">wagiminator</a><span class="sep">/</span><span>Apps</span><span class="sep">/</span><span>Power Analyzer</span>
+  </nav>
+
+  <main class="app">
+    <header class="app-head">
+      <h1>Power Analyzer</h1>
+      <p>The control program for the <a href="https://github.com/wagiminator/ATtiny814-Power-Analyzer">ATtiny814 Power Analyzer</a>, an electronic load with two power sensors: live readings, a constant current load and the automatic tests of power supplies, DC/DC converters and batteries, with charts that can be compared and saved.</p>
+    </header>
+
+    <p class="banner" id="unsupported" hidden>This browser cannot reach serial ports. Open the page in Chrome, Edge or Opera on a computer; saved measurements and CSV files can be viewed anywhere.</p>
+
+    <div class="main-col">
+      <section class="panel chart-panel" aria-labelledby="chart-h">
+        <div class="chart-head">
+          <div>
+            <h2 id="chart-h">Load test</h2>
+            <p class="chart-sub" id="chart-sub">Connect the analyzer, or try the simulator, and start a test.</p>
+          </div>
+          <div class="chart-tools">
+            <button type="button" class="btn btn-small" id="btn-csv" disabled title="Save the readings as CSV file">CSV</button>
+            <button type="button" class="btn btn-small" id="btn-png" disabled title="Save the chart with the results as picture">Picture</button>
+          </div>
+        </div>
+        <div class="legend" id="legend"></div>
+        <div class="chart-wrap"><canvas id="chart" aria-label="Chart of the readings"></canvas></div>
+        <p class="readout" id="readout" aria-live="off"></p>
+        <dl class="summary" id="summary"></dl>
+      </section>
+
+      <section class="panel runs-panel" aria-labelledby="runs-h">
+        <div class="runs-head">
+          <h2 id="runs-h">Measurements</h2>
+          <div class="runs-tools">
+            <button type="button" class="btn btn-small" id="btn-import" title="Open a CSV file of this app or of the Python program">Open CSV…</button>
+            <button type="button" class="btn btn-small" id="btn-clear" title="Delete all measurements in this browser">Delete all</button>
+          </div>
+        </div>
+        <p class="hint">Click a measurement to show it. Tick others of the same test to draw them into the same chart.</p>
+        <div class="runs" id="runs" role="list"></div>
+      </section>
+    </div>
+
+    <aside class="side">
+      <section class="panel" aria-labelledby="dev-h">
+        <h2 id="dev-h">Analyzer</h2>
+        <p class="conn" id="conn"><span class="dot"></span><span id="conn-text">Not connected</span></p>
+        <div class="dev-btns">
+          <button type="button" class="btn btn-primary" id="btn-connect">Connect</button>
+          <button type="button" class="btn" id="btn-sim" title="A simulated analyzer with a USB charger, a DC/DC converter and a battery">Simulator</button>
+        </div>
+
+        <div class="meter" id="meter" aria-live="off">
+          <div class="mblock">
+            <h3>Load <small>TEST-IN</small></h3>
+            <div class="mval"><b id="m-u1">–</b><span>V</span></div>
+            <div class="mval"><b id="m-i1">–</b><span id="m-i1u">mA</span></div>
+            <div class="mval"><b id="m-p1">–</b><span id="m-p1u">W</span></div>
+          </div>
+          <div class="mblock">
+            <h3>Supply <small>PWR-IN → OUT</small></h3>
+            <div class="mval"><b id="m-u2">–</b><span>V</span></div>
+            <div class="mval"><b id="m-i2">–</b><span id="m-i2u">mA</span></div>
+            <div class="mval"><b id="m-p2">–</b><span id="m-p2u">W</span></div>
+          </div>
+        </div>
+        <div class="load">
+          <label class="field"><span>Constant load</span>
+            <span class="inunit"><input type="number" id="load-i" min="17" max="5000" step="1" value="500" inputmode="numeric"><i>mA</i></span></label>
+          <button type="button" class="btn" id="btn-load" disabled>Switch on</button>
+          <button type="button" class="btn" id="btn-off" disabled>Off</button>
+        </div>
+        <p class="load-state" id="load-state"></p>
+      </section>
+
+      <section class="panel test-panel" aria-labelledby="test-h">
+        <h2 id="test-h">Test</h2>
+        <label class="field"><span class="vh">Test program</span><select id="test"></select></label>
+        <p class="test-info" id="test-info"></p>
+        <div class="wiring" id="wiring" aria-label="How to connect"></div>
+        <div class="params" id="params"></div>
+        <label class="field"><span>Label for the chart</span><input type="text" id="label" maxlength="60" placeholder="e.g. USB charger 5 V 2 A" spellcheck="false"></label>
+        <div class="cal" id="cal" hidden>
+          <p>Readings of your multimeter during the calibration:</p>
+          <div class="cal-g">
+            <label class="field"><span>Load current</span><span class="inunit"><input type="number" id="cal-i1" step="any"><i>mA</i></span></label>
+            <label class="field"><span>Load voltage</span><span class="inunit"><input type="number" id="cal-u1" step="any"><i>mV</i></span></label>
+            <label class="field"><span>Supply current</span><span class="inunit"><input type="number" id="cal-i2" step="any"><i>mA</i></span></label>
+            <label class="field"><span>Supply voltage</span><span class="inunit"><input type="number" id="cal-u2" step="any"><i>mV</i></span></label>
+          </div>
+          <pre class="cal-out" id="cal-out"></pre>
+        </div>
+        <div class="run">
+          <button type="button" class="btn btn-primary" id="btn-start" disabled>Start test</button>
+          <button type="button" class="btn" id="btn-stop" disabled>Stop</button>
+        </div>
+        <p class="status" id="status" aria-live="polite"></p>
+      </section>
+    </aside>
+
+    <section class="panel help" aria-labelledby="help-h">
+      <h2 id="help-h">Good to know</h2>
+      <div class="help-cols">
+        <ul>
+          <li>The analyzer takes up to 26 V, 5 A and 25 W on the load. It switches the load off by itself when the power or the heat sink temperature is too high. Use a good heat sink with a fan.</li>
+          <li>All terminals and USB share one ground. A <a href="https://github.com/wagiminator/ADuM3160-USB-Isolator">USB isolator</a> between the analyzer and the computer prevents ground loops.</li>
+          <li>The load cannot go below about 17 mA. Load, efficiency and ripple tests stop by themselves at the maximum current or the stop voltage; the battery test and the multimeter can be stopped at any time.</li>
+        </ul>
+        <ul>
+          <li>The CH330N/CH340N needs no driver on current Windows, macOS and Linux versions; on Linux the user must be in the <code>dialout</code> group. Close other serial monitors first.</li>
+          <li>Measurements are kept in this browser. Save them as CSV files to keep them for good; CSV files of the Python program can be opened too.</li>
+          <li>The simulator behaves like the firmware with a USB charger on TEST-IN, a 12 V to 5 V converter for the efficiency test and a lithium-ion cell for the battery test (which runs much faster than real time).</li>
+        </ul>
+      </div>
+    </section>
+  </main>
+
+  <input type="file" id="file" accept=".csv,.txt,.tsv" hidden>
+
+  <footer class="site-footer">
+    Power Analyzer by <a href="https://github.com/wagiminator">wagiminator</a>. Uses the Web Serial API; nothing leaves your computer.
+  </footer>
+
+  <script src="js/tests.js"></script>
+  <script src="js/device.js"></script>
+  <script src="js/chart.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
