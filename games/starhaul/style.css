@@ -1,0 +1,5 @@
+/* STARHAUL: a WebGL canvas with a 2D HUD canvas on top, both filling the window */
+html, body { margin: 0; height: 100%; overflow: hidden; background: #02040a; }
+canvas { position: fixed; left: 0; top: 0; width: 100vw; height: 100vh; display: block; touch-action: none; outline: none; user-select: none; }
+#hud { cursor: default; }
+.noscript { color: #9ad8ff; font: 18px Arial, sans-serif; text-align: center; margin-top: 40vh; }

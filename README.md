@@ -50,6 +50,7 @@ games/
   mole-mayhem/          Mole Mayhem (turn-based artillery game)
   pearl-panic/          Pearl Panic (marble-shooting puzzle game)
   woolly-wallop/        Woolly Wallop (slingshot physics game)
+  starhaul/             Starhaul (3D space trading and combat game)
 ```
 
 Every app lives in its own folder under `apps/` and is reachable at `https://wagiminator.github.io/apps/<app-name>/`. Apps are plain HTML, CSS and JavaScript without a build step and run entirely in the browser. Browser games live in the same way under `games/<game-name>/` and are listed under "Games" on the start page.
@@ -483,6 +484,20 @@ Slingshot physics game as a homage to the slingshot games of the early smartphon
 - Mouse, touch, keyboard and gamepad controls, fullscreen mode (F).
 
 Code: `js/physics.js` (rigid-body engine), `js/levels.js` (materials, sheep and wolves, landscapes, levels), `js/game.js` (slingshot, flight, tricks, damage, scoring), `js/sprites.js` (flock, wolves, blocks, landscapes), `js/play.js` (level screen, camera, HUD, controls), `js/draw.js` (drawing helpers and widgets), `js/audio.js` (music, sound and voice), `js/ui.js` (screens), `js/main.js` (main loop); see `games/woolly-wallop/README.md`.
+
+### Starhaul
+
+3D space trading and combat game as a homage to the 8-bit classic Elite (Acornsoft, 1984). Trade between star systems, fight pirates, earn a combat rating and work your way up to a better ship. Rendered with three.js (WebGL); models, planets, nebulae, music and sound effects are generated while the game runs; names, ships and tunes are original (the docking waltz is an arrangement of The Blue Danube, public domain).
+
+- Eight galaxies with 256 star systems each, every one with its own economy, government, tech level and description; 3D planets with terrain, clouds, atmosphere, rings and moons, a star, a nebula sky and a rotating orbital station.
+- Trading with 17 commodities (some of them illegal), seven ships to buy and a full set of equipment: four kinds of lasers, missiles, E.C.M., cargo bay, fuel scoops, escape pod, energy bomb, docking computer and a galactic hyperdrive.
+- Pirates, police, bounty hunters, traders, asteroids and an alien hive ship; pirates come rarely and alone at first and grow bolder with the combat rating and the flight time.
+- In-system jump drive, hyperspace with the occasional misjump, docking by hand into the spinning slot or by docking computer.
+- Combat rating from Harmless to LEGEND, legal status with fines and bounty hunters, automatic saving when docked, a backup save and a highscore list.
+- Synthesized music with moods for the title, the station, quiet and lawless systems, combat and the aliens, engine hum and sound effects.
+- Keyboard, mouse and gamepad controls, three graphics settings, fullscreen mode (F).
+
+Code: `src/galaxy.js` (galaxies, systems, markets, ranks), `src/ships.js` (ships, equipment, 3D models), `src/world.js` (renderer, star systems, effects), `src/flight.js` (flight model, AI, weapons, docking, encounters), `src/state.js` (commander, saving, highscores), `src/hud.js` (cockpit HUD and scanner), `src/ui.js` (screens), `src/main.js` (main loop), bundled with three.js into `js/starhaul.js` by `build.sh`; `js/audio.js` (music and sound); see `games/starhaul/README.md`.
 
 ## Start page
 
