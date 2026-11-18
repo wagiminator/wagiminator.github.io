@@ -22,6 +22,7 @@ apps/
   cart-builder/         C64 Cartridge Builder
   c64-emulator/         C64 Emulator (CPU, VIC-II, SID, CIAs, 1541 drive, datasette)
   sid-player/           C64 SID Player (music player and analyser)
+  pixel-studio/         C64 Pixel Studio (sprites, characters, levels, bitmaps)
   gameconsole/          Game Console Flasher
   rvprog/               WCH RISC-V Programmer
   chprog/               WCH USB Programmer
@@ -162,6 +163,20 @@ A player and analyser for C64 music (PSID and RSID files, versions 1 to 4), runn
 - Includes "Blue Circuit", an original demo tune with its own small 6502 player (source and build script in `demo/`). No other music is part of the repository.
 
 Code: `js/psid.js` (file format), `js/player.js` (machine, multi-SID routing, PSID driver, tick recording), `emu/` (CPU, VIC-II, CIAs and C64 core from the C64 Emulator; `sid.js` extended by single-voice outputs and muting), `app.js` (audio worklet, views, export).
+
+### C64 Pixel Studio
+
+A graphics editor for C64 programs: sprites, sprite objects, character sets, tiles, game levels and bitmaps in one project, with the colour rules of the VIC-II.
+
+- Sprites: hires (24×21) and multicolour (12×21) with the shared multicolours, expand X/Y, up to 256 sprites; pen, line, rectangle, filled rectangle, ellipse, fill and colour picker with two mouse buttons, shift, flip, invert, copy and paste.
+- Objects: several sprites on top of each other (for example a hires outline over a multicolour sprite, or a large figure made of four sprites), moved by mouse or keys, and frames for animations with a speed in screen frames; playback, the previous frame as onion skin, and the other sprites of the object shown while drawing one of them.
+- Character set: 256 characters in hires or multicolour (colour per character, colours 8–15 multicolour like on the C64), shift, flip, rotate, invert, the C64 upper and lower case sets from the Open ROMs as a start, and a line of text to try them out.
+- Tiles of 1×1 to 8×8 characters and a level (map) of up to 1024×1024 tiles, drawn with pen, line, rectangles and fill, with zoom, tile grid and the borders of C64 screens.
+- Bitmaps: multicolour (160×200, background and three colours per 4×8 cell) and hires (320×200, two colours per 8×8 cell); painting keeps the limits of a cell (a new colour takes a free slot or replaces the least used one). The picture converter turns PNG, JPEG and other pictures into C64 bitmaps with fit, background, brightness, contrast and saturation, and no, ordered (Bayer) or error-diffusion (Floyd–Steinberg) dithering.
+- Undo and redo for every change; the project is kept in the browser and saved as a JSON file.
+- Export: sprites as raw data (64 bytes each, colour in byte 63), PRG with load address, SpritePad 1.x (.spd), assembler source and PNG; object tables as assembler source and frames as PNG; the character set as raw data, .64c with load address, colours, assembler source and PNG; tiles and levels as raw data (tile numbers, or screen codes and colours character by character), assembler source and PNG; bitmaps as Koala Painter (.koa), Art Studio (.aas), raw parts and PNG. Import reads the project, SpritePad 1.x, Koala and Art Studio pictures, pictures for the converter and raw data (sprites, characters, colours, tiles, level, with or without load address).
+
+Code: `js/gfx.js` (C64 colours, pixel formats, bitmap colour rules), `js/model.js` (project, undo, project file), `js/editor.js` (pixel editor and tools), `js/formats.js` (file formats), `js/convert.js` (picture converter), `js/core.js` and `js/ui-*.js` (the views), `js/io.js` (export, import, converter dialog), `app.js` (tabs, keyboard); `roms/chargen.js` is the character ROM of the MEGA65 Open ROMs (LGPL-3.0).
 
 ### Game Console Flasher
 

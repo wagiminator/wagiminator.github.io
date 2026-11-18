@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>C64 Pixel Studio</title>
+  <meta name="description" content="Draw C64 graphics in the browser: sprites, composite and animated sprite objects, character sets, tiles, game levels and multicolour bitmaps, with an image converter. Loads and saves C64 formats.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chivo:wght@400;700&family=Press+Start+2P&display=swap">
+  <link rel="stylesheet" href="../../assets/css/site.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav class="site-bar" aria-label="Breadcrumb">
+    <a href="../../">wagiminator</a><span class="sep">/</span><span>Apps</span><span class="sep">/</span><span>C64 Pixel Studio</span>
+  </nav>
+
+  <main class="app">
+    <header class="app-head">
+      <h1>C64 Pixel Studio</h1>
+      <p>Draw graphics for the C64: sprites, sprite objects made of several sprites and animation frames, character sets, tiles and game levels built from them, and multicolour bitmaps. Pictures can be converted to C64 graphics. Everything is saved in C64 formats for your programs.</p>
+    </header>
+
+    <!-- project -->
+    <section class="panel projbar" aria-label="Project">
+      <label class="proj-name"><span>Project</span><input type="text" id="proj-name" value="untitled" spellcheck="false" maxlength="40"></label>
+      <div class="proj-actions">
+        <button type="button" class="btn" id="btn-new">New</button>
+        <button type="button" class="btn" id="btn-open">Open…</button>
+        <button type="button" class="btn" id="btn-save" title="Save the whole project as a file (Ctrl+S)">Save project</button>
+        <button type="button" class="btn" id="btn-import">Import…</button>
+        <button type="button" class="btn btn-primary" id="btn-export">Export…</button>
+      </div>
+      <div class="proj-undo">
+        <button type="button" class="icon-btn" id="btn-undo" title="Undo (Ctrl+Z)" aria-label="Undo">↶</button>
+        <button type="button" class="icon-btn" id="btn-redo" title="Redo (Ctrl+Y)" aria-label="Redo">↷</button>
+        <span class="saved" id="saved" aria-live="polite"></span>
+      </div>
+      <input type="file" id="file-open" accept=".json,.c64ps" hidden>
+      <input type="file" id="file-import" hidden>
+    </section>
+
+    <nav class="modes" role="tablist" aria-label="What to edit">
+      <button type="button" role="tab" data-mode="sprites" id="tab-sprites">Sprites</button>
+      <button type="button" role="tab" data-mode="objects" id="tab-objects">Objects</button>
+      <button type="button" role="tab" data-mode="chars" id="tab-chars">Characters</button>
+      <button type="button" role="tab" data-mode="tiles" id="tab-tiles">Tiles</button>
+      <button type="button" role="tab" data-mode="map" id="tab-map">Level</button>
+      <button type="button" role="tab" data-mode="bitmap" id="tab-bitmap">Bitmap</button>
+    </nav>
+
+    <!-- ===================== Sprites ===================== -->
+    <section class="mode" id="mode-sprites" role="tabpanel" aria-labelledby="tab-sprites">
+      <div class="work">
+        <section class="panel">
+          <div class="panel-head">
+            <h2><span id="spr-title">Sprite 0</span></h2>
+            <input type="text" class="name-in" id="spr-name" placeholder="Name" aria-label="Sprite name" spellcheck="false" maxlength="30">
+          </div>
+          <div class="toolbar" data-tools></div>
+          <div class="ed-wrap"><canvas class="ed" id="spr-ed" aria-label="Sprite editor. Left button: first colour, right button: second colour."></canvas></div>
+          <p class="status" id="spr-status">&nbsp;</p>
+          <div class="ops" role="group" aria-label="Change the sprite">
+            <button type="button" class="btn sm" data-sop="left" title="Shift left">←</button>
+            <button type="button" class="btn sm" data-sop="right" title="Shift right">→</button>
+            <button type="button" class="btn sm" data-sop="up" title="Shift up">↑</button>
+            <button type="button" class="btn sm" data-sop="down" title="Shift down">↓</button>
+            <button type="button" class="btn sm" data-sop="fliph">Flip ↔</button>
+            <button type="button" class="btn sm" data-sop="flipv">Flip ↕</button>
+            <button type="button" class="btn sm" data-sop="invert">Invert</button>
+            <button type="button" class="btn sm" data-sop="clear">Clear</button>
+            <button type="button" class="btn sm" data-sop="copy" title="Ctrl+C">Copy</button>
+            <button type="button" class="btn sm" data-sop="paste" title="Ctrl+V">Paste</button>
+          </div>
+        </section>
+        <section class="panel">
+          <div class="panel-head">
+            <h2>All sprites <span class="count" id="spr-count"></span></h2>
+            <div class="head-actions">
+              <button type="button" class="btn sm" data-slist="add">Add</button>
+              <button type="button" class="btn sm" data-slist="dup">Duplicate</button>
+              <button type="button" class="btn sm" data-slist="back" title="Move one place back">◀</button>
+              <button type="button" class="btn sm" data-slist="fwd" title="Move one place on">▶</button>
+              <button type="button" class="btn sm danger" data-slist="del">Delete</button>
+            </div>
+          </div>
+          <div class="thumbs" id="spr-list" role="listbox" aria-label="Sprites"></div>
+        </section>
+      </div>
+      <aside class="side">
+        <section class="panel">
+          <h2>Colours</h2>
+          <div class="slots" id="spr-slots"></div>
+          <div class="palette" id="spr-pal" role="group" aria-label="C64 colours"></div>
+          <p class="hint" id="spr-pal-hint">Pick a colour slot, then a colour from the palette. Left button paints with the first slot (L), right button with the second (R).</p>
+          <label class="choice"><input type="checkbox" id="spr-mc"> Multicolour (12×21, double-wide pixels)</label>
+          <div class="row2">
+            <label class="choice"><input type="checkbox" id="spr-xe"> Expand X</label>
+            <label class="choice"><input type="checkbox" id="spr-ye"> Expand Y</label>
+          </div>
+          <label class="choice"><input type="checkbox" id="spr-ghost" checked> Show the other sprites of the object</label>
+        </section>
+        <section class="panel">
+          <h2>Preview</h2>
+          <div class="preview-box"><canvas id="spr-prev" width="96" height="84" aria-label="Sprite preview"></canvas></div>
+          <div class="field inline"><label for="spr-bg">Background</label><select id="spr-bg"></select></div>
+        </section>
+      </aside>
+    </section>
+
+    <!-- ===================== Objects ===================== -->
+    <section class="mode" id="mode-objects" role="tabpanel" aria-labelledby="tab-objects" hidden>
+      <div class="work">
+        <section class="panel">
+          <div class="panel-head">
+            <h2><span id="obj-title">No object</span></h2>
+            <input type="text" class="name-in" id="obj-name" placeholder="Name" aria-label="Object name" spellcheck="false" maxlength="30">
+            <div class="head-actions">
+              <button type="button" class="btn sm" id="obj-play">Play</button>
+            </div>
+          </div>
+          <div class="obj-stage"><canvas id="obj-cv" width="560" height="360" aria-label="The object. Drag a sprite to move it."></canvas></div>
+          <p class="status" id="obj-status">&nbsp;</p>
+          <div class="obj-row">
+            <div class="field inline"><label for="obj-speed">Speed</label><select id="obj-speed"></select></div>
+            <label class="choice"><input type="checkbox" id="obj-onion"> Show the previous frame</label>
+          </div>
+        </section>
+        <section class="panel">
+          <div class="panel-head">
+            <h2>Frames <span class="count" id="obj-fcount"></span></h2>
+            <div class="head-actions">
+              <button type="button" class="btn sm" data-flist="add" title="A new frame like the current one">Add</button>
+              <button type="button" class="btn sm" data-flist="next" title="A new frame with the next sprites (animation)">Add with next sprites</button>
+              <button type="button" class="btn sm" data-flist="back">◀</button>
+              <button type="button" class="btn sm" data-flist="fwd">▶</button>
+              <button type="button" class="btn sm danger" data-flist="del">Delete</button>
+            </div>
+          </div>
+          <div class="thumbs frames" id="obj-frames" role="listbox" aria-label="Frames"></div>
+        </section>
+      </div>
+      <aside class="side">
+        <section class="panel">
+          <div class="panel-head">
+            <h2>Objects</h2>
+            <div class="head-actions">
+              <button type="button" class="btn sm" data-olist="add">New</button>
+              <button type="button" class="btn sm danger" data-olist="del">Delete</button>
+            </div>
+          </div>
+          <ul class="list" id="obj-list" role="listbox" aria-label="Objects"></ul>
+        </section>
+        <section class="panel">
+          <div class="panel-head">
+            <h2>Sprites in this frame</h2>
+            <button type="button" class="btn sm" id="obj-addlayer">Add sprite</button>
+          </div>
+          <ul class="layers" id="obj-layers"></ul>
+          <p class="hint">The first sprite lies on top, like sprite 0 on the C64. Offsets are in hires pixels; multicolour sprites share the two multicolours.</p>
+        </section>
+      </aside>
+    </section>
+
+    <!-- ===================== Characters ===================== -->
+    <section class="mode" id="mode-chars" role="tabpanel" aria-labelledby="tab-chars" hidden>
+      <div class="work">
+        <section class="panel">
+          <div class="panel-head"><h2 id="chr-title">Character $00</h2><span class="count" id="chr-info"></span></div>
+          <div class="toolbar" data-tools></div>
+          <div class="chr-row">
+            <div class="ed-wrap"><canvas class="ed" id="chr-ed" aria-label="Character editor"></canvas></div>
+            <div class="chr-grid-box">
+              <canvas id="chr-grid" class="grid-cv" aria-label="Character set. Click a character to edit it." tabindex="0"></canvas>
+            </div>
+          </div>
+          <p class="status" id="chr-status">&nbsp;</p>
+          <div class="ops" role="group" aria-label="Change the character">
+            <button type="button" class="btn sm" data-cop="left">←</button>
+            <button type="button" class="btn sm" data-cop="right">→</button>
+            <button type="button" class="btn sm" data-cop="up">↑</button>
+            <button type="button" class="btn sm" data-cop="down">↓</button>
+            <button type="button" class="btn sm" data-cop="fliph">Flip ↔</button>
+            <button type="button" class="btn sm" data-cop="flipv">Flip ↕</button>
+            <button type="button" class="btn sm" data-cop="rotate">Rotate</button>
+            <button type="button" class="btn sm" data-cop="invert">Invert</button>
+            <button type="button" class="btn sm" data-cop="clear">Clear</button>
+            <button type="button" class="btn sm" data-cop="copy">Copy</button>
+            <button type="button" class="btn sm" data-cop="paste">Paste</button>
+          </div>
+        </section>
+        <section class="panel">
+          <h2>Try the characters</h2>
+          <input type="text" class="wide-in" id="chr-text" value="HELLO C64 PIXEL STUDIO!" spellcheck="false" maxlength="80" aria-label="Text to show with the character set">
+          <div class="text-box"><canvas id="chr-textcv" width="320" height="16" aria-label="The text in the character set"></canvas></div>
+        </section>
+      </div>
+      <aside class="side">
+        <section class="panel">
+          <h2>Colours</h2>
+          <div class="field inline"><label for="chr-mode">Mode</label>
+            <select id="chr-mode"><option value="hires">Hires</option><option value="mc">Multicolour</option></select></div>
+          <div class="slots" id="chr-slots"></div>
+          <div class="palette" id="chr-pal" role="group" aria-label="C64 colours"></div>
+          <label class="choice" id="chr-mcrow"><input type="checkbox" id="chr-mcchar"> This character is multicolour</label>
+          <p class="hint" id="chr-hint"></p>
+          <button type="button" class="btn sm" id="chr-colall">Give all characters this colour</button>
+        </section>
+        <section class="panel">
+          <h2>Start from</h2>
+          <div class="btn-col">
+            <button type="button" class="btn sm" data-rom="0">C64 characters, upper case</button>
+            <button type="button" class="btn sm" data-rom="1">C64 characters, lower case</button>
+            <button type="button" class="btn sm" data-rom="empty">Empty character set</button>
+          </div>
+        </section>
+      </aside>
+    </section>
+
+    <!-- ===================== Tiles ===================== -->
+    <section class="mode" id="mode-tiles" role="tabpanel" aria-labelledby="tab-tiles" hidden>
+      <div class="work">
+        <section class="panel">
+          <div class="panel-head"><h2 id="tile-title">Tile 0</h2><span class="count" id="tile-info"></span></div>
+          <div class="ed-wrap"><canvas class="ed" id="tile-ed" aria-label="Tile editor. Left button puts the chosen character, right button picks one."></canvas></div>
+          <p class="status" id="tile-status">&nbsp;</p>
+        </section>
+        <section class="panel">
+          <div class="panel-head">
+            <h2>All tiles <span class="count" id="tile-count"></span></h2>
+            <div class="head-actions">
+              <button type="button" class="btn sm" data-tlist="add">Add</button>
+              <button type="button" class="btn sm" data-tlist="dup">Duplicate</button>
+              <button type="button" class="btn sm" data-tlist="back">◀</button>
+              <button type="button" class="btn sm" data-tlist="fwd">▶</button>
+              <button type="button" class="btn sm danger" data-tlist="del">Delete</button>
+            </div>
+          </div>
+          <div class="thumbs" id="tile-list" role="listbox" aria-label="Tiles"></div>
+        </section>
+      </div>
+      <aside class="side">
+        <section class="panel">
+          <h2>Characters</h2>
+          <canvas id="tile-chars" class="grid-cv" aria-label="Choose a character to put into the tile"></canvas>
+          <p class="status" id="tile-charinfo">&nbsp;</p>
+        </section>
+        <section class="panel">
+          <h2>Tile size</h2>
+          <div class="size-row">
+            <label>Width <select id="tile-w"></select></label>
+            <label>Height <select id="tile-h"></select></label>
+            <button type="button" class="btn sm" id="tile-size">Change</button>
+          </div>
+          <p class="hint">In characters. A smaller size cuts off the right and bottom of every tile.</p>
+        </section>
+      </aside>
+    </section>
+
+    <!-- ===================== Level (map) ===================== -->
+    <section class="mode" id="mode-map" role="tabpanel" aria-labelledby="tab-map" hidden>
+      <div class="work">
+        <section class="panel">
+          <div class="panel-head">
+            <h2>Level <span class="count" id="map-info"></span></h2>
+            <div class="head-actions">
+              <label class="choice"><input type="checkbox" id="map-grid" checked> Tile grid</label>
+              <label class="choice"><input type="checkbox" id="map-screens" checked> Screen borders</label>
+              <label class="mini">Zoom <select id="map-zoom"><option value="1">1×</option><option value="2" selected>2×</option><option value="3">3×</option><option value="4">4×</option></select></label>
+            </div>
+          </div>
+          <div class="toolbar" id="map-tools"></div>
+          <div class="map-view" id="map-view"><div id="map-space"></div><canvas id="map-cv" aria-label="The level. Left button places the tile, right button picks one."></canvas></div>
+          <p class="status" id="map-status">&nbsp;</p>
+        </section>
+      </div>
+      <aside class="side">
+        <section class="panel">
+          <h2>Tiles</h2>
+          <div class="thumbs small" id="map-tiles" role="listbox" aria-label="Choose a tile"></div>
+        </section>
+        <section class="panel">
+          <h2>Level size</h2>
+          <div class="size-row">
+            <label>Width <input type="number" id="map-w" min="1" max="1024"></label>
+            <label>Height <input type="number" id="map-h" min="1" max="1024"></label>
+            <button type="button" class="btn sm" id="map-size">Change</button>
+          </div>
+          <p class="hint" id="map-sizehint">In tiles.</p>
+        </section>
+      </aside>
+    </section>
+
+    <!-- ===================== Bitmap ===================== -->
+    <section class="mode" id="mode-bitmap" role="tabpanel" aria-labelledby="tab-bitmap" hidden>
+      <div class="work">
+        <section class="panel">
+          <div class="panel-head">
+            <h2>Bitmap <span class="count" id="bm-info"></span></h2>
+            <div class="head-actions">
+              <label class="choice"><input type="checkbox" id="bm-grid"> Cell grid</label>
+              <label class="mini">Zoom <select id="bm-zoom"><option value="1">1×</option><option value="2" selected>2×</option><option value="3">3×</option><option value="4">4×</option><option value="6">6×</option></select></label>
+            </div>
+          </div>
+          <div class="toolbar" data-tools></div>
+          <div class="bm-view" id="bm-view"><canvas class="ed" id="bm-ed" aria-label="Bitmap editor"></canvas></div>
+          <p class="status" id="bm-status">&nbsp;</p>
+        </section>
+      </div>
+      <aside class="side">
+        <section class="panel">
+          <h2>Colours</h2>
+          <div class="lr" id="bm-lr"></div>
+          <div class="palette" id="bm-pal" role="group" aria-label="C64 colours"></div>
+          <p class="hint">Left click on a colour: left button colour, right click: right button colour. A cell holds the background and three colours (multicolour) or two colours (hires); a new colour replaces the one used least in the cell.</p>
+          <div class="field inline"><label for="bm-bg">Background</label><select id="bm-bg"></select></div>
+          <div class="field inline"><label for="bm-border">Border</label><select id="bm-border"></select></div>
+        </section>
+        <section class="panel">
+          <h2>Picture</h2>
+          <div class="field inline"><label for="bm-mode">Mode</label>
+            <select id="bm-mode"><option value="mc">Multicolour, 160×200</option><option value="hires">Hires, 320×200</option></select></div>
+          <div class="btn-col">
+            <button type="button" class="btn btn-primary sm" id="bm-convert">Convert a picture…</button>
+            <button type="button" class="btn sm" id="bm-clear">Clear</button>
+          </div>
+          <p class="status" id="bm-cell">&nbsp;</p>
+        </section>
+      </aside>
+    </section>
+
+    <section class="panel help" aria-labelledby="help-title">
+      <h2 id="help-title">Good to know</h2>
+      <ul>
+        <li><strong>Drawing:</strong> left mouse button paints with the first colour, right button with the second. Tools: pen (P), line (L), rectangle (R), filled rectangle (B), ellipse (E), fill (F) and pick a colour (K, or Alt+click). Ctrl+Z undoes, Ctrl+Y redoes.</li>
+        <li><strong>Objects</strong> are made of sprites: several sprites on top of each other (for example a hires outline over a multicolour sprite, or a large figure from four sprites) and several frames for an animation.</li>
+        <li><strong>Levels</strong> are built from tiles, and tiles from characters. Every character has its own colour; in multicolour mode, colours 8–15 make a character multicolour, like on the C64.</li>
+        <li><strong>Bitmaps</strong> follow the C64 rules: in multicolour, a 4×8 cell holds the background and three more colours. The converter turns pictures into C64 bitmaps, with or without dithering.</li>
+        <li>Your work is kept in this browser while you edit. <em>Save project</em> writes all of it to a file; <em>Export</em> writes sprites, characters, tiles, levels and bitmaps in C64 formats (raw data, PRG, SpritePad 1.x, Koala Painter, Art Studio), as assembler source or as PNG.</li>
+        <li>The C64 character set comes from the free <a href="https://github.com/MEGA65/open-roms">MEGA65 Open ROMs</a>.</li>
+      </ul>
+    </section>
+  </main>
+
+  <!-- dialogs -->
+  <dialog class="dlg" id="dlg-export" aria-labelledby="dlg-export-h">
+    <form method="dialog">
+      <h2 id="dlg-export-h">Export</h2>
+      <div id="export-body"></div>
+      <div class="dlg-foot"><button class="btn" value="close">Close</button></div>
+    </form>
+  </dialog>
+  <dialog class="dlg" id="dlg-import" aria-labelledby="dlg-import-h">
+    <form method="dialog" id="import-form">
+      <h2 id="dlg-import-h">Import</h2>
+      <div id="import-body"></div>
+      <div class="dlg-foot"><button class="btn" value="cancel">Cancel</button><button class="btn btn-primary" value="ok" id="import-ok">Import</button></div>
+    </form>
+  </dialog>
+  <dialog class="dlg wide" id="dlg-convert" aria-labelledby="dlg-convert-h">
+    <form method="dialog" id="convert-form">
+      <h2 id="dlg-convert-h">Convert a picture</h2>
+      <div class="conv">
+        <div class="conv-views">
+          <figure><figcaption>Original</figcaption><canvas id="conv-src" width="320" height="200"></canvas></figure>
+          <figure><figcaption>C64</figcaption><canvas id="conv-out" width="320" height="200"></canvas></figure>
+        </div>
+        <div class="conv-opts">
+          <div class="field inline"><label for="conv-mode">Mode</label><select id="conv-mode"><option value="mc">Multicolour, 160×200</option><option value="hires">Hires, 320×200</option></select></div>
+          <div class="field inline"><label for="conv-fit">Fit</label><select id="conv-fit"><option value="cover">Fill and crop</option><option value="contain">Whole picture</option><option value="stretch">Stretch</option></select></div>
+          <div class="field inline"><label for="conv-dither">Dithering</label><select id="conv-dither"><option value="none">None</option><option value="bayer">Ordered (Bayer)</option><option value="fs">Error diffusion (Floyd–Steinberg)</option></select></div>
+          <div class="field inline"><label for="conv-bg">Background</label><select id="conv-bg"></select></div>
+          <label class="slider">Brightness <input type="range" id="conv-br" min="-60" max="60" value="0"><output id="conv-br-v">0</output></label>
+          <label class="slider">Contrast <input type="range" id="conv-ct" min="-60" max="80" value="0"><output id="conv-ct-v">0</output></label>
+          <label class="slider">Saturation <input type="range" id="conv-sat" min="0" max="200" value="100"><output id="conv-sat-v">100</output></label>
+        </div>
+      </div>
+      <div class="dlg-foot"><button class="btn" value="cancel">Cancel</button><button class="btn btn-primary" value="ok">Use this picture</button></div>
+    </form>
+  </dialog>
+
+  <footer class="site-footer">
+    C64 Pixel Studio by <a href="https://github.com/wagiminator">wagiminator</a>.
+  </footer>
+
+  <script src="roms/chargen.js"></script>
+  <script src="js/gfx.js"></script>
+  <script src="js/model.js"></script>
+  <script src="js/editor.js"></script>
+  <script src="js/formats.js"></script>
+  <script src="js/convert.js"></script>
+  <script src="js/core.js"></script>
+  <script src="js/ui-sprites.js"></script>
+  <script src="js/ui-objects.js"></script>
+  <script src="js/ui-chars.js"></script>
+  <script src="js/ui-tiles.js"></script>
+  <script src="js/ui-map.js"></script>
+  <script src="js/ui-bitmap.js"></script>
+  <script src="js/io.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
