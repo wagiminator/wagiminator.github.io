@@ -436,7 +436,7 @@
   var screen = $("screen");
   screen.addEventListener("keydown", function (e) {
     if ((e.ctrlKey || e.metaKey) && (e.key === "Enter" || e.key === "s")) return;
-    if (e.key === "F5" || e.key === "F9" || e.key === "F10" || e.key === "F11") return;
+    if (e.key === "F1" || e.key === "F5" || e.key === "F9" || e.key === "F10" || e.key === "F11") return;
     M.keydown(e); e.stopPropagation();
   });
   screen.addEventListener("keyup", function (e) { M.keyup(e); });
@@ -445,6 +445,7 @@
   screen.addEventListener("pointerdown", function () { M.gesture(); });
   document.addEventListener("keydown", function (e) {
     var ctrl = e.ctrlKey || e.metaKey;
+    if (e.key === "F1") { e.preventDefault(); R.lookup(document.activeElement === ed.ta ? wordAtCaret() : ""); return; }
     if (ctrl && e.key === "Enter") { e.preventDefault(); run(); return; }
     if (e.key === "F5") { e.preventDefault(); run(); return; }
     if (ctrl && (e.key === "s" || e.key === "S")) { e.preventDefault(); saveFile(); return; }
@@ -453,6 +454,44 @@
     if (e.key === "F10" && M.stopped) { e.preventDefault(); $("b-over").click(); return; }
     if (e.key === "F11" && M.stopped) { e.preventDefault(); (e.shiftKey ? $("b-out") : $("b-step")).click(); return; }
   });
+
+  // ---------------------------------------------------------------- quick reference
+  var R = window.C64Ref;
+  R.init({
+    insert: function (name, addr, desc) {
+      var f = cur();
+      if (!f || f.text == null) return "Open a source file to insert " + name + ".";
+      var v = ed.getText();
+      if (new RegExp("^[ \\t]*" + name + "[ \\t]*(=|\\.equ\\b)", "mi").test(v)) return name + " is already in the code.";
+      var p = ed.ta.selectionStart, ls = v.lastIndexOf("\n", p - 1) + 1;
+      var line = R.defineLine(name, addr, desc) + "\n";
+      ed.replace(ls, ls, line, ls + line.length);
+    },
+    insertBlock: function (text) {
+      var f = cur();
+      if (!f || f.text == null) return "Open a source file first.";
+      var v = ed.getText(), p = ed.ta.selectionStart, ls = v.lastIndexOf("\n", p - 1) + 1;
+      ed.replace(ls, ls, text, ls + text.length);
+    },
+    resolve: function (w) {
+      var r = st.result; if (!r || !r.symbols) return null;
+      var s = r.symbols.filter(function (x) { return x.name === w || x.name.toLowerCase() === w.toLowerCase(); })[0];
+      return s && s.value != null ? s.value : null;
+    },
+    focusEditor: function () { ed.focus(); }
+  });
+  document.querySelectorAll("[data-ref]").forEach(function (b) {
+    b.addEventListener("click", function () { R.toggle(b.getAttribute("data-ref")); });
+  });
+  // the word at the caret: an instruction, $address, number, label or name
+  function wordAtCaret() {
+    var v = ed.getText(), p = ed.ta.selectionStart, e = ed.ta.selectionEnd;
+    if (e > p && e - p < 40) return v.slice(p, e).trim();
+    var ls = v.lastIndexOf("\n", p - 1) + 1, le = v.indexOf("\n", p); if (le < 0) le = v.length;
+    var line = v.slice(ls, le), c = p - ls, re = /\$[0-9a-fA-F]+|[A-Za-z_][\w]*|\d+/g, m;
+    while ((m = re.exec(line))) if (c >= m.index && c <= m.index + m[0].length) return line.slice(0, m.index).indexOf(";") >= 0 ? "" : m[0];
+    return "";
+  }
 
   // ---------------------------------------------------------------- start
   try { var saved = localStorage.getItem(KEY); st.p = saved ? fromJSON(saved) : newProject(); }

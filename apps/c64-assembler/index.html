@@ -42,7 +42,18 @@
     <div class="desk">
       <!-- editor -->
       <section class="panel edit-panel" aria-label="Editor">
-        <div class="tabs" id="tabs" role="tablist" aria-label="Files"></div>
+        <div class="ed-head">
+          <div class="tabs" id="tabs" role="tablist" aria-label="Files"></div>
+          <div class="ref-bar" role="group" aria-label="Quick reference">
+            <span class="ref-lbl">Reference</span>
+            <button type="button" class="chip" data-ref="ins" aria-pressed="false" title="All instructions with opcodes, cycles and flags">Instructions</button>
+            <button type="button" class="chip" data-ref="mem" aria-pressed="false" title="Memory map, banking, zero page and vectors">Memory</button>
+            <button type="button" class="chip" data-ref="kernal" aria-pressed="false" title="KERNAL routines to call with JSR">KERNAL</button>
+            <button type="button" class="chip" data-ref="io" aria-pressed="false" title="Registers of the VIC-II, SID and CIAs">I/O</button>
+            <button type="button" class="chip" data-ref="codes" aria-pressed="false" title="Colours, PETSCII and the keyboard matrix">Codes</button>
+            <button type="button" class="chip" data-ref="snip" aria-pressed="false" title="Ready-made code: raster interrupt, joystick, sprites, sound …">Snippets</button>
+          </div>
+        </div>
         <div class="editor" id="editor"></div>
         <div class="bin-view" id="bin-view" hidden></div>
         <div class="ed-status">
@@ -106,6 +117,7 @@
             <li>A label starts at the beginning of a line (a colon after it is allowed); instructions are indented. Labels starting with <code>_</code> or <code>@</code> belong to the label before them; <code>-</code> and <code>+</code> are labels without a name (<code>bne -</code> jumps back to the last one, <code>++</code> to the second one ahead).</li>
             <li>Numbers: <code>$c000</code> hexadecimal, <code>%1010</code> binary, <code>49152</code> decimal, <code>'a'</code> a character. <code>&lt;</code> and <code>&gt;</code> give the low and high byte, <code>*</code> the current address.</li>
             <li>Keys: <kbd>Tab</kbd> and <kbd>Shift</kbd>+<kbd>Tab</kbd> indent, <kbd>Ctrl</kbd>+<kbd>/</kbd> comments lines out, <kbd>Ctrl</kbd>+<kbd>Enter</kbd> runs, a click on a line number sets a breakpoint.</li>
+            <li>The reference buttons above the editor open a window with the instructions, the memory map, the KERNAL routines, every register of the VIC-II, SID and CIAs with its bits, the colour and character codes, and snippets of code for common jobs. <kbd>F1</kbd> looks up the word at the cursor: an instruction, an address like <code>$d020</code>, a name like <code>CHROUT</code> or one of your labels. The <b>+</b> next to a name puts <code>NAME = $address</code> into the code.</li>
             <li>The program starts with RUN when it begins with <code>.basic</code>, otherwise with SYS at the label <code>start</code> or at its first byte. Click the C64 screen to type on it; the number pad is a joystick in port 2.</li>
             <li>The project is kept in this browser. Save it as a file to keep it for good.</li>
           </ul>
@@ -151,6 +163,7 @@
   <script src="js/editor.js"></script>
   <script src="js/machine.js"></script>
   <script src="js/examples.js"></script>
+  <script src="js/reference.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
