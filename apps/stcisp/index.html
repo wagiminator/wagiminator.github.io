@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>STC ISP Programmer</title>
+  <meta name="description" content="Flash STC 8051 microcontrollers (STC8H, STC8G, STC8A, STC15, STC10/11/12) through a USB-to-serial converter and their bootloader, from the browser: HEX and BIN files, frequency trimming of the internal oscillator, chip info.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chivo:wght@400;700&display=swap">
+  <link rel="stylesheet" href="../../assets/css/site.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav class="site-bar" aria-label="Breadcrumb">
+    <a href="../../">wagiminator</a><span class="sep">/</span><span>Apps</span><span class="sep">/</span><span>STC ISP Programmer</span>
+  </nav>
+
+  <main class="app">
+    <header class="app-head">
+      <h1>STC ISP Programmer</h1>
+      <p>Flash STC 8051 microcontrollers with a USB-to-serial converter and the bootloader that every chip has: the STC8H, STC8G, STC8A/8F, STC15 and STC10/11/12 series. Write HEX and BIN files and set the frequency of the internal oscillator, as stcgal does.</p>
+    </header>
+
+    <p class="banner" id="unsupported" hidden>This browser cannot access serial ports. Open this page in Chrome, Edge or Opera on a desktop computer.</p>
+
+    <div class="work">
+      <section class="panel" aria-labelledby="fw-title">
+        <h2 id="fw-title">Firmware</h2>
+        <label class="drop" id="drop" for="file-input">
+          <strong id="fw-name">Drop a .hex or .bin file here or choose one</strong>
+          <span id="fw-info">The program is written from address 0 of the code flash.</span>
+          <input type="file" id="file-input" accept=".hex,.ihx,.bin">
+        </label>
+        <div class="fit" id="fit" hidden>
+          <div class="fit-bar" aria-hidden="true"><div id="fit-used"></div></div>
+          <p class="fit-text" id="fit-text"></p>
+        </div>
+        <ul class="messages" id="fw-messages"></ul>
+        <div class="freq-row">
+          <label class="field freq-field"><span>Clock of the internal oscillator</span>
+            <span class="freq-input"><input id="freq" list="freqs" inputmode="decimal" placeholder="keep" spellcheck="false" aria-describedby="freq-hint"> MHz</span>
+          </label>
+          <datalist id="freqs">
+            <option value="11.0592"><option value="12"><option value="20"><option value="22.1184"><option value="24"><option value="27"><option value="30"><option value="33.1776"><option value="35"><option value="40">
+          </datalist>
+          <small id="freq-hint">STC15 and STC8 only. Empty: as the chip was set last time. Chips that run from a crystal keep it.</small>
+        </div>
+        <div class="flash-row">
+          <button type="button" class="btn btn-primary btn-big" id="btn-flash" disabled>Flash firmware</button>
+          <button type="button" class="btn" id="btn-cancel" hidden>Cancel</button>
+          <div class="progress-wrap" id="progress" hidden>
+            <div class="progress"><div id="progress-bar"></div></div>
+            <span class="progress-label" id="progress-label"></span>
+          </div>
+        </div>
+        <p class="hint" id="flash-hint">Choose Flash firmware and the converter's serial port, then switch the chip's power off and on: STC chips listen for the programmer only right after power-up. The chip is erased, written, its oscillator trimmed, and then it starts the program.</p>
+      </section>
+
+      <section class="panel" aria-labelledby="chip-act-title">
+        <h2 id="chip-act-title">Chip</h2>
+        <div class="actions">
+          <div class="action">
+            <button type="button" class="btn" id="btn-info" disabled>Read chip info</button>
+            <p>Shows the model, flash sizes, clock and bootloader version. The program on the chip is not changed.</p>
+          </div>
+          <div class="action">
+            <button type="button" class="btn" id="btn-erase" disabled>Erase chip</button>
+            <p>Erases the code flash (and the EEPROM area on STC15 and STC8).</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel" aria-labelledby="boot-title">
+        <h2 id="boot-title">Wiring and power</h2>
+        <pre class="wiring">Converter   STC chip
+   RXD  &lt;-- P3.1 (TxD)
+   TXD  --&gt; P3.0 (RxD)
+   VCC  --&gt; VCC  (3.3 V or 5 V, as the chip)
+   GND  --&gt; GND</pre>
+        <ul class="ways">
+          <li><strong>Power-up:</strong> the bootloader runs only for a moment after the chip gets power. Start an action first, then switch the power on (or off and on again). A switch or push button in the VCC line makes this easy.</li>
+          <li><strong>Automatically:</strong> if DTR or RTS of the converter switches the chip's supply (for example through a P-channel MOSFET), choose that line under More options; the app then cycles the power by itself.</li>
+          <li><strong>Leaking supply:</strong> while the power is off, the chip can be fed through the TXD line and not reset properly. A 1 kΩ resistor or a diode in that line (cathode to the converter) helps.</li>
+        </ul>
+        <p class="small">The STC89/90, STC12C2052 and older STC15F10x/20x use other protocols, and the STC32 a 24-bit address space; they are not supported here. The STC8H8K64U, which can also load programs over USB, is flashed here through P3.0/P3.1 as shown.</p>
+      </section>
+    </div>
+
+    <aside class="side">
+      <section class="panel" aria-labelledby="dev-title">
+        <h2 id="dev-title">Converter</h2>
+        <p class="conn" id="conn"><span class="dot"></span><span id="conn-text">No port chosen</span></p>
+        <p class="link-note" id="link-note">Every action asks for the serial port the first time.</p>
+        <button type="button" class="btn btn-wide" id="btn-port">Choose serial port</button>
+        <details class="more">
+          <summary>More options</summary>
+          <label class="field"><span>Baud rate for writing</span>
+            <select id="baud">
+              <option>9600</option><option>19200</option><option>38400</option><option>57600</option><option selected>115200</option>
+            </select>
+            <small>Lower it if writing fails. The handshake runs at 2400 baud.</small>
+          </label>
+          <label class="field"><span>Power cycle</span>
+            <select id="reset">
+              <option value="none" selected>By hand</option>
+              <option value="dtr">DTR: power off while DTR is set</option>
+              <option value="dtr_inverted">DTR: power off while DTR is cleared</option>
+              <option value="rts">RTS: power off while RTS is set</option>
+              <option value="rts_inverted">RTS: power off while RTS is cleared</option>
+            </select>
+          </label>
+          <p class="small"><strong>Drivers:</strong> CH340, CP210x and FTDI converters usually work without installing anything on current Windows, macOS and Linux versions. The converter must support even parity (PL2303 clones sometimes do not). On Linux the user must be in the <code>dialout</code> group.</p>
+        </details>
+      </section>
+
+      <section class="panel" aria-labelledby="chip-title">
+        <h2 id="chip-title">Connected chip</h2>
+        <dl class="facts" id="chip-facts"><dt>Chip</dt><dd>Not read yet</dd></dl>
+      </section>
+
+      <section class="panel log-panel" aria-labelledby="log-title">
+        <h2 id="log-title">Log</h2>
+        <ol class="log" id="log"></ol>
+      </section>
+    </aside>
+  </main>
+
+  <footer class="site-footer">
+    STC ISP Programmer by <a href="https://github.com/wagiminator">wagiminator</a>, a port of <a href="https://github.com/grigorig/stcgal">stcgal</a> by Grigori Goronzy (MIT License).
+  </footer>
+
+  <script src="../../assets/js/firmware.js"></script>
+  <script src="../../assets/js/serial-link.js"></script>
+  <script src="models.js"></script>
+  <script src="stc.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

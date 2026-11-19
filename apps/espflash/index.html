@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ESP32/ESP8266 Flasher</title>
+  <meta name="description" content="Flash ESP32, ESP32-S2/S3, ESP32-C2/C3/C5/C6/C61, ESP32-H2, ESP32-P4 and ESP8266 boards from the browser through their serial download mode: bootloader, partition table and application at their addresses, MD5 check, chip info with MAC address and flash size.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chivo:wght@400;700&display=swap">
+  <link rel="stylesheet" href="../../assets/css/site.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav class="site-bar" aria-label="Breadcrumb">
+    <a href="../../">wagiminator</a><span class="sep">/</span><span>Apps</span><span class="sep">/</span><span>ESP32/ESP8266 Flasher</span>
+  </nav>
+
+  <main class="app">
+    <header class="app-head">
+      <h1>ESP32/ESP8266 Flasher</h1>
+      <p>Flash Espressif chips through their serial download mode, as esptool does: the ESP32, ESP32-S2, -S3, -C2, -C3, -C5, -C6, -C61, -H2, -P4 and the ESP8266. Through a USB-to-serial converter or the built-in USB port of the newer chips, with automatic reset on most boards. Bootloader, partition table and program go to their addresses and are checked afterwards.</p>
+    </header>
+
+    <p class="banner" id="unsupported" hidden>This browser cannot access serial ports. Open this page in Chrome, Edge or Opera on a desktop computer.</p>
+
+    <div class="work">
+      <section class="panel" aria-labelledby="fw-title">
+        <h2 id="fw-title">Firmware</h2>
+        <label class="drop" id="drop" for="file-input">
+          <strong>Drop .bin files here or choose them</strong>
+          <span>One merged image, or bootloader, partition table and program together. The addresses are guessed from the file names and can be changed.</span>
+          <input type="file" id="file-input" accept=".bin,.img" multiple>
+        </label>
+        <table class="files" id="files" hidden>
+          <thead><tr><th scope="col">File</th><th scope="col">Size</th><th scope="col">Address</th><th scope="col"><span class="sr-only">Remove</span></th></tr></thead>
+          <tbody id="file-rows"></tbody>
+        </table>
+        <ul class="messages" id="fw-messages"></ul>
+        <div class="after" role="group" aria-label="Options">
+          <label><input type="checkbox" id="opt-erase"> Erase the whole flash first</label>
+          <label><input type="checkbox" id="opt-reset" checked> Start the program afterwards</label>
+        </div>
+        <div class="flash-row">
+          <button type="button" class="btn btn-primary btn-big" id="btn-flash" disabled>Flash firmware</button>
+          <div class="progress-wrap" id="progress" hidden>
+            <div class="progress"><div id="progress-bar"></div></div>
+            <span class="progress-label" id="progress-label"></span>
+          </div>
+        </div>
+        <p class="hint">Choose Flash firmware and select the board's serial port. The app resets the chip into download mode, writes the files and checks each one with an MD5 sum computed by the chip (not possible on the ESP8266).</p>
+      </section>
+
+      <section class="panel" aria-labelledby="chip-act-title">
+        <h2 id="chip-act-title">Chip</h2>
+        <div class="actions">
+          <div class="action">
+            <button type="button" class="btn" id="btn-info" disabled>Read chip info</button>
+            <p>Shows the chip type, MAC address, flash chip and its size, and the security settings.</p>
+          </div>
+          <div class="action">
+            <button type="button" class="btn" id="btn-erase" disabled>Erase flash</button>
+            <p>Erases the whole flash, including Wi-Fi settings and stored data (NVS).</p>
+          </div>
+          <div class="action">
+            <button type="button" class="btn" id="btn-reset" disabled>Restart the chip</button>
+            <p>Restarts the chip through the reset line so that it runs its program.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel" aria-labelledby="boot-title">
+        <h2 id="boot-title">Download mode</h2>
+        <ul class="ways">
+          <li><strong>Development boards</strong> (DevKit, NodeMCU, Wemos D1 and most others) have an auto-reset circuit: DTR and RTS of the converter pull IO0 (GPIO0) and EN, so the app starts the download mode by itself.</li>
+          <li><strong>Built-in USB</strong> of the ESP32-C3, -C5, -C6, -C61, -H2, -P4 and -S3 (USB-Serial/JTAG): connect the chip's USB pins directly; the reset works the same way through the USB port.</li>
+          <li><strong>By hand:</strong> hold BOOT (GPIO0 on the ESP32, -S2, -S3 and ESP8266, GPIO9 on most C- and H-series chips), press and release RESET (EN), release BOOT. Then choose “Reset: by hand” under More options.</li>
+          <li><strong>ESP32-S2 with native USB:</strong> enter the download mode by hand; the chip then appears as a new serial port. Press RESET after flashing.</li>
+        </ul>
+        <p class="small">Bare modules need a 3.3&nbsp;V converter: TXD to RXD0 (U0RXD), RXD to TXD0 (U0TXD), GND to GND, and a supply that can deliver at least 300&nbsp;mA.</p>
+      </section>
+    </div>
+
+    <aside class="side">
+      <section class="panel" aria-labelledby="dev-title">
+        <h2 id="dev-title">Serial port</h2>
+        <p class="conn" id="conn"><span class="dot"></span><span id="conn-text">No port chosen</span></p>
+        <p class="link-note" id="link-note">Every action asks for the serial port the first time.</p>
+        <button type="button" class="btn btn-wide" id="btn-port">Choose serial port</button>
+        <details class="more">
+          <summary>More options</summary>
+          <label class="field"><span>Baud rate for writing</span>
+            <select id="baud">
+              <option>115200</option><option>230400</option><option selected>460800</option><option>921600</option><option>1500000</option><option>2000000</option>
+            </select>
+            <small>The chip is contacted at 115200 baud and then switched. The ESP8266 and the built-in USB ports stay at their rate.</small>
+          </label>
+          <div class="radio" role="radiogroup" aria-label="Reset">
+            <label><input type="radio" name="reset" value="auto" checked> Reset: automatic (DTR/RTS)</label>
+            <label><input type="radio" name="reset" value="manual"> Reset: by hand (chip already in download mode)</label>
+          </div>
+          <p class="small"><strong>Drivers:</strong> CP210x, CH340/CH9102 and FTDI converters work without installing anything on current Windows, macOS and Linux versions; otherwise install the manufacturer's driver. On Linux the user must be in the <code>dialout</code> group.</p>
+        </details>
+      </section>
+
+      <section class="panel" aria-labelledby="chip-title">
+        <h2 id="chip-title">Connected chip</h2>
+        <dl class="facts" id="chip-facts"><dt>Chip</dt><dd>Not read yet</dd></dl>
+      </section>
+
+      <section class="panel log-panel" aria-labelledby="log-title">
+        <h2 id="log-title">Log</h2>
+        <ol class="log" id="log"></ol>
+      </section>
+    </aside>
+  </main>
+
+  <footer class="site-footer">
+    ESP32/ESP8266 Flasher by <a href="https://github.com/wagiminator">wagiminator</a>, serial protocol as in <a href="https://github.com/espressif/esptool-js">esptool-js</a> by Espressif (Apache-2.0).
+  </footer>
+
+  <script src="../../assets/js/serial-link.js"></script>
+  <script src="esp.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
