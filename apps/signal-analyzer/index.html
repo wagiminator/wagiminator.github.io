@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Signal Analyzer</title>
-  <meta name="description" content="A logic analyzer and simple oscilloscope in the browser for cheap hardware: Raspberry Pi Pico, FX2 logic analyzers and the sound card, with decoders for UART, I²C, SPI, 1-Wire, WS2812, IR remote controls and the C64 serial bus.">
+  <meta name="description" content="A logic analyzer and simple oscilloscope in the browser for cheap hardware: Raspberry Pi Pico, CH32X033 board, FX2 logic analyzers and the sound card, with decoders for UART, I²C, SPI, 1-Wire, WS2812, IR remote controls and the C64 serial bus.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chivo:wght@400;700&display=swap">
@@ -19,7 +19,7 @@
   <main class="app">
     <header class="app-head">
       <h1>Signal Analyzer</h1>
-      <p>A logic analyzer in the browser for hardware that costs a few euros: a Raspberry Pi Pico, one of the small FX2 logic analyzers, or simply the sound card. Decoders read UART, I²C, SPI, 1-Wire, NeoPixels, IR remote controls and the C64 serial bus.</p>
+      <p>A logic analyzer in the browser for hardware that costs a few euros: a Raspberry Pi Pico or a CH32X033 board, one of the small FX2 logic analyzers, or simply the sound card. Decoders read UART, I²C, SPI, 1-Wire, NeoPixels, IR remote controls and the C64 serial bus.</p>
     </header>
 
     <p class="banner" id="unsupported" hidden>This browser cannot reach USB or serial devices. Open the page in Chrome, Edge or Opera on a computer to capture signals; files and demos work everywhere.</p>
@@ -115,6 +115,8 @@
         <div>
           <h3>Raspberry Pi Pico</h3>
           <p>Hold BOOTSEL, plug the Pico in and copy the <a href="https://github.com/pico-coder/sigrok-pico">sigrok-pico</a> UF2 file onto it. Inputs are GP2 to GP22 (3.3 V only, use a level shifter for 5 V) and the ADC inputs GP26 to GP28 for analog signals. Without a trigger the Pico samples into its memory at up to 120 MS/s; with a trigger the data is streamed, which works up to a few hundred kS/s.</p>
+          <h3>CH32X033 development board</h3>
+          <p>With the <a href="https://github.com/wagiminator/Development-Boards/tree/main/CH32X033F8P6_DevBoard/software/logic_analyzer">logic analyzer firmware</a> the board is an 8-channel logic analyzer on PA0 to PA7 (for 3.3 V and 5 V logic) that speaks the protocol of sigrok-pico; choose it under “Pico”. Without a trigger up to 16,384 samples go into its memory at up to 8 MS/s; longer captures and captures with a trigger are streamed, which works up to about 1 MS/s with busy signals. PC3 puts out a 1 kHz test signal.</p>
           <h3>FX2 logic analyzers</h3>
           <p>The small “24 MHz 8 channel” boxes and the Cypress FX2 mini boards. The app loads the free fx2lafw firmware into them each time they are plugged in. They have no memory of their own, so the computer must take the data as fast as it comes; 8 to 12 MS/s is usually safe. On Windows install the WinUSB driver with <a href="https://zadig.akeo.ie/">Zadig</a> once, as for PulseView; on Linux the user needs access to the USB device (udev rule).</p>
         </div>

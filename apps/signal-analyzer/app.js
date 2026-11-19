@@ -9,7 +9,7 @@
   var SAMPLES = [1e3, 2e3, 5e3, 1e4, 2e4, 5e4, 1e5, 2e5, 5e5, 1e6, 2e6, 5e6, 1e7, 2e7, 5e7, 1e8];
   var SOUND_RATES = [44100, 48000, 96000, 192000];
   var NOTES = {
-    pico: "Raspberry Pi Pico with the sigrok-pico firmware, over USB serial.",
+    pico: "Raspberry Pi Pico with the sigrok-pico firmware, or the CH32X033 board with its logic analyzer firmware, over USB serial.",
     fx2: "The small “24 MHz 8 channel” analyzers and FX2 boards. The firmware is loaded automatically.",
     sound: "Two analog channels from the microphone or line input."
   };
@@ -440,13 +440,15 @@
     // source options
     var h = "";
     if (S.src === "pico") {
-      var max = (s.info && s.info.digital) || 21, na = (s.info && s.info.analog) || 3, nd = Math.min(+opt("dig", 8), max), an = opt("ana", []);
+      var max = (s.info && s.info.digital) || 21, na = s.info ? s.info.analog : 3, nd = Math.min(+opt("dig", 8), max), an = opt("ana", []);
       h += '<label class="field"><span>Digital channels</span><select id="o-dig">' + [0, 1, 2, 4, 8, 12, 16, 21].filter(function (x) { return x <= max; }).map(function (x) {
-        return '<option value="' + x + '"' + (x === nd ? " selected" : "") + ">" + (x ? x + " (GP2–GP" + (x + 1) + ")" : "none") + "</option>";
+        return '<option value="' + x + '"' + (x === nd ? " selected" : "") + ">" + (x ? x + (s.ch32 ? (x > 1 ? " (PA0–PA" + (x - 1) + ")" : " (PA0)") : (x > 1 ? " (GP2–GP" + (x + 1) + ")" : " (GP2)")) : "none") + "</option>";
       }).join("") + "</select></label>";
-      h += '<div class="field"><span>Analog inputs</span><div class="chk-row">';
-      for (var a = 0; a < na; a++) h += '<label class="check"><input type="checkbox" data-ana="' + a + '"' + (an.indexOf(a) >= 0 ? " checked" : "") + "> ADC" + a + " (GP" + (26 + a) + ")</label>";
-      h += "</div></div>";
+      if (na) {
+        h += '<div class="field"><span>Analog inputs</span><div class="chk-row">';
+        for (var a = 0; a < na; a++) h += '<label class="check"><input type="checkbox" data-ana="' + a + '"' + (an.indexOf(a) >= 0 ? " checked" : "") + "> ADC" + a + " (GP" + (26 + a) + ")</label>";
+        h += "</div></div>";
+      }
     } else if (S.src === "fx2") {
       if (s.prof && s.prof.wide) h += '<label class="field"><span>Channels</span><select id="o-dig"><option value="8"' + (+opt("dig", 8) === 8 ? " selected" : "") + '>8 (up to 24 MS/s)</option><option value="16"' + (+opt("dig", 8) === 16 ? " selected" : "") + ">16 (up to 12 MS/s)</option></select></label>";
     } else {
@@ -545,7 +547,7 @@
   }
   $("btn-connect").addEventListener("click", connect);
   if ("serial" in navigator) navigator.serial.addEventListener("disconnect", function (e) {
-    if (st.src.pico.port === e.target) { st.src.pico.port = null; st.on.pico = false; st.stop = true; renderSource(); status("The Pico was unplugged.", "warn"); }
+    if (st.src.pico.port === e.target) { st.src.pico.port = null; st.on.pico = false; st.stop = true; renderSource(); status((st.src.pico.ch32 ? "The board" : "The Pico") + " was unplugged.", "warn"); }
   });
   if ("usb" in navigator) navigator.usb.addEventListener("disconnect", function (e) {
     if (st.src.fx2.dev === e.device) { st.src.fx2.dev = null; st.on.fx2 = false; st.stop = true; renderSource(); status("The analyzer was unplugged.", "warn"); }
