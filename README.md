@@ -34,6 +34,9 @@ apps/
   swdprog/              SWD Programmer
   serialupdi/           AVR Serial UPDI Programmer
   avrisp/               AVR ISP Programmer
+  espflash/             ESP32/ESP8266 Flasher
+  rpprog/               RP2040/RP2350 Programmer
+  stcisp/               STC ISP Programmer
   tinypro/              XGecu Memory Programmer
   hex-editor/           Hex Editor (BIN, Intel HEX, S-record, UF2, ELF)
   serial-terminal/      Serial Terminal
@@ -321,6 +324,40 @@ Programs classic AVR microcontrollers over ISP with a USBasp or a USBtinyISP. A 
 - Needs Chrome, Edge or Opera on a desktop computer; on Windows the programmer needs the WinUSB driver (Zadig), on Linux a udev rule.
 
 Code: `avrisp.js` is the programmer, `parts.js` holds the part data generated from avrdude.conf, `fusebits.js` the fuse fields generated from avrintel.c, `app.js` is the user interface.
+
+### ESP32/ESP8266 Flasher
+
+Flashes Espressif chips through the serial download mode in their ROM, like `esptool --no-stub write-flash`, using the Web Serial API. Written after the serial protocol of esptool and [esptool-js](https://github.com/espressif/esptool-js) (Apache-2.0); no code is uploaded to the chip.
+
+- Chips: ESP8266, ESP32, ESP32-S2, -S3, -C2, -C3, -C5, -C6, -C61, -H2 and -P4, detected from the security info (chip ID) or the magic register.
+- Several BIN files at once (bootloader, partition table, boot_app0, program, or one merged image); the addresses are guessed from the file names and contents and can be edited. The bootloader address follows the chip (0x1000 on ESP32/S2, 0x2000 on C5/P4, 0x0 otherwise), and the program goes to 0x0 on the ESP8266. Files are checked for overlaps, flash size and chip type (from the image header).
+- Each file is written in 1 KB blocks with checksums and verified with the MD5 sum the ROM computes (not on the ESP8266, whose ROM cannot do it). The ESP8266 erase-size bug is worked around as esptool does.
+- Chip info: type, MAC address, JEDEC ID and size of the flash, secure boot and flash encryption. Erase the whole flash, restart the chip.
+- Auto-reset into download mode with the DTR/RTS sequences of esptool, for converters with the usual two-transistor circuit and for the USB-Serial/JTAG port; or by hand. After connecting at 115200 baud the rate is switched (up to 2 Mbaud, not on the ESP8266 and the USB ports).
+
+Code: `esp.js` is the protocol (SLIP, commands, chip table, MD5), `app.js` is the user interface; `/assets/js/serial-link.js` is shared with other apps.
+
+### RP2040/RP2350 Programmer
+
+Flashes the Raspberry Pi RP2040 and RP2350 over USB in BOOTSEL mode through the PICOBOOT interface of their boot ROM, as [picotool](https://github.com/raspberrypi/picotool) (BSD-3-Clause) does, using the WebUSB API.
+
+- UF2, BIN (at a chosen offset) and Intel HEX files. UF2 files are checked against the chip (family IDs RP2040, RP2350 Arm/RISC-V, absolute, data); for universal UF2 files the image for the connected chip is taken, and the RP2350-E10 workaround block is skipped. Only the 4 KB sectors the file uses are erased; every byte is read back.
+- Chip info: RP2040 or RP2350 with package, revision, chip ID, available cores, secure boot and debug state, flash size (from the address mirror, like picotool), and the binary info of the program on the chip (name, version, build date, SDK, board, pins). The binary info of a file is shown before flashing.
+- Erase the whole flash, read it into a BIN or UF2 file, start the program (reboot), and restart a running board into BOOTSEL mode with the 1200 baud signal on its serial port.
+- Needs Chrome, Edge or Opera on a desktop computer. On Windows the RP2040 needs the WinUSB driver for “RP2 Boot (Interface 1)” (Zadig); the RP2350 needs none. On Linux a udev rule for vendor 2e8a.
+
+Code: `picoboot.js` is the protocol with the UF2 and binary info readers, `app.js` is the user interface; `/assets/js/firmware.js` reads HEX files.
+
+### STC ISP Programmer
+
+Flashes STC 8051 microcontrollers through a USB-to-serial converter and their serial bootloader. A JavaScript port of the STC10/11/12, STC15 and STC8 protocols of [stcgal](https://github.com/grigorig/stcgal) (MIT License) using the Web Serial API (2400 baud handshake, 8E1).
+
+- Chips: STC10/11/12 (stc12 and stc12b protocols), STC15 (incl. IAP15/IRC15), STC8A/8F, STC8A8K-D, STC8H and STC8G; the model is identified from its ID in the model database of stcgal (`models.js`, 1,138 models). STC89/90, STC12C2052, the older STC15F10x/20x and the STC32 are recognised but not supported.
+- Flash BIN and Intel HEX files: frequency trimming of the internal RC oscillator to the chosen clock (or the one set before), baud rate switch, erase, write in blocks, then the option bytes as the chip reported them with the new trim value. Chips running from a crystal keep it.
+- Chip info: model, flash and EEPROM sizes, clock, bootloader version, wake-up timer, reference voltage, manufacturing date, option bytes and UID. Erase the chip.
+- Power cycling by hand (the bootloader listens only after power-up) or through DTR or RTS of the converter switching the supply.
+
+Code: `stc.js` is the programmer, `models.js` the model table generated from stcgal's models.py, `app.js` is the user interface; `/assets/js/serial-link.js` and `/assets/js/firmware.js` are shared with other apps.
 
 ### XGecu Memory Programmer
 

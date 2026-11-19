@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RP2040/RP2350 Programmer</title>
+  <meta name="description" content="Flash the Raspberry Pi RP2040 and RP2350 (Raspberry Pi Pico, Pico 2 and compatible boards) over USB in BOOTSEL mode from the browser: UF2, BIN and HEX files, chip info, program info, erase, read-out and restart.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chivo:wght@400;700&display=swap">
+  <link rel="stylesheet" href="../../assets/css/site.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav class="site-bar" aria-label="Breadcrumb">
+    <a href="../../">wagiminator</a><span class="sep">/</span><span>Apps</span><span class="sep">/</span><span>RP2040/RP2350 Programmer</span>
+  </nav>
+
+  <main class="app">
+    <header class="app-head">
+      <h1>RP2040/RP2350 Programmer</h1>
+      <p>Flash the Raspberry Pi RP2040 and RP2350 (Pico, Pico W, Pico 2 and the many compatible boards) over USB with the bootloader in their boot ROM, as picotool does. Write UF2, BIN and HEX files and verify them, see what is on the chip, erase it, read it out and restart it, without copying files to a drive.</p>
+    </header>
+
+    <p class="banner" id="unsupported" hidden>This browser cannot access USB devices. Open this page in Chrome, Edge or Opera on a desktop computer.</p>
+
+    <div class="work">
+      <section class="panel" aria-labelledby="fw-title">
+        <h2 id="fw-title">Firmware</h2>
+        <label class="drop" id="drop" for="file-input">
+          <strong id="fw-name">Drop a .uf2, .bin or .hex file here or choose one</strong>
+          <span id="fw-info">UF2 and HEX files go to their addresses, BIN files to the start of the flash (0x10000000).</span>
+          <input type="file" id="file-input" accept=".uf2,.bin,.hex,.ihx">
+        </label>
+        <div class="bin-offset" id="bin-offset" hidden>
+          <label class="field inline-field"><span>BIN file at flash offset</span>
+            <input id="offset" value="0x0" spellcheck="false" inputmode="text" aria-describedby="offset-hint">
+          </label>
+          <small id="offset-hint">A multiple of 256 (0x100). 0 for a complete program.</small>
+        </div>
+        <div class="fit" id="fit" hidden>
+          <div class="fit-bar" aria-hidden="true"><div id="fit-used"></div></div>
+          <p class="fit-text" id="fit-text"></p>
+        </div>
+        <dl class="facts file-facts" id="file-facts" hidden></dl>
+        <ul class="messages" id="fw-messages"></ul>
+        <div class="after" role="group" aria-label="After flashing">
+          <label><input type="checkbox" id="opt-run" checked> Start the program afterwards</label>
+        </div>
+        <div class="flash-row">
+          <button type="button" class="btn btn-primary btn-big" id="btn-flash" disabled>Flash firmware</button>
+          <div class="progress-wrap" id="progress" hidden>
+            <div class="progress"><div id="progress-bar"></div></div>
+            <span class="progress-label" id="progress-label"></span>
+          </div>
+        </div>
+        <p class="hint">Put the board into BOOTSEL mode, choose Flash firmware and select the board. The 4 KB sectors that the file uses are erased, written and read back; the rest of the flash stays as it is.</p>
+      </section>
+
+      <section class="panel" aria-labelledby="chip-act-title">
+        <h2 id="chip-act-title">Chip</h2>
+        <div class="actions">
+          <div class="action">
+            <button type="button" class="btn" id="btn-info" disabled>Read chip info</button>
+            <p>Shows the chip, its revision and flash size and the program on it (name, version, pins). The board stays in BOOTSEL mode.</p>
+          </div>
+          <div class="action">
+            <button type="button" class="btn" id="btn-run" disabled>Start the program</button>
+            <p>Leaves BOOTSEL mode and starts the program in the flash.</p>
+          </div>
+        </div>
+        <details class="more">
+          <summary>Erase and read the flash</summary>
+          <label class="field size-field"><span>Flash size</span>
+            <select id="flash-size">
+              <option value="0">As detected (2 MB if unknown)</option>
+              <option value="1048576">1 MB</option>
+              <option value="2097152">2 MB (Pico, Pico W)</option>
+              <option value="4194304">4 MB (Pico 2, Pico 2 W)</option>
+              <option value="8388608">8 MB</option>
+              <option value="16777216">16 MB</option>
+            </select>
+          </label>
+          <div class="actions">
+            <div class="action">
+              <button type="button" class="btn" id="btn-erase" disabled>Erase flash</button>
+              <p>Erases the whole flash; the board stays in BOOTSEL mode.</p>
+            </div>
+            <div class="action">
+              <button type="button" class="btn" id="btn-read" disabled>Read flash</button>
+              <p>Saves the flash as
+                <select id="read-format" aria-label="File format">
+                  <option value="uf2">UF2</option>
+                  <option value="bin">BIN</option>
+                </select>
+                file, to keep a copy or to flash another board with it.</p>
+            </div>
+          </div>
+        </details>
+      </section>
+
+      <section class="panel" aria-labelledby="boot-title">
+        <h2 id="boot-title">BOOTSEL mode</h2>
+        <ul class="ways">
+          <li><strong>With the button:</strong> hold BOOTSEL, plug the board in (or press RESET or RUN to GND), then release BOOTSEL. The board shows up as a drive named RPI-RP2 or RP2350.</li>
+          <li><strong>From a running program:</strong> programs built with the Pico SDK and USB serial output, Arduino sketches (Earle Philhower's core) and CircuitPython restart into BOOTSEL mode when their serial port is opened at 1200 baud:
+            <button type="button" class="btn btn-small" id="btn-bootsel">Restart a running board into BOOTSEL</button>
+          </li>
+          <li><strong>From a blank chip:</strong> a chip with an empty flash starts in BOOTSEL mode by itself.</li>
+        </ul>
+        <p class="small">The app does not use the drive; it talks to the second USB interface of the boot ROM (PICOBOOT), like picotool. Copying a UF2 file to the drive works as well, of course.</p>
+      </section>
+    </div>
+
+    <aside class="side">
+      <section class="panel" aria-labelledby="dev-title">
+        <h2 id="dev-title">Board</h2>
+        <p class="conn" id="conn"><span class="dot"></span><span id="conn-text">No board chosen</span></p>
+        <p class="link-note" id="link-note">Every action asks for the board in BOOTSEL mode the first time.</p>
+        <button type="button" class="btn btn-wide" id="btn-port">Choose board</button>
+        <details class="more">
+          <summary>Driver setup</summary>
+          <p class="small"><strong>Windows:</strong> the RP2040 needs the WinUSB driver once: run <a href="https://zadig.akeo.ie/">Zadig</a> with the board in BOOTSEL mode, choose “RP2 Boot (Interface 1)” and install WinUSB. The RP2350 needs nothing.</p>
+          <p class="small"><strong>Linux:</strong> the browser needs access to the USB device: install the udev rules of picotool (<code>60-picotool.rules</code>) or a rule for vendor 2e8a.</p>
+          <p class="small"><strong>macOS:</strong> works without setup.</p>
+        </details>
+      </section>
+
+      <section class="panel" aria-labelledby="chip-title">
+        <h2 id="chip-title">Connected chip</h2>
+        <dl class="facts" id="chip-facts"><dt>Chip</dt><dd>Not read yet</dd></dl>
+      </section>
+
+      <section class="panel" aria-labelledby="prog-title">
+        <h2 id="prog-title">Program on the chip</h2>
+        <dl class="facts" id="prog-facts"><dt>Program</dt><dd>Not read yet</dd></dl>
+      </section>
+
+      <section class="panel log-panel" aria-labelledby="log-title">
+        <h2 id="log-title">Log</h2>
+        <ol class="log" id="log"></ol>
+      </section>
+    </aside>
+  </main>
+
+  <footer class="site-footer">
+    RP2040/RP2350 Programmer by <a href="https://github.com/wagiminator">wagiminator</a>, PICOBOOT protocol as in <a href="https://github.com/raspberrypi/picotool">picotool</a> (BSD-3-Clause).
+  </footer>
+
+  <script src="../../assets/js/firmware.js"></script>
+  <script src="picoboot.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
