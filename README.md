@@ -36,11 +36,11 @@ apps/
   avrisp/               AVR ISP Programmer
   tinypro/              XGecu Memory Programmer
   hex-editor/           Hex Editor (BIN, Intel HEX, S-record, UF2, ELF)
+  serial-terminal/      Serial Terminal
   oscilloscope/         USB Oscilloscope (Hantek 6022BE/BL, DSO-6021, DSO-2020, DDS120)
   signal-analyzer/      Signal Analyzer (logic analyzer for Pico, FX2 and sound card)
   power-analyzer/       Power Analyzer (control program for the ATtiny814 Power Analyzer)
   power-profiler/       Power Profiler (for the Nordic Power Profiler Kit II)
-  serial-terminal/      Serial Terminal
   calculators/          Electronics Calculators (regulators, resistors, MCU timing, PCB)
   mt3608-sepic/         redirect to the MT3608 calculator in calculators/
   gerber-viewer/        Gerber Viewer
@@ -345,6 +345,18 @@ View and edit firmware files in the browser; nothing is uploaded.
 
 Code: `js/formats.js` (readers and writers), `js/grid.js` (hex view and editing), `app.js` (user interface). No dependencies.
 
+### Serial Terminal
+
+Talks to a microcontroller through a USB-to-serial converter (CH340, CP210x, FTDI, PL2303) or a USB CDC device using the Web Serial API.
+
+- Connection: baud rate (common rates to choose from or any value from 50 to 4,000,000), data bits, parity, stop bits and RTS/CTS flow control. Changing a setting while connected reopens the port. Known converters are named by their USB IDs.
+- Control lines: DTR and RTS switches and a reset pulse for Arduino-style (DTR) and ESP32-style (RTS/DTR) auto reset circuits.
+- Display: UTF-8 text (CR, LF and CR+LF start a new line, other control characters are shown by name, ANSI color codes are removed) or hex dump with ASCII column, optional timestamps, sent data in a different color. Switching the view redraws the received data. Keeps the last 10,000 lines; Save downloads them as a text file, Clear (Ctrl+L) empties the terminal.
+- Send line: text with a selectable line ending (none, LF, CR, CR+LF) or hex bytes, Enter sends, ↑/↓ recall the last 50 sent lines.
+- Settings and the send history are remembered in the browser. Needs Chrome, Edge or Opera on a desktop computer.
+
+Code: `app.js` (no dependencies).
+
 ### USB Oscilloscope
 
 An oscilloscope for the cheap two-channel USB scopes of the Hantek 6022 family over WebUSB (Chrome, Edge, Opera on the desktop): Hantek 6022BE and 6022BL, Hantek DSO-6021, Voltcraft DSO-2020 and (untested) SainSmart DDS120, with a simulator for trying it without a scope.
@@ -403,18 +415,6 @@ The control program for the [ATtiny814 Power Analyzer](https://github.com/wagimi
 - A simulated analyzer (a USB charger, a 12 V to 5 V converter and a lithium-ion cell behind the same firmware protocol) to try the app without hardware.
 
 Code: `js/device.js` (serial line protocol and the simulator), `js/tests.js` (test programs and their results), `js/chart.js` (chart), `app.js` (user interface); no dependencies.
-
-### Serial Terminal
-
-Talks to a microcontroller through a USB-to-serial converter (CH340, CP210x, FTDI, PL2303) or a USB CDC device using the Web Serial API.
-
-- Connection: baud rate (common rates to choose from or any value from 50 to 4,000,000), data bits, parity, stop bits and RTS/CTS flow control. Changing a setting while connected reopens the port. Known converters are named by their USB IDs.
-- Control lines: DTR and RTS switches and a reset pulse for Arduino-style (DTR) and ESP32-style (RTS/DTR) auto reset circuits.
-- Display: UTF-8 text (CR, LF and CR+LF start a new line, other control characters are shown by name, ANSI color codes are removed) or hex dump with ASCII column, optional timestamps, sent data in a different color. Switching the view redraws the received data. Keeps the last 10,000 lines; Save downloads them as a text file, Clear (Ctrl+L) empties the terminal.
-- Send line: text with a selectable line ending (none, LF, CR, CR+LF) or hex bytes, Enter sends, ↑/↓ recall the last 50 sent lines.
-- Settings and the send history are remembered in the browser. Needs Chrome, Edge or Opera on a desktop computer.
-
-Code: `app.js` (no dependencies).
 
 ### Gerber Viewer
 
