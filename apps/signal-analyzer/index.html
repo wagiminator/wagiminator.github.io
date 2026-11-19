@@ -42,6 +42,10 @@
           <button type="button" class="btn btn-small" id="z-cur" title="Zoom to cursors A and B" disabled>A–B</button>
           <button type="button" class="btn btn-small" id="btn-hidden" hidden></button>
         </div>
+        <div class="bar-group bg-sel" role="group" aria-label="Background of the chart">
+          <button type="button" class="btn btn-small" id="bg-dark" aria-pressed="true" title="Black background">Black</button>
+          <button type="button" class="btn btn-small" id="bg-light" aria-pressed="false" title="White background, for printing and screenshots">White</button>
+        </div>
       </div>
       <div class="wave" id="wave"></div>
       <div class="readout" id="readout" aria-live="polite">
@@ -122,6 +126,7 @@
             <li>Wheel or pinch zooms, dragging moves, the overview bar jumps. Keys: arrows, + and −, F for everything.</li>
             <li>Click places cursor A, Shift+click cursor B; both snap to nearby edges. Hovering a digital channel measures the pulse under the pointer.</li>
             <li>Click a channel name to rename, recolour or hide it. Files: sigrok sessions (.sr) from PulseView and sigrok-cli, VCD and CSV.</li>
+            <li>Black or White switches the background of the chart; white is good for printing and for the PNG picture.</li>
           </ul>
         </div>
       </div>

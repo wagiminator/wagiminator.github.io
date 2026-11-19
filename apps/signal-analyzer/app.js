@@ -38,6 +38,17 @@
     onHover: hover, onCursor: cursors, onLabel: openPop,
     onAnn: function () { /* the readout shows it */ }
   });
+  // background of the chart: black or white
+  function bgUi() {
+    var light = S.bg === "light";
+    $("bg-dark").setAttribute("aria-pressed", String(!light)); $("bg-light").setAttribute("aria-pressed", String(light));
+    $("wave").classList.toggle("light", light);
+    view.theme = light ? "light" : "dark";
+    view.overCache = null; view.redraw();
+  }
+  $("bg-dark").addEventListener("click", function () { S.bg = "dark"; save(); bgUi(); });
+  $("bg-light").addEventListener("click", function () { S.bg = "light"; save(); bgUi(); });
+  bgUi();
   function rows() {
     var r = [];
     if (!st.cap) return r;
