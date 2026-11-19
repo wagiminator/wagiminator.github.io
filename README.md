@@ -47,6 +47,7 @@ apps/
   gerber-viewer/        Gerber Viewer
   panelizer/            Gerber Panelizer
   interactive-bom/      Interactive BOM (parts list and board picture for hand soldering)
+  stencil/              Solder Paste Stencil (3D-printable stencil from the paste layer)
 games/
   ironfall/             Ironfall (run-and-gun action platformer)
   x-abyss/              X-Abyss (underwater shoot'em-up)
@@ -456,6 +457,19 @@ A helper for soldering a board by hand, in the spirit of InteractiveHtmlBom: the
 - Download: the Gerber ZIP (the original, or a new ZIP of single files), the BOM and the positions as CPL file (JLCPCB format, with the taught positions). *A4 sheet* makes a PDF for the workbench: the board picture of both sides with the parts numbered and coloured by BOM line, and the parts list with boxes to tick, in the chosen order; long lists go into two columns.
 
 Code: `js/parts.js` (BOM and pick-and-place readers, CPL writer, part sizes, GitHub search), `js/board.js` (pad finder, snapping, board view), `js/export.js` (ZIP and PDF writer, A4 sheet), `app.js` (user interface); the board is drawn by `../gerber-viewer/gerber.js`. No other dependencies.
+
+### Solder Paste Stencil
+
+Makes a solder paste stencil to print yourself from the Gerber files of a board, as STL, or as SVG for laser cutters and cutting plotters. Complements the Interactive BOM for soldering by hand.
+
+- Input: the Gerber ZIP or the single files (KiCad, EasyEDA, Eagle, Altium …): paste layer of the top or bottom side, board outline, drill files for the pins. A demo board is built in.
+- Openings: the paste layer is drawn finely (up to 40 pixels per mm) and traced again as smooth outlines, so overlapping shapes, aperture macros and clear polarity all come out right; they can be made larger or smaller per side. Openings narrower than 0.25 mm and pieces of stencil that would fall out are pointed out.
+- Plate: thickness and border, a cut corner as orientation mark; the bottom stencil is made as seen from the bottom.
+- Frame: a pocket in the shape of the board (its outline grown by a gap) or a rectangle, as high as the board, so the board lies in the pocket and the plate flat on it.
+- Pins: in holes chosen by clicking (mounting holes are chosen at first), a little thinner than the hole, with a chamfer.
+- Output: a closed, consistently oriented triangle mesh (plate and frame one body, pins on top), as it is printed: plate on the bed, frame and pins upwards. Views from above (as on the board) and in 3D (WebGL).
+
+Code: `js/stencil.js` (tracing, polygon triangulation after the earcut algorithm of Mapbox, meshes, STL and SVG writers), `js/view3d.js` (WebGL view), `app.js` (user interface); reading Gerber files by `../gerber-viewer/gerber.js`. No other dependencies.
 
 ### Display Converter
 
