@@ -6,6 +6,7 @@ Personal page of wagiminator with links and small browser apps, published with G
 
 ```
 index.html              Start page: web apps, games, hardware projects with search, links
+robots.txt, sitemap.xml  For search engines (sitemap written by _tools/seo.py)
 assets/home/            Start page only: home.css, home.js (project search), favicon,
                         img/projects/ and img/games/ (480x300 WebP thumbnails)
 assets/css/site.css     Shared styles and color tokens for the apps
@@ -13,6 +14,9 @@ assets/js/d64edit.js    Shared D64 disk library (editor and transfer app)
 assets/js/serial-link.js  Shared Web Serial connection with timeouts (transfer apps)
 assets/js/tap.js        Shared TAP tape library (read, write, decode, optimize)
 assets/js/firmware.js   Shared BIN/HEX firmware file handling (programmer apps)
+assets/share/           Preview images (1200x630) for link previews and search results
+_tools/                 seo.py (search engine tags, sitemap), share-images.js (preview images);
+                        not published
 apps/
   _template/            Starting point for a new app (not published)
   d64-viewer/           C64 Disk Viewer
@@ -75,17 +79,17 @@ Every app lives in its own folder under `apps/` and is reachable at `https://wag
 ## Adding a new app
 
 1. Copy `apps/_template/` to `apps/<app-name>/` (lower case, words separated by `-`).
-2. Replace the placeholder name and description in `index.html` and write the app in `app.js` and `style.css`.
-3. Add an entry to the "Web Apps" list in `/index.html`:
-   ```html
-   <li>
-       <a href="apps/<app-name>/">App Name</a>
-       <p>One sentence about what the app does.</p>
-   </li>
+2. Replace the placeholder name and description in `index.html` and write the app in `app.js` and `style.css`. The `<title>` is what search results show: the app's name, then " – " and a few words people would search for (e.g. "ESP32/ESP8266 Flasher – flash ESP32 and ESP8266 in the browser"). The description meta tag is the snippet under it.
+3. Add an entry to the matching group of the "Web apps" list in `/index.html` (copy a neighbouring `<li>` with its icon) and update the tool count and the group subtitle.
+4. Make the preview image and the search engine data (with the local server running in the repository root, `python3 -m http.server 8123`):
    ```
-4. Commit and push; GitHub Pages publishes the change within a minute or two.
+   NODE_PATH=$(npm root -g) node _tools/share-images.js <app-name>
+   python3 _tools/seo.py
+   ```
+   `seo.py` writes canonical URL, Open Graph/Twitter tags and JSON-LD (WebApplication, VideoGame, breadcrumbs) into every page between `<!-- seo -->` and `<!-- /seo -->`, and rewrites `sitemap.xml`. Run it again after changing a title or description. The same works for games.
+5. Commit and push; GitHub Pages publishes the change within a minute or two.
 
-Folders starting with `_` are not published by GitHub Pages (Jekyll), so the template stays private.
+Folders starting with `_` are not published by GitHub Pages (Jekyll), so the template and `_tools/` stay private.
 
 ## Apps
 
