@@ -106,6 +106,10 @@
               <button type="button" class="btn btn-small" id="z-sel" title="Zoom to the selection (double click)" disabled>Selection</button>
             </div>
             <label class="check"><input type="checkbox" id="log"> Log scale</label>
+            <div class="seg" role="group" aria-label="Background of the chart">
+              <button type="button" id="bg-dark" aria-pressed="true" title="Black background">Black</button>
+              <button type="button" id="bg-light" aria-pressed="false" title="White background, for printing and screenshots">White</button>
+            </div>
             <div class="seg" role="group" aria-label="Dragging">
               <button type="button" id="drag-sel" aria-pressed="true" title="Dragging selects a stretch">Select</button>
               <button type="button" id="drag-move" aria-pressed="false" title="Dragging moves the view">Move</button>
@@ -141,7 +145,7 @@
           <li><b>Logic inputs:</b> D0–D7 of the PPK2 show what the firmware is doing, for example a pin set while the radio sends. Connect the logic port's <i>VCC</i> to the logic level of the device.</li>
         </ul>
         <ul>
-          <li><b>Chart:</b> the light band shows the lowest and highest value of each pixel column, the line the average. Wheel or pinch zooms, dragging selects a stretch (or moves the view in <i>Move</i> mode), double click zooms into the selection, the bar below moves through the whole recording. Keys: ←/→, + and −, F, Esc.</li>
+          <li><b>Chart:</b> black or white background (white for printing and screenshots); the light band shows the lowest and highest value of each pixel column, the line the average. Wheel or pinch zooms, dragging selects a stretch (or moves the view in <i>Move</i> mode), double click zooms into the selection, the bar below moves through the whole recording. Keys: ←/→, + and −, F, Esc.</li>
           <li><b>Long recordings:</b> 100 000 samples per second take 0.5 MB per second of memory. For hours, choose fewer samples per second: each sample is then the average of the 10 µs samples.</li>
           <li><b>Recordings</b> are saved as <code>.pprec</code> (compressed) and can be opened again here; CSV gives time, current and the logic inputs for spreadsheets.</li>
         </ul>

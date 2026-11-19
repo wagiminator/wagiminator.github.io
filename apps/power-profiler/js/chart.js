@@ -5,9 +5,24 @@
   "use strict";
   var PP = global.PP;
 
-  var BG = "#0f141b", GRID = "rgba(255,255,255,0.07)", TEXT = "#c9d1dc", DIM = "#7d8899";
-  var LINE = "#5ce1e6", BAND = "rgba(92,225,230,0.28)", SEL = "rgba(255,209,102,0.16)", SELB = "#ffd166", TRIG = "#ff6b6b", HOV = "rgba(255,255,255,0.55)";
-  var BITS = ["#9aa4b2", "#b5763c", "#e5484d", "#f08c2e", "#f2d03b", "#3fb950", "#4c9aff", "#b48cf2"];
+  // colours of the two backgrounds
+  var THEMES = {
+    dark: { BG: "#0f141b", GRID: "rgba(255,255,255,0.07)", TEXT: "#c9d1dc", DIM: "#7d8899", LINE: "#5ce1e6", BAND: "rgba(92,225,230,0.28)",
+      SEL: "rgba(255,209,102,0.16)", SELB: "#ffd166", TRIG: "#ff6b6b", HOV: "rgba(255,255,255,0.55)", DOT: "#ffffff", RULERBG: "#161b24",
+      OVERFILL: "rgba(92,225,230,0.55)", WINF: "rgba(255,255,255,0.12)", WINS: "rgba(255,255,255,0.5)", LOST: "rgba(255,107,107,0.35)", SELO: "rgba(255,209,102,0.5)",
+      BITS: ["#9aa4b2", "#b5763c", "#e5484d", "#f08c2e", "#f2d03b", "#3fb950", "#4c9aff", "#b48cf2"] },
+    light: { BG: "#ffffff", GRID: "rgba(0,0,0,0.08)", TEXT: "#2b2f36", DIM: "#6b7280", LINE: "#1f6fb2", BAND: "rgba(31,111,178,0.2)",
+      SEL: "rgba(224,168,0,0.14)", SELB: "#c08a00", TRIG: "#d0312d", HOV: "rgba(0,0,0,0.45)", DOT: "#0f141b", RULERBG: "#f0f2f6",
+      OVERFILL: "rgba(31,111,178,0.5)", WINF: "rgba(0,0,0,0.07)", WINS: "rgba(0,0,0,0.4)", LOST: "rgba(208,49,45,0.35)", SELO: "rgba(192,138,0,0.6)",
+      BITS: ["#5a6270", "#8a5528", "#c62f34", "#c96a12", "#a88400", "#2a8a3a", "#2f6fd0", "#7f4fc0"] }
+  };
+  var BG, GRID, TEXT, DIM, LINE, BAND, SEL, SELB, TRIG, HOV, DOT, RULERBG, OVERFILL, WINF, WINS, LOST, SELO, BITS;
+  function useTheme(name) {
+    var t = THEMES[name] || THEMES.dark;
+    BG = t.BG; GRID = t.GRID; TEXT = t.TEXT; DIM = t.DIM; LINE = t.LINE; BAND = t.BAND; SEL = t.SEL; SELB = t.SELB; TRIG = t.TRIG; HOV = t.HOV; DOT = t.DOT;
+    RULERBG = t.RULERBG; OVERFILL = t.OVERFILL; WINF = t.WINF; WINS = t.WINS; LOST = t.LOST; SELO = t.SELO; BITS = t.BITS;
+  }
+  useTheme("dark");
   var MONO = '11px ui-monospace, "Cascadia Mono", "SF Mono", Menlo, Consolas, monospace';
   var LW = 66, RULER = 22, LANE = 17;
 
@@ -35,6 +50,7 @@
     this.log = false; this.mask = 0x0F;
     this.sel = null; this.marks = [];
     this.mode = "select";
+    this.theme = "dark";
     this.hover = null;
     this.dirty = false;
     this.cache = {};
@@ -142,6 +158,7 @@
 
   // ---------------------------------------------------------------- drawing
   P.draw = function () {
+    useTheme(this.theme);
     this.applyFollow();
     var c = this.main.getContext("2d"), W = this.W, H = this.H, pw = this.plotW(), ch = this.curH(), self = this;
     c.fillStyle = BG; c.fillRect(0, 0, W, H);
@@ -209,7 +226,7 @@
     c.restore();
     // lost samples
     if (this.store.lost) {
-      c.fillStyle = "rgba(255,107,107,0.35)";
+      c.fillStyle = LOST;
       cols.forEach(function (o, x) { if (o && o.cnt === 0) c.fillRect(LW + x, 0, 1, 4); });
     }
     // logic lanes
@@ -246,14 +263,14 @@
     // trigger marks
     this.marks.forEach(function (s) { var x = self.xOf(s); if (x >= LW && x <= LW + pw) { c.strokeStyle = TRIG; c.setLineDash([4, 3]); c.beginPath(); c.moveTo(Math.round(x) + 0.5, 0); c.lineTo(Math.round(x) + 0.5, H - RULER); c.stroke(); c.setLineDash([]); } });
     // ruler
-    c.fillStyle = "#161b24"; c.fillRect(0, H - RULER, W, RULER);
+    c.fillStyle = RULERBG; c.fillRect(0, H - RULER, W, RULER);
     c.fillStyle = DIM; c.textAlign = "center";
     tk.forEach(function (t) { var x = self.xOf(t.s); if (x > LW + 20 && x < W - 20) c.fillText(t.label, x, H - RULER / 2); });
     // hover
     if (this.hover != null && this.hover >= 0 && this.hover < this.store.n) {
       var hx = Math.round(this.xOf(this.hover)) + 0.5, info = this.valueAt(this.hover);
       c.strokeStyle = HOV; c.lineWidth = 1; c.beginPath(); c.moveTo(hx, 0); c.lineTo(hx, H - RULER); c.stroke();
-      if (info && info.avg === info.avg) { c.fillStyle = "#fff"; c.beginPath(); c.arc(hx, Y(info.avg), 3, 0, 7); c.fill(); }
+      if (info && info.avg === info.avg) { c.fillStyle = DOT; c.beginPath(); c.arc(hx, Y(info.avg), 3, 0, 7); c.fill(); }
     }
     this.drawOver();
   };
@@ -273,7 +290,8 @@
   };
   P.drawOver = function () {
     var c = this.over.getContext("2d"), W = this.W, h = 40;
-    c.fillStyle = "#161b24"; c.fillRect(0, 0, W, h);
+    useTheme(this.theme);
+    c.fillStyle = RULERBG; c.fillRect(0, 0, W, h);
     if (!this.store || !this.store.n) return;
     var pw = this.plotW(), n = this.store.n, total = Math.max(n, this.follow ? n : n), o = {};
     var key = n + ":" + pw + ":" + this.log;
@@ -289,7 +307,7 @@
       this.cache = { key: key, col: col, mx: mx };
     }
     var cc = this.cache, lg = this.log;
-    c.fillStyle = "rgba(92,225,230,0.55)";
+    c.fillStyle = OVERFILL;
     cc.col.forEach(function (v, x) {
       if (v == null || !(cc.mx > 0)) return;
       var f = lg ? Math.max(0, 1 + Math.log10(Math.max(v, 1e-12) / cc.mx) / 6) : v / cc.mx;
@@ -297,9 +315,9 @@
       c.fillRect(LW + x, h - 3 - hh, 1, hh);
     });
     var va = this.visible(), xa = LW + va[0] / total * pw, xb = LW + va[1] / total * pw;
-    c.fillStyle = "rgba(255,255,255,0.12)"; c.fillRect(xa, 1, Math.max(2, xb - xa), h - 2);
-    c.strokeStyle = "rgba(255,255,255,0.5)"; c.strokeRect(xa + 0.5, 1.5, Math.max(2, xb - xa) - 1, h - 3);
-    if (this.sel) { c.fillStyle = "rgba(255,209,102,0.5)"; c.fillRect(LW + this.sel[0] / total * pw, 0, Math.max(1, (this.sel[1] - this.sel[0]) / total * pw), 3); }
+    c.fillStyle = WINF; c.fillRect(xa, 1, Math.max(2, xb - xa), h - 2);
+    c.strokeStyle = WINS; c.strokeRect(xa + 0.5, 1.5, Math.max(2, xb - xa) - 1, h - 3);
+    if (this.sel) { c.fillStyle = SELO; c.fillRect(LW + this.sel[0] / total * pw, 0, Math.max(1, (this.sel[1] - this.sel[0]) / total * pw), 3); }
     c.fillStyle = DIM; c.font = MONO; c.textAlign = "right"; c.textBaseline = "middle"; c.fillText(secs(n / this.store.rate), LW - 6, h / 2);
   };
 

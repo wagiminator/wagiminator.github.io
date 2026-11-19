@@ -5,7 +5,7 @@
   var amps = PP.amps, secs = PP.secs;
 
   var st = { dev: null, store: null, rec: false, acc: null, trig: null, stopAt: "", hold: 0 };
-  var S = { mode: "source", volt: 3.3, rate: 100000, limit: 60, win: 5, log: false, mask: 0x0F, bat: 220, trig: "off", src: "up", level: "1m", bit: 0, tw: 10, pre: 20 };
+  var S = { bg: "dark", mode: "source", volt: 3.3, rate: 100000, limit: 60, win: 5, log: false, mask: 0x0F, bat: 220, trig: "off", src: "up", level: "1m", bit: 0, tw: 10, pre: 20 };
   try { Object.assign(S, JSON.parse(localStorage.getItem("ppk.settings")) || {}); } catch (e) { /* defaults */ }
   function save() { try { localStorage.setItem("ppk.settings", JSON.stringify(S)); } catch (e) { /* not kept */ } }
 
@@ -32,7 +32,7 @@
       $("hover").textContent = secs(s / st.store.rate) + "   " + amps(v.avg, 3) + (v.max > v.min ? "   (" + amps(v.min, 2) + " … " + amps(v.max, 2) + ")" : "") + "   " + bits.join(" ");
     }
   });
-  chart.win = S.win; chart.log = S.log; chart.mask = S.mask;
+  chart.win = S.win; chart.log = S.log; chart.mask = S.mask; chart.theme = S.bg;
 
   // ================================================================ device
   function voltUi() {
@@ -282,6 +282,13 @@
   $("z-sel").addEventListener("click", function () { if (chart.sel) chart.show(chart.sel[0], chart.sel[1]); });
   $("log").checked = S.log;
   $("log").addEventListener("change", function () { S.log = chart.log = this.checked; save(); chart.cache = {}; chart.redraw(); });
+  function bgUi() {
+    $("bg-dark").setAttribute("aria-pressed", String(S.bg === "dark")); $("bg-light").setAttribute("aria-pressed", String(S.bg === "light"));
+    $("chart").classList.toggle("light", S.bg === "light");
+  }
+  function setBg(v) { S.bg = chart.theme = v; save(); bgUi(); chart.cache = {}; chart.redraw(); }
+  $("bg-dark").addEventListener("click", function () { setBg("dark"); });
+  $("bg-light").addEventListener("click", function () { setBg("light"); });
   function dragUi() { $("drag-sel").setAttribute("aria-pressed", String(chart.mode === "select")); $("drag-move").setAttribute("aria-pressed", String(chart.mode === "move")); }
   $("drag-sel").addEventListener("click", function () { chart.mode = "select"; dragUi(); });
   $("drag-move").addEventListener("click", function () { chart.mode = "move"; dragUi(); });
@@ -359,7 +366,7 @@
   });
 
   // ================================================================ start
-  voltUi(); devUi(); memUi(); trigUi(); bitsUi(); dragUi(); liveUi(); stats();
+  voltUi(); devUi(); memUi(); trigUi(); bitsUi(); bgUi(); dragUi(); liveUi(); stats();
   if (!PP.PPK2.supported()) status("dev-status", "This browser has no Web Serial (Chrome, Edge or Opera on the desktop needed); the simulator works here too.");
   window.addEventListener("beforeunload", function () { if (st.dev) st.dev.close(); });
   window.PPAPP = { st: st, chart: chart, S: S };
