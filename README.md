@@ -41,6 +41,7 @@ apps/
   signal-analyzer/      Signal Analyzer (logic analyzer for Pico, FX2 and sound card)
   power-analyzer/       Power Analyzer (control program for the ATtiny814 Power Analyzer)
   power-profiler/       Power Profiler (for the Nordic Power Profiler Kit II)
+  display-converter/    Display Converter (pictures and fonts for OLED, LCD, TFT and e-paper)
   calculators/          Electronics Calculators (regulators, resistors, MCU timing, PCB)
   mt3608-sepic/         redirect to the MT3608 calculator in calculators/
   gerber-viewer/        Gerber Viewer
@@ -441,6 +442,17 @@ A helper for soldering a board by hand, in the spirit of InteractiveHtmlBom: the
 - Download: the Gerber ZIP (the original, or a new ZIP of single files), the BOM and the positions as CPL file (JLCPCB format, with the taught positions). *A4 sheet* makes a PDF for the workbench: the board picture of both sides with the parts numbered and coloured by BOM line, and the parts list with boxes to tick, in the chosen order; long lists go into two columns.
 
 Code: `js/parts.js` (BOM and pick-and-place readers, CPL writer, part sizes, GitHub search), `js/board.js` (pad finder, snapping, board view), `js/export.js` (ZIP and PDF writer, A4 sheet), `app.js` (user interface); the board is drawn by `../gerber-viewer/gerber.js`. No other dependencies.
+
+### Display Converter
+
+Turns pictures, icons, animations and fonts into the bytes of small displays, as C/C++ array, MicroPython (`bytearray`, `framebuf`) or binary file.
+
+- Pictures: PNG, JPEG, GIF, WebP, BMP, SVG by file, drag and drop or paste; several files, the tiles of a sprite sheet or the frames of an animated GIF (ImageDecoder) become frames, with a frame player. Sizes of common displays (SSD1306/SH1106 OLEDs from 64 × 32 to 128 × 64, SSD1327, SSD1322, PCD8544, ST7565, e-paper, ST7735, ST7789, ILI9341, icon sizes) or any size; fit, fill or stretch, rotation, mirroring, smooth or pixel-exact scaling, background.
+- Formats: monochrome (vertical bytes for SSD1306/SH1106/PCD8544 pages, horizontal bytes with bit 7 or bit 0 at the left for Adafruit GFX, u8g2 and XBM), 4-bit greyscale, RGB332, RGB565 (byte order, optionally as 16-bit words) and RGB888. Brightness, contrast, invert, threshold and dithering (Floyd–Steinberg, Atkinson, Sierra Lite, Bayer 4 × 4 and 8 × 8).
+- Preview as the display looks (white, blue, yellow-blue and yellow OLED, green LCD, e-paper) with zoom and pixel grid; monochrome pixels can be set and cleared by hand. Arrays can be read back for a look or for editing.
+- Fonts: installed fonts or TTF/OTF/WOFF files, size, bold, italic, threshold; ASCII, Latin-1 or an own selection of characters. Output as fixed-width font (cell size from the font or set by hand, vertical or horizontal bytes, first/last or a table of the characters) or as Adafruit GFX font (bitmaps, glyph table, `GFXfont`). Sample text and all characters in the preview, with pixel editing.
+
+Code: `js/convert.js` (scaling, dithering, byte layouts), `js/font.js` (drawing the characters), `js/export.js` (C, MicroPython, Adafruit GFX), `app.js` (user interface). No dependencies.
 
 ### Electronics Calculators
 

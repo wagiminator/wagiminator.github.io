@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Display Converter</title>
+  <meta name="description" content="Pictures, icons, animations and fonts as C arrays or MicroPython for OLED, LCD, TFT and e-paper displays: SSD1306, SH1106, PCD8544, SSD1327, ST7735, ST7789, ILI9341 and Adafruit GFX fonts.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chivo:wght@400;700&display=swap">
+  <link rel="stylesheet" href="../../assets/css/site.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav class="site-bar" aria-label="Breadcrumb">
+    <a href="../../">wagiminator</a><span class="sep">/</span><span>Apps</span><span class="sep">/</span><span>Display Converter</span>
+  </nav>
+
+  <main class="app">
+    <header class="app-head">
+      <h1>Display Converter</h1>
+      <p>Turns pictures, icons, animations and fonts into the bytes a small display needs, as C array or MicroPython: monochrome OLEDs and LCDs (SSD1306, SH1106, PCD8544), greyscale OLEDs (SSD1327, SSD1322), colour TFTs (ST7735, ST7789, ILI9341) and e-paper. Fonts also as Adafruit GFX font. Everything stays in your browser.</p>
+    </header>
+
+    <div class="seg modes" role="group" aria-label="What to convert" id="mode">
+      <button type="button" data-v="image">Picture</button><button type="button" data-v="font">Font</button>
+    </div>
+
+    <div class="layout">
+      <div class="main">
+        <section class="panel" aria-labelledby="pv-h">
+          <div class="pv-head">
+            <h2 id="pv-h">Preview</h2>
+            <div class="row">
+              <label class="inline">Look <select id="look" aria-label="Look of the display"></select></label>
+              <label class="inline">Zoom <select id="zoom" aria-label="Zoom"><option value="0">Fit</option><option>1</option><option>2</option><option>3</option><option>4</option><option>6</option><option>8</option><option>12</option><option>16</option></select></label>
+              <label class="check"><input type="checkbox" id="grid"> Pixel grid</label>
+            </div>
+          </div>
+
+          <div data-mode="image">
+            <div class="stage" id="stage"><canvas id="pv" aria-label="Preview of the converted picture. Monochrome pixels can be set and cleared by clicking or dragging."></canvas></div>
+            <div class="row frames" id="frames" hidden>
+              <button type="button" class="btn btn-small" id="f-prev" aria-label="Previous frame">‹</button>
+              <span id="f-info">Frame 1 of 1</span>
+              <button type="button" class="btn btn-small" id="f-next" aria-label="Next frame">›</button>
+              <button type="button" class="btn btn-small" id="f-play">Play</button>
+              <label class="inline"><input type="number" id="fps" min="1" max="60" value="8" aria-label="Frames per second"> frames/s</label>
+            </div>
+            <p class="hint" id="edit-hint">Monochrome: click or drag on the preview to set or clear single pixels. <button type="button" class="link" id="edit-clear" hidden>Undo all pixel edits</button></p>
+          </div>
+
+          <div data-mode="font" hidden>
+            <label class="field"><span>Sample text</span><input id="sample" value="Hello World! 0123456789" spellcheck="false"></label>
+            <div class="stage" id="stage-s"><canvas id="pv-sample" aria-label="Sample text in the converted font"></canvas></div>
+            <h3 class="sub">Characters</h3>
+            <div class="stage glyphs" id="stage-g"><canvas id="pv-glyphs" aria-label="All characters of the font. Pixels can be set and cleared by clicking or dragging."></canvas></div>
+            <p class="hint">Click or drag on a character to set or clear pixels. <button type="button" class="link" id="gedit-clear" hidden>Undo all pixel edits</button></p>
+          </div>
+        </section>
+
+        <section class="panel code-panel" aria-labelledby="out-h">
+          <div class="pv-head">
+            <h2 id="out-h">Code</h2>
+            <div class="row">
+              <button type="button" class="btn btn-small" id="copy">Copy</button>
+              <button type="button" class="btn btn-small btn-primary" id="save">Download</button>
+            </div>
+          </div>
+          <p class="status" id="out-info" aria-live="polite"></p>
+          <textarea id="code" readonly spellcheck="false" aria-label="Generated code"></textarea>
+        </section>
+      </div>
+
+      <aside class="side">
+        <!-- picture -->
+        <section class="panel" data-mode="image" aria-labelledby="src-h">
+          <h2 id="src-h">Picture</h2>
+          <div class="drop" id="drop">
+            <button type="button" class="btn btn-primary" id="open">Open pictures</button>
+            <input type="file" id="file" accept="image/*,.svg" multiple hidden>
+            <p>or drop them here, or paste one. Several files or an animated GIF become frames.</p>
+          </div>
+          <p class="hint" id="src-info"></p>
+          <label class="check"><input type="checkbox" id="tiles"> Split into tiles (sprite sheet, icon set)</label>
+          <div class="pair" id="tile-size" hidden>
+            <label class="field"><span>Tile width</span><input type="number" id="tile-w" min="1" max="2048" value="16"></label>
+            <label class="field"><span>Tile height</span><input type="number" id="tile-h" min="1" max="2048" value="16"></label>
+          </div>
+          <details class="import">
+            <summary>Read a C array back</summary>
+            <p class="hint">Paste the numbers of an array; they are read with the size, format and byte layout set here.</p>
+            <textarea id="import-text" spellcheck="false" placeholder="0x00, 0x7E, 0x81, …" aria-label="Array to read"></textarea>
+            <button type="button" class="btn btn-small" id="import">Show it</button>
+          </details>
+        </section>
+
+        <section class="panel" data-mode="image" aria-labelledby="size-h">
+          <h2 id="size-h">Size</h2>
+          <label class="field"><span>Display</span><select id="preset"></select></label>
+          <div class="pair">
+            <label class="field"><span>Width</span><input type="number" id="w" min="1" max="2048"></label>
+            <label class="field"><span>Height</span><input type="number" id="h" min="1" max="2048"></label>
+          </div>
+          <div class="field"><span>Picture into the size</span>
+            <div class="seg" role="group" aria-label="Fit" id="fit"><button type="button" data-v="contain" title="Whole picture, keep the proportions">Fit</button><button type="button" data-v="cover" title="Fill the size, cut the rest">Fill</button><button type="button" data-v="stretch">Stretch</button></div>
+          </div>
+          <div class="field"><span>Rotate</span>
+            <div class="seg" role="group" aria-label="Rotate" id="rotate"><button type="button" data-v="0">0°</button><button type="button" data-v="90">90°</button><button type="button" data-v="180">180°</button><button type="button" data-v="270">270°</button></div>
+          </div>
+          <div class="row">
+            <label class="check"><input type="checkbox" id="flip-h"> Mirror</label>
+            <label class="check"><input type="checkbox" id="flip-v"> Upside down</label>
+          </div>
+          <div class="pair">
+            <label class="field"><span>Scaling</span><select id="smooth"><option value="1">Smooth</option><option value="0">Pixel art (nearest)</option></select></label>
+            <div class="field"><span>Background</span>
+              <div class="seg" role="group" aria-label="Background" id="bg"><button type="button" data-v="#000000">Black</button><button type="button" data-v="#ffffff">White</button></div>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel" data-mode="image" aria-labelledby="col-h">
+          <h2 id="col-h">Colours</h2>
+          <label class="field"><span>Format</span><select id="fmt"></select></label>
+          <label class="field"><span>Dithering</span><select id="dither"></select></label>
+          <label class="field" id="thr-f"><span>Threshold <output id="thr-o"></output></span><input type="range" id="thr" min="1" max="255"></label>
+          <label class="field"><span>Brightness <output id="bri-o"></output></span><input type="range" id="bri" min="-100" max="100"></label>
+          <label class="field"><span>Contrast <output id="con-o"></output></span><input type="range" id="con" min="-100" max="100"></label>
+          <label class="check"><input type="checkbox" id="invert"> Invert</label>
+        </section>
+
+        <!-- font -->
+        <section class="panel" data-mode="font" hidden aria-labelledby="font-h">
+          <h2 id="font-h">Font</h2>
+          <label class="field"><span>Installed font</span><input id="family" list="families" spellcheck="false"></label>
+          <datalist id="families"><option value="monospace"><option value="sans-serif"><option value="serif"><option value="Consolas"><option value="Courier New"><option value="DejaVu Sans Mono"><option value="Liberation Mono"><option value="Menlo"><option value="Arial"><option value="Verdana"><option value="Tahoma"><option value="Segoe UI"></datalist>
+          <div class="row">
+            <button type="button" class="btn btn-small" id="font-open">Open a font file</button>
+            <input type="file" id="font-file" accept=".ttf,.otf,.woff,.woff2,font/*" hidden>
+            <span class="hint" id="font-info"></span>
+          </div>
+          <div class="pair">
+            <label class="field"><span>Size (pixels)</span><input type="number" id="fsize" min="4" max="200"></label>
+            <label class="field"><span>Threshold <output id="fthr-o"></output></span><input type="range" id="fthr" min="1" max="255"></label>
+          </div>
+          <div class="row">
+            <label class="check"><input type="checkbox" id="bold"> Bold</label>
+            <label class="check"><input type="checkbox" id="italic"> Italic</label>
+          </div>
+          <p class="hint">Small sizes (8 pixels and less) need a pixel font: open a pixel font file and use its own size or a multiple of it. For other fonts, try the threshold.</p>
+        </section>
+
+        <section class="panel" data-mode="font" hidden aria-labelledby="chars-h">
+          <h2 id="chars-h">Characters</h2>
+          <label class="field"><span>Selection</span><select id="set"></select></label>
+          <label class="field" id="custom-f"><span>Characters (in this order)</span><textarea id="custom" spellcheck="false" rows="3"></textarea></label>
+          <p class="hint" id="chars-info"></p>
+        </section>
+
+        <section class="panel" data-mode="font" hidden aria-labelledby="cell-h">
+          <h2 id="cell-h">Layout</h2>
+          <div class="seg wide" role="group" aria-label="Kind of font" id="fmode"><button type="button" data-v="fixed">Fixed width</button><button type="button" data-v="gfx">Adafruit GFX</button></div>
+          <div id="fixed-opts">
+            <label class="check"><input type="checkbox" id="auto-cell"> Cell size from the font</label>
+            <div class="pair">
+              <label class="field"><span>Cell width</span><input type="number" id="cw" min="1" max="255"></label>
+              <label class="field"><span>Cell height</span><input type="number" id="ch" min="1" max="255"></label>
+              <label class="field"><span>Baseline (from top)</span><input type="number" id="base" min="0" max="255"></label>
+              <label class="field"><span>Shift right</span><input type="number" id="xoff" min="-64" max="64"></label>
+            </div>
+            <label class="check"><input type="checkbox" id="centre"> Centre every character in its cell</label>
+          </div>
+          <div id="gfx-opts" hidden>
+            <div class="pair">
+              <label class="field"><span>Extra spacing</span><input type="number" id="spacing" min="-10" max="20"></label>
+              <label class="field"><span>Line height</span><input type="number" id="yadv" min="1" max="255"></label>
+            </div>
+            <p class="hint">Each character keeps its own width; the line height is set from the font and can be changed.</p>
+          </div>
+        </section>
+
+        <!-- both -->
+        <section class="panel" aria-labelledby="o-h">
+          <h2 id="o-h">Output</h2>
+          <div class="seg wide" role="group" aria-label="Language" id="lang"><button type="button" data-v="c">C / C++</button><button type="button" data-v="py">MicroPython</button><button type="button" data-v="bin">Binary</button></div>
+          <label class="field"><span>Name</span><input id="name" spellcheck="false"></label>
+          <label class="field" id="layout-f"><span>Byte layout</span><select id="layout"></select></label>
+          <p class="hint" id="layout-use"></p>
+          <div class="field" id="order-f"><span>Byte order</span>
+            <div class="seg" role="group" aria-label="Byte order" id="order"><button type="button" data-v="be" title="As the display receives it">High byte first</button><button type="button" data-v="le">Low byte first</button></div>
+          </div>
+          <label class="check" id="word-f"><input type="checkbox" id="word16"> As 16-bit words (uint16_t)</label>
+          <label class="check" id="pm-f"><input type="checkbox" id="progmem"> PROGMEM (AVR)</label>
+          <label class="check" id="sz-f"><input type="checkbox" id="sizebytes"> Start with width and height bytes</label>
+          <div class="pair">
+            <label class="field"><span>Values per line</span><input type="number" id="perline" min="1" max="64"></label>
+            <label class="check lower"><input type="checkbox" id="upper"> Capital hex digits</label>
+          </div>
+        </section>
+      </aside>
+    </div>
+
+    <section class="panel help" aria-labelledby="help-h">
+      <h2 id="help-h">Good to know</h2>
+      <div class="help-cols">
+        <ul>
+          <li><b>SSD1306, SH1106, SSD1309, ST7565, PCD8544:</b> monochrome with vertical bytes: each byte is 8 pixels of a column, bit 0 at the top, and the picture is sent page by page (8 rows at a time). The SH1106 has 132 columns in memory; the 128 visible ones usually start at column 2.</li>
+          <li><b>Adafruit GFX and u8g2:</b> <code>drawBitmap()</code> takes horizontal bytes with bit 7 at the left, <code>drawXBMP()</code> horizontal bytes with bit 0 at the left.</li>
+          <li><b>Colour TFTs</b> (ST7735, ST7789, ILI9341) take RGB565 with the high byte first. As 16-bit words, the values are written so that they lie in that order in the memory of a little-endian controller and can be sent byte by byte.</li>
+          <li><b>Greyscale OLEDs:</b> SSD1327 and SSD1322 take 4 bits per pixel, two pixels per byte, the left one in the high nibble.</li>
+        </ul>
+        <ul>
+          <li><b>Dithering</b> spreads the error of each pixel to its neighbours (Floyd–Steinberg, Atkinson, Sierra) or adds a fixed pattern (Bayer), so photos keep their shades with few colours. For icons and line art, use none and set the threshold.</li>
+          <li><b>Frames:</b> several pictures, the tiles of a sprite sheet or the frames of an animated GIF become one array with one row per frame. Animated GIFs need Chrome or Edge (ImageDecoder).</li>
+          <li><b>Fixed-width fonts</b> store every character in a cell of the same size, as many of the small OLED libraries do (5 or 6 × 8 pixels, vertical bytes). <b>Adafruit GFX fonts</b> are proportional: a bitmap for each character plus a table of sizes and offsets, for <code>setFont()</code>.</li>
+          <li><b>Fonts:</b> installed fonts, or TTF, OTF and WOFF files. Mind the licence of a font before you put it into firmware.</li>
+        </ul>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    Display Converter by <a href="https://github.com/wagiminator">wagiminator</a>.
+  </footer>
+
+  <script src="js/convert.js"></script>
+  <script src="js/font.js"></script>
+  <script src="js/export.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
