@@ -38,7 +38,8 @@ apps/
   signal-analyzer/      Signal Analyzer (logic analyzer for Pico, FX2 and sound card)
   power-analyzer/       Power Analyzer (control program for the ATtiny814 Power Analyzer)
   serial-terminal/      Serial Terminal
-  mt3608-sepic/         MT3608 SEPIC Voltage Calculator
+  calculators/          Electronics Calculators (regulators, resistors, MCU timing, PCB)
+  mt3608-sepic/         redirect to the MT3608 calculator in calculators/
   gerber-viewer/        Gerber Viewer
   interactive-bom/      Interactive BOM (parts list and board picture for hand soldering)
 games/
@@ -396,6 +397,17 @@ A helper for soldering a board by hand, in the spirit of InteractiveHtmlBom: the
 - Download: the Gerber ZIP (the original, or a new ZIP of single files), the BOM and the positions as CPL file (JLCPCB format, with the taught positions). *A4 sheet* makes a PDF for the workbench: the board picture of both sides with the parts numbered and coloured by BOM line, and the parts list with boxes to tick, in the chosen order; long lists go into two columns.
 
 Code: `js/parts.js` (BOM and pick-and-place readers, CPL writer, part sizes, GitHub search), `js/board.js` (pad finder, snapping, board view), `js/export.js` (ZIP and PDF writer, A4 sheet), `app.js` (user interface); the board is drawn by `../gerber-viewer/gerber.js`. No other dependencies.
+
+### Electronics Calculators
+
+Small calculators for building the boards, in four groups (tabs); every calculator has its own link (`#feedback`, `#uart`, …), the values are kept in the browser, values can be typed as `4k7`, `100n`, `2u2`.
+
+- Regulators and chargers: feedback divider of adjustable regulators with a chip list (MT3608, SX1308, SD8942, MP1584, MP2307, LM2596, LM2577, XL6009, MC34063, LM317, AMS1117) and the nearest resistor pairs of a series; it replaces the former MT3608 SEPIC calculator (`#mt3608`, the old address redirects). Charge current resistor of TP4056, TP4054/LTC4054, MCP73831, CN3058E and IP2312; heat and junction temperature of linear regulators; battery runtime with sleep current and charge time.
+- Resistors and LEDs: LED series resistor (with power and package), current sense resistor of LED drivers (TPS61169, PT4115), voltage divider with ADC reading, nearest values and series/parallel pairs of the E6 … E96 series, colour code (4 and 5 bands, both ways, with picture) and SMD codes (3-digit, 4-digit, EIA-96, R notation, both ways).
+- MCU timing: UART register values and baud rate error for classic AVR (UBRR, U2X), tinyAVR 0/1/2 and AVR Dx (BAUD, CLK2X), CH32V/CH32X/STM32/PY32 (BRR) and CH55x (TH1/SBAUD1), with a table of the common baud rates; prescaler and top value for timer and PWM frequencies (AVR Timer0/1/2, ATtiny85 Timer1, TCA0/TCB, CH32 timers, CH55x Timer 2) with error and PWM resolution; clock cycles and time.
+- PCB and converters: trace width, resistance and voltage drop after IPC-2221, via current and number of vias, clearance for a voltage (IPC-2221 table 6-1), and duty cycle, inductor, peak currents and capacitors of buck, boost and SEPIC converters (with switching frequencies of common chips).
+
+Code: `app.js` (no dependencies).
 
 ## Games
 

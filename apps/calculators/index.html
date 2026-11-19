@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Electronics Calculators</title>
+  <meta name="description" content="Small calculators for the workbench: feedback dividers of regulators like the MT3608, charge current resistors, LED resistors, voltage dividers, resistor codes, UART baud rates and timers of AVR, CH32 and CH55x, trace widths, vias and DC/DC converters.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chivo:wght@400;700&display=swap">
+  <link rel="stylesheet" href="../../assets/css/site.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav class="site-bar" aria-label="Breadcrumb">
+    <a href="../../">wagiminator</a><span class="sep">/</span><span>Apps</span><span class="sep">/</span><span>Electronics Calculators</span>
+  </nav>
+
+  <main class="app">
+    <header class="app-head">
+      <h1>Electronics Calculators</h1>
+      <p>Small calculators for building the boards: regulators and chargers, resistors and LEDs, the timers and serial ports of microcontrollers, traces and DC/DC converters. Values can be typed like <code>4k7</code>, <code>4.7k</code>, <code>100n</code> or <code>2u2</code>; the results follow as you type.</p>
+    </header>
+
+    <div class="tabs" role="tablist" aria-label="Groups">
+      <button type="button" role="tab" id="t-power" aria-controls="power" aria-selected="true">Regulators &amp; chargers</button>
+      <button type="button" role="tab" id="t-passive" aria-controls="passive" aria-selected="false">Resistors &amp; LEDs</button>
+      <button type="button" role="tab" id="t-mcu" aria-controls="mcu" aria-selected="false">MCU timing</button>
+      <button type="button" role="tab" id="t-pcb" aria-controls="pcb" aria-selected="false">PCB &amp; converters</button>
+    </div>
+
+    <!-- ================================================================ regulators and chargers -->
+    <section class="tabpanel" id="power" role="tabpanel" aria-labelledby="t-power">
+      <article class="panel calc wide" id="feedback">
+        <h2>Feedback divider</h2>
+        <p class="lead">Output voltage of an adjustable regulator: V<sub>out</sub> = V<sub>ref</sub> · (1 + R<sub>top</sub> / R<sub>bottom</sub>). R<sub>top</sub> goes from the output to FB, R<sub>bottom</sub> from FB to ground.</p>
+        <div class="split">
+          <div>
+            <div class="fields">
+              <label class="field span2"><span>Regulator</span><select id="fb-chip"></select></label>
+              <label class="field"><span>V<sub>ref</sub> (FB)</span><span class="unit"><input id="fb-vref" inputmode="decimal" value="0.6"><i>V</i></span></label>
+              <label class="field"><span>Wanted V<sub>out</sub></span><span class="unit"><input id="fb-vout" inputmode="decimal" value="12"><i>V</i></span></label>
+              <label class="field"><span>Series</span><select id="fb-series" class="eseries"></select></label>
+              <label class="field"><span>R<sub>bottom</sub> range</span><select id="fb-range">
+                <option value="1e3,10e3">1 k – 10 k</option><option value="2e3,47e3" selected>2 k – 47 k</option><option value="10e3,100e3">10 k – 100 k</option><option value="47e3,1e6">47 k – 1 M</option>
+              </select></label>
+            </div>
+            <p class="note" id="fb-note"></p>
+            <h3>Check two resistors</h3>
+            <div class="fields">
+              <label class="field"><span>R<sub>top</sub></span><span class="unit"><input id="fb-rt" inputmode="decimal" value="180k"><i>Ω</i></span></label>
+              <label class="field"><span>R<sub>bottom</sub></span><span class="unit"><input id="fb-rb" inputmode="decimal" value="10k"><i>Ω</i></span></label>
+            </div>
+            <p class="result" id="fb-check"></p>
+          </div>
+          <div>
+            <h3>Nearest pairs <span class="hint">(click one to check it)</span></h3>
+            <div class="tbl"><table class="pairs" id="fb-pairs"></table></div>
+          </div>
+        </div>
+      </article>
+
+      <article class="panel calc" id="charger">
+        <h2>Charge current</h2>
+        <p class="lead">The resistor that sets the charge current of a linear Li-ion or LiFePO4 charger.</p>
+        <div class="fields">
+          <label class="field span2"><span>Charger</span><select id="ch-chip"></select></label>
+          <label class="field"><span>Charge current</span><span class="unit"><input id="ch-i" inputmode="decimal" value="500"><i>mA</i></span></label>
+          <label class="field"><span>Series</span><select id="ch-series" class="eseries"></select></label>
+        </div>
+        <p class="result" id="ch-out"></p>
+        <h3>Common values</h3>
+        <div class="tbl"><table class="pairs" id="ch-table"></table></div>
+        <p class="note" id="ch-note"></p>
+      </article>
+
+      <article class="panel calc" id="ldo">
+        <h2>Linear regulator heat</h2>
+        <p class="lead">A linear regulator (78xx, AMS1117, LM317, LDO) turns the voltage difference into heat: P = (V<sub>in</sub> − V<sub>out</sub>) · I.</p>
+        <div class="fields">
+          <label class="field"><span>V<sub>in</sub></span><span class="unit"><input id="ldo-vin" inputmode="decimal" value="12"><i>V</i></span></label>
+          <label class="field"><span>V<sub>out</sub></span><span class="unit"><input id="ldo-vout" inputmode="decimal" value="5"><i>V</i></span></label>
+          <label class="field"><span>Load current</span><span class="unit"><input id="ldo-i" inputmode="decimal" value="100"><i>mA</i></span></label>
+          <label class="field"><span>Quiescent current</span><span class="unit"><input id="ldo-iq" inputmode="decimal" value="5"><i>mA</i></span></label>
+          <label class="field"><span>Package</span><select id="ldo-pkg"></select></label>
+          <label class="field"><span>θ<sub>JA</sub></span><span class="unit"><input id="ldo-th" inputmode="decimal" value="90"><i>°C/W</i></span></label>
+          <label class="field"><span>Ambient</span><span class="unit"><input id="ldo-ta" inputmode="decimal" value="25"><i>°C</i></span></label>
+          <label class="field"><span>T<sub>J</sub> max</span><span class="unit"><input id="ldo-tj" inputmode="decimal" value="125"><i>°C</i></span></label>
+        </div>
+        <p class="result" id="ldo-out"></p>
+        <p class="note">θ<sub>JA</sub> depends on the copper around the part; the presets are typical datasheet values.</p>
+      </article>
+
+      <article class="panel calc" id="battery">
+        <h2>Battery runtime</h2>
+        <p class="lead">Average current of a device that sleeps most of the time, how long a battery lasts and how long it charges.</p>
+        <div class="fields">
+          <label class="field"><span>Capacity</span><span class="unit"><input id="bat-c" inputmode="decimal" value="1000"><i>mAh</i></span></label>
+          <label class="field"><span>Usable</span><span class="unit"><input id="bat-u" inputmode="decimal" value="80"><i>%</i></span></label>
+          <label class="field"><span>Active current</span><span class="unit"><input id="bat-ia" inputmode="decimal" value="10"><i>mA</i></span></label>
+          <label class="field"><span>Active time</span><span class="unit"><input id="bat-d" inputmode="decimal" value="1"><i>%</i></span></label>
+          <label class="field"><span>Sleep current</span><span class="unit"><input id="bat-is" inputmode="decimal" value="5"><i>µA</i></span></label>
+          <label class="field"><span>Charge current</span><span class="unit"><input id="bat-ic" inputmode="decimal" value="500"><i>mA</i></span></label>
+        </div>
+        <p class="result" id="bat-out"></p>
+      </article>
+    </section>
+
+    <!-- ================================================================ resistors and LEDs -->
+    <section class="tabpanel" id="passive" role="tabpanel" aria-labelledby="t-passive" hidden>
+      <article class="panel calc" id="led">
+        <h2>LED series resistor</h2>
+        <p class="lead">R = (V<sub>supply</sub> − n · V<sub>f</sub>) / I, rounded up to the next value of the series.</p>
+        <div class="fields">
+          <label class="field"><span>Supply</span><span class="unit"><input id="led-v" inputmode="decimal" value="5"><i>V</i></span></label>
+          <label class="field"><span>LED colour</span><select id="led-col"></select></label>
+          <label class="field"><span>Forward voltage V<sub>f</sub></span><span class="unit"><input id="led-vf" inputmode="decimal" value="2"><i>V</i></span></label>
+          <label class="field"><span>LEDs in series</span><input id="led-n" inputmode="numeric" value="1"></label>
+          <label class="field"><span>Current</span><span class="unit"><input id="led-i" inputmode="decimal" value="2"><i>mA</i></span></label>
+          <label class="field"><span>Series</span><select id="led-series" class="eseries"></select></label>
+        </div>
+        <p class="result" id="led-out"></p>
+        <p class="note">Modern LEDs are bright at 1–5 mA; 20 mA is the rating, not the target.</p>
+      </article>
+
+      <article class="panel calc" id="ledcc">
+        <h2>LED driver current</h2>
+        <p class="lead">Constant current LED drivers regulate the voltage across a sense resistor: I = V<sub>FB</sub> / R<sub>sense</sub>.</p>
+        <div class="fields">
+          <label class="field span2"><span>Driver</span><select id="cc-chip"></select></label>
+          <label class="field"><span>V<sub>FB</sub></span><span class="unit"><input id="cc-vfb" inputmode="decimal" value="0.204"><i>V</i></span></label>
+          <label class="field"><span>LED current</span><span class="unit"><input id="cc-i" inputmode="decimal" value="20"><i>mA</i></span></label>
+          <label class="field"><span>Series</span><select id="cc-series" class="eseries"></select></label>
+        </div>
+        <p class="result" id="cc-out"></p>
+      </article>
+
+      <article class="panel calc" id="divider">
+        <h2>Voltage divider</h2>
+        <p class="lead">V<sub>out</sub> = V<sub>in</sub> · R<sub>bottom</sub> / (R<sub>top</sub> + R<sub>bottom</sub>), for example to measure a battery with the ADC.</p>
+        <div class="fields">
+          <label class="field"><span>V<sub>in</sub></span><span class="unit"><input id="dv-vin" inputmode="decimal" value="12"><i>V</i></span></label>
+          <label class="field"><span>Wanted V<sub>out</sub></span><span class="unit"><input id="dv-vout" inputmode="decimal" value="3.3"><i>V</i></span></label>
+          <label class="field"><span>Series</span><select id="dv-series" class="eseries"></select></label>
+          <label class="field"><span>R<sub>top</sub> + R<sub>bottom</sub></span><select id="dv-range">
+            <option value="1e3,10e3">1 k – 10 k</option><option value="10e3,100e3" selected>10 k – 100 k</option><option value="100e3,1e6">100 k – 1 M</option><option value="1e6,10e6">1 M – 10 M</option>
+          </select></label>
+        </div>
+        <h3>Nearest pairs <span class="hint">(click one to check it)</span></h3>
+        <div class="tbl"><table class="pairs" id="dv-pairs"></table></div>
+        <h3>Check</h3>
+        <div class="fields">
+          <label class="field"><span>R<sub>top</sub></span><span class="unit"><input id="dv-rt" inputmode="decimal" value="27k"><i>Ω</i></span></label>
+          <label class="field"><span>R<sub>bottom</sub></span><span class="unit"><input id="dv-rb" inputmode="decimal" value="10k"><i>Ω</i></span></label>
+          <label class="field"><span>ADC</span><select id="dv-bits"><option value="8">8 bit</option><option value="10" selected>10 bit</option><option value="12">12 bit</option><option value="16">16 bit</option></select></label>
+          <label class="field"><span>ADC reference</span><span class="unit"><input id="dv-aref" inputmode="decimal" value="3.3"><i>V</i></span></label>
+        </div>
+        <p class="result" id="dv-check"></p>
+      </article>
+
+      <article class="panel calc" id="combo">
+        <h2>Resistor values</h2>
+        <p class="lead">The nearest values of a series, and two resistors in series or parallel for a value that is not in it.</p>
+        <div class="fields">
+          <label class="field"><span>Wanted value</span><span class="unit"><input id="cb-r" inputmode="decimal" value="3k"><i>Ω</i></span></label>
+          <label class="field"><span>Series</span><select id="cb-series" class="eseries"></select></label>
+        </div>
+        <div class="tbl"><table class="pairs" id="cb-out"></table></div>
+      </article>
+
+      <article class="panel calc" id="colour">
+        <h2>Colour code</h2>
+        <p class="lead">Choose the bands, or type a value to see its bands.</p>
+        <div class="fields">
+          <label class="field"><span>Value</span><span class="unit"><input id="co-val" inputmode="decimal" value="4k7"><i>Ω</i></span></label>
+          <label class="field"><span>Bands</span><select id="co-bands"><option value="4">4 bands</option><option value="5">5 bands</option></select></label>
+        </div>
+        <svg class="resistor" id="co-svg" viewBox="0 0 300 70" role="img" aria-label="Resistor with colour bands"></svg>
+        <div class="bands" id="co-sel"></div>
+        <p class="result" id="co-res"></p>
+      </article>
+
+      <article class="panel calc" id="smd">
+        <h2>SMD resistor code</h2>
+        <p class="lead">3-digit, 4-digit and EIA-96 codes printed on SMD resistors, both ways.</p>
+        <div class="fields">
+          <label class="field"><span>Code on the part</span><input id="smd-code" value="472" spellcheck="false" autocapitalize="characters"></label>
+          <label class="field"><span>or value</span><span class="unit"><input id="smd-val" inputmode="decimal" value=""><i>Ω</i></span></label>
+        </div>
+        <p class="result" id="smd-out"></p>
+        <p class="note">EIA-96: two digits for the value (01 = 100 … 96 = 976) and a letter for the multiplier (Z ×0.001, Y/R ×0.01, X/S ×0.1, A ×1, B/H ×10, C ×100, D ×1 k, E ×10 k, F ×100 k). R marks the decimal point: 4R7 = 4.7 Ω.</p>
+      </article>
+    </section>
+
+    <!-- ================================================================ MCU timing -->
+    <section class="tabpanel" id="mcu" role="tabpanel" aria-labelledby="t-mcu" hidden>
+
+      <article class="panel calc span2c" id="timer">
+        <h2>Timer and PWM frequency</h2>
+        <p class="lead">Prescaler and top value for a frequency, with the resolution of the PWM.</p>
+        <div class="fields">
+          <label class="field span2"><span>Timer</span><select id="tm-fam"></select></label>
+          <label class="field"><span>Timer clock</span><span class="unit"><input id="tm-f" inputmode="decimal" value="16" list="clocks"><i>MHz</i></span></label>
+          <label class="field"><span>Wanted frequency</span><span class="unit"><input id="tm-out" inputmode="decimal" value="1k"><i>Hz</i></span></label>
+          <label class="field span2"><span>Mode</span><select id="tm-mode">
+            <option value="ctc">Overflow / CTC / fast PWM: f = clk / (N · (TOP + 1))</option>
+            <option value="pc">Phase correct PWM: f = clk / (2 · N · TOP)</option>
+            <option value="toggle">Toggled pin in CTC mode: f = clk / (2 · N · (TOP + 1))</option>
+          </select></label>
+        </div>
+        <div class="tbl"><table class="pairs" id="tm-table"></table></div>
+        <p class="note" id="tm-note"></p>
+      </article>
+
+      <article class="panel calc" id="cycles">
+        <h2>Cycles and time</h2>
+        <p class="lead">Clock cycles of a delay loop or an interrupt routine as time, and back.</p>
+        <div class="fields">
+          <label class="field"><span>Clock</span><span class="unit"><input id="cy-f" inputmode="decimal" value="16" list="clocks"><i>MHz</i></span></label>
+          <label class="field"><span>Cycles</span><input id="cy-n" inputmode="numeric" value="1000"></label>
+          <label class="field"><span>Time</span><span class="unit"><input id="cy-t" inputmode="decimal" value=""><i>µs</i></span></label>
+        </div>
+        <p class="result" id="cy-out"></p>
+      </article>
+      <article class="panel calc wide" id="uart">
+        <h2>UART baud rate</h2>
+        <p class="lead">Register value, real baud rate and error for a clock; up to about ±2 % works.</p>
+        <div class="split">
+          <div>
+            <div class="fields">
+              <label class="field span2"><span>Microcontroller</span><select id="ua-fam"></select></label>
+              <label class="field"><span>Clock</span><span class="unit"><input id="ua-f" inputmode="decimal" value="16" list="clocks"><i>MHz</i></span></label>
+              <label class="field"><span>Baud rate</span><input id="ua-b" inputmode="numeric" value="115200" list="bauds"></label>
+            </div>
+            <p class="result" id="ua-out"></p>
+          </div>
+          <div>
+            <h3>Common baud rates at this clock</h3>
+            <div class="tbl"><table class="pairs" id="ua-table"></table></div>
+          </div>
+        </div>
+      </article>
+      <datalist id="clocks"><option value="1"><option value="1.2"><option value="4"><option value="8"><option value="9.6"><option value="12"><option value="16"><option value="16.5"><option value="20"><option value="24"><option value="48"><option value="72"><option value="144"></datalist>
+      <datalist id="bauds"><option value="1200"><option value="2400"><option value="4800"><option value="9600"><option value="19200"><option value="38400"><option value="57600"><option value="115200"><option value="230400"><option value="460800"><option value="921600"><option value="1000000"></datalist>
+    </section>
+
+    <!-- ================================================================ PCB and converters -->
+    <section class="tabpanel" id="pcb" role="tabpanel" aria-labelledby="t-pcb" hidden>
+      <article class="panel calc" id="trace">
+        <h2>Trace width</h2>
+        <p class="lead">Width of a copper trace for a current after IPC-2221, with resistance and voltage drop.</p>
+        <div class="fields">
+          <label class="field"><span>Current</span><span class="unit"><input id="tr-i" inputmode="decimal" value="2"><i>A</i></span></label>
+          <label class="field"><span>Temperature rise</span><span class="unit"><input id="tr-dt" inputmode="decimal" value="10"><i>°C</i></span></label>
+          <label class="field"><span>Copper</span><select id="tr-oz"><option value="0.5">0.5 oz (18 µm)</option><option value="1" selected>1 oz (35 µm)</option><option value="2">2 oz (70 µm)</option></select></label>
+          <label class="field"><span>Layer</span><select id="tr-layer"><option value="ext">Outer layer</option><option value="int">Inner layer</option></select></label>
+          <label class="field"><span>Length</span><span class="unit"><input id="tr-len" inputmode="decimal" value="30"><i>mm</i></span></label>
+          <label class="field"><span>Ambient</span><span class="unit"><input id="tr-amb" inputmode="decimal" value="25"><i>°C</i></span></label>
+        </div>
+        <p class="result" id="tr-out"></p>
+        <div class="fields">
+          <label class="field"><span>Check a width</span><span class="unit"><input id="tr-w" inputmode="decimal" value="0.5"><i>mm</i></span></label>
+        </div>
+        <p class="result" id="tr-check"></p>
+      </article>
+
+      <article class="panel calc" id="via">
+        <h2>Via current</h2>
+        <p class="lead">Current of a plated via after IPC-2221 (the barrel as conductor), and how many vias a current needs.</p>
+        <div class="fields">
+          <label class="field"><span>Hole diameter</span><span class="unit"><input id="via-d" inputmode="decimal" value="0.3"><i>mm</i></span></label>
+          <label class="field"><span>Plating</span><span class="unit"><input id="via-t" inputmode="decimal" value="20"><i>µm</i></span></label>
+          <label class="field"><span>Board thickness</span><span class="unit"><input id="via-h" inputmode="decimal" value="1.6"><i>mm</i></span></label>
+          <label class="field"><span>Temperature rise</span><span class="unit"><input id="via-dt" inputmode="decimal" value="10"><i>°C</i></span></label>
+          <label class="field"><span>Current to carry</span><span class="unit"><input id="via-i" inputmode="decimal" value="3"><i>A</i></span></label>
+        </div>
+        <p class="result" id="via-out"></p>
+      </article>
+
+      <article class="panel calc" id="clearance">
+        <h2>Clearance</h2>
+        <p class="lead">Minimum spacing between conductors for a voltage after IPC-2221 (table 6-1).</p>
+        <div class="fields">
+          <label class="field"><span>Voltage (DC or peak AC)</span><span class="unit"><input id="cl-v" inputmode="decimal" value="230"><i>V</i></span></label>
+          <label class="field"><span>Conductors</span><select id="cl-kind">
+            <option value="b2">Outer layer, uncoated (B2)</option><option value="b4">Outer layer, conformal coating (B4)</option><option value="b1">Inner layer (B1)</option>
+          </select></label>
+        </div>
+        <p class="result" id="cl-out"></p>
+        <p class="note">Up to 3050 m above sea level. For mains voltages the safety standards of the device (creepage distances, insulation) apply and ask for more; 230 V AC has a peak of 325 V.</p>
+      </article>
+
+      <article class="panel calc wide" id="dcdc">
+        <h2>DC/DC converter</h2>
+        <p class="lead">Duty cycle, inductor and capacitors of a buck, boost or SEPIC converter, as a starting point before the datasheet.</p>
+        <div class="split">
+          <div>
+            <div class="fields">
+              <label class="field"><span>Type</span><select id="dc-topo"><option value="buck">Buck (step down)</option><option value="boost">Boost (step up)</option><option value="sepic">SEPIC (up and down)</option></select></label>
+              <label class="field"><span>Chip</span><select id="dc-chip"></select></label>
+              <label class="field"><span>V<sub>in</sub> min</span><span class="unit"><input id="dc-vmin" inputmode="decimal" value="3"><i>V</i></span></label>
+              <label class="field"><span>V<sub>in</sub> max</span><span class="unit"><input id="dc-vmax" inputmode="decimal" value="4.2"><i>V</i></span></label>
+              <label class="field"><span>V<sub>out</sub></span><span class="unit"><input id="dc-vout" inputmode="decimal" value="5"><i>V</i></span></label>
+              <label class="field"><span>I<sub>out</sub></span><span class="unit"><input id="dc-iout" inputmode="decimal" value="0.5"><i>A</i></span></label>
+              <label class="field"><span>Switching frequency</span><span class="unit"><input id="dc-f" inputmode="decimal" value="1.2M"><i>Hz</i></span></label>
+              <label class="field"><span>Efficiency</span><span class="unit"><input id="dc-eff" inputmode="decimal" value="85"><i>%</i></span></label>
+              <label class="field"><span>Inductor ripple</span><span class="unit"><input id="dc-r" inputmode="decimal" value="30"><i>%</i></span></label>
+              <label class="field"><span>Output ripple</span><span class="unit"><input id="dc-dv" inputmode="decimal" value="50"><i>mV</i></span></label>
+              <label class="field"><span>Diode V<sub>f</sub></span><span class="unit"><input id="dc-vd" inputmode="decimal" value="0.4"><i>V</i></span></label>
+            </div>
+            <p class="note" id="dc-note"></p>
+          </div>
+          <div>
+            <div class="tbl"><table class="pairs results" id="dc-out"></table></div>
+          </div>
+        </div>
+      </article>
+    </section>
+
+    <section class="panel help" aria-labelledby="help-h">
+      <h2 id="help-h">Good to know</h2>
+      <ul>
+        <li>Each calculator has its own link, for example <a href="#feedback">#feedback</a> for the feedback divider (with the MT3608 of the <a href="https://github.com/wagiminator/Power-Boards">Power Boards</a>), <a href="#uart">#uart</a> or <a href="#trace">#trace</a>. The values you typed are kept in this browser.</li>
+        <li>The results are calculated values for the design; check the limits in the datasheet of the part (maximum currents, voltages and power).</li>
+      </ul>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    Electronics Calculators by <a href="https://github.com/wagiminator">wagiminator</a>. Everything is calculated in your browser.
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
