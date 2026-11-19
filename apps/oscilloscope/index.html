@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>USB Oscilloscope</title>
+  <meta name="description" content="An oscilloscope in the browser for the Hantek 6022BE/BL and its relatives: two channels up to 30 MS/s over WebUSB, trigger, measurements, cursors, spectrum and XY mode.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chivo:wght@400;700&display=swap">
+  <link rel="stylesheet" href="../../assets/css/site.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav class="site-bar" aria-label="Breadcrumb">
+    <a href="../../">wagiminator</a><span class="sep">/</span><span>Apps</span><span class="sep">/</span><span>USB Oscilloscope</span>
+  </nav>
+
+  <main class="app">
+    <header class="app-head">
+      <h1>USB Oscilloscope</h1>
+      <p>The cheap two-channel USB oscilloscopes Hantek 6022BE and 6022BL (and the DSO-6021, Voltcraft DSO-2020 and SainSmart DDS120) in the browser, without installing anything: up to 30 million samples per second, trigger, measurements, cursors, spectrum and XY mode. The open source firmware is loaded into the scope when it is connected.</p>
+    </header>
+
+    <section class="panel bar" aria-label="Device">
+      <div class="row">
+        <button type="button" class="btn btn-primary" id="btn-connect">Connect scope</button>
+        <button type="button" class="btn" id="btn-sim">Simulator</button>
+        <button type="button" class="btn" id="btn-disconnect" hidden>Disconnect</button>
+      </div>
+      <p class="status" id="dev-status" aria-live="polite">Not connected.</p>
+      <div class="row run">
+        <button type="button" class="btn run-btn" id="btn-run" disabled>Run</button>
+        <button type="button" class="btn" id="btn-single" disabled title="Wait for one trigger, then stop">Single</button>
+        <button type="button" class="btn" id="btn-auto" disabled title="Find V/div, time/div and trigger level for the signals">Auto set</button>
+      </div>
+    </section>
+
+    <div class="layout">
+      <section class="panel screen-panel" aria-label="Screen">
+        <div class="screen"><canvas id="screen" aria-label="Oscilloscope screen. Drag the markers at the left (zero lines), right (trigger level) and top (trigger point)."></canvas></div>
+        <div class="screen spec" id="spec-wrap" hidden><canvas id="spec" aria-label="Spectrum"></canvas></div>
+        <p class="readout" id="readout" aria-live="off"></p>
+        <div class="meas"><table class="mt" id="meas" aria-label="Measurements"></table></div>
+      </section>
+
+      <aside class="side">
+        <section class="panel" aria-labelledby="h-h">
+          <h2 id="h-h">Horizontal</h2>
+          <div class="field"><span>Time / div</span>
+            <div class="stepper"><button type="button" class="btn btn-small" id="t-dn" aria-label="Faster">−</button><select id="tdiv" aria-label="Time per division"></select><button type="button" class="btn btn-small" id="t-up" aria-label="Slower">+</button></div>
+          </div>
+          <label class="field"><span>Trigger point <output id="hpos-out"></output></span><input type="range" id="hpos" min="0" max="100" step="1"></label>
+          <label class="field"><span>Sample rate</span><select id="rate"></select></label>
+          <p class="hint" id="rate-info"></p>
+        </section>
+
+        <section class="panel" aria-labelledby="t-h">
+          <h2 id="t-h">Trigger</h2>
+          <div class="seg" role="group" aria-label="Trigger mode" id="trig-mode">
+            <button type="button" data-v="auto">Auto</button><button type="button" data-v="normal">Normal</button><button type="button" data-v="single">Single</button>
+          </div>
+          <div class="row2">
+            <div class="seg" role="group" aria-label="Trigger source" id="trig-src"><button type="button" data-v="0">CH1</button><button type="button" data-v="1">CH2</button></div>
+            <div class="seg" role="group" aria-label="Trigger slope" id="trig-slope"><button type="button" data-v="rise" title="Rising edge">↑ Rise</button><button type="button" data-v="fall" title="Falling edge">↓ Fall</button></div>
+          </div>
+          <div class="row2 lv">
+            <label class="field"><span>Level</span><span class="unit"><input id="trig-level" inputmode="decimal"><i>V</i></span></label>
+            <button type="button" class="btn btn-small" id="trig-50" title="Level to the middle of the signal">50 %</button>
+          </div>
+        </section>
+
+        <section class="panel ch" id="ch0" aria-label="Channel 1"></section>
+        <section class="panel ch" id="ch1" aria-label="Channel 2"></section>
+
+        <section class="panel" aria-labelledby="d-h">
+          <h2 id="d-h">Display</h2>
+          <div class="row2">
+            <div class="seg" role="group" aria-label="Background"><button type="button" id="bg-dark">Black</button><button type="button" id="bg-light">White</button></div>
+          </div>
+          <label class="check"><input type="checkbox" id="cursors"> Time cursors A and B</label>
+          <label class="check"><input type="checkbox" id="xy"> XY mode (CH1 across, CH2 up)</label>
+          <div class="row2">
+            <label class="check"><input type="checkbox" id="fft"> Spectrum of</label>
+            <select id="fft-ch" aria-label="Channel of the spectrum"><option value="0">CH1</option><option value="1">CH2</option></select>
+            <label class="inline">up to <select id="fft-span" aria-label="Frequency range of the spectrum"></select></label>
+          </div>
+        </section>
+
+        <section class="panel" aria-labelledby="c-h">
+          <h2 id="c-h">Calibration</h2>
+          <label class="field"><span>Calibration output</span><select id="calfreq"></select></label>
+          <p class="hint">The square wave at the probe-compensation pins of the scope.</p>
+          <div class="row2">
+            <button type="button" class="btn btn-small" id="btn-zero" disabled title="Connect both inputs to ground first">Zero offsets</button>
+            <button type="button" class="btn btn-small" id="btn-zero-clear" disabled>Forget</button>
+          </div>
+          <p class="hint" id="cal-info"></p>
+        </section>
+
+        <section class="panel" aria-labelledby="x-h">
+          <h2 id="x-h">Export</h2>
+          <div class="row2">
+            <button type="button" class="btn btn-small" id="btn-csv" disabled>CSV of the screen</button>
+            <button type="button" class="btn btn-small" id="btn-png" disabled>Picture (PNG)</button>
+          </div>
+        </section>
+      </aside>
+    </div>
+
+    <section class="panel help" aria-labelledby="help-h">
+      <h2 id="help-h">Good to know</h2>
+      <div class="help-cols">
+        <ul>
+          <li><b>Browser and driver:</b> WebUSB works in Chrome, Edge and Opera on the desktop. Windows needs the WinUSB driver for the scope (install it with Zadig, for the device before and after the firmware is loaded); Linux needs a udev rule for the USB IDs 04b4/04b5 and 8102, macOS nothing.</li>
+          <li><b>Connecting:</b> choose the scope; the firmware is loaded and the scope comes back as an "OpenHantek" device. If the browser asks again, choose it once more. The firmware is the open source firmware of Hantek6022API (GPL), as used by OpenHantek6022; see the <a href="fw/README.txt">notes on the firmware</a>.</li>
+          <li><b>Ranges:</b> 20 mV to 5 V per division with a 1:1 probe (the input takes ±5 V; with the probe at 10:1, ±50 V). Set the probe factor to the switch on the probe. Over range shows a warning at the channel.</li>
+          <li><b>AC coupling</b> works on the DDS120 and on Hantek scopes with the small AC/DC modification; otherwise the inputs are always DC.</li>
+        </ul>
+        <ul>
+          <li><b>Sample rate:</b> chosen from the time base, up to 30 MS/s with one channel and 15 MS/s with two (USB 2.0 is the limit). The analog bandwidth of the 6022BE is about 20 MHz.</li>
+          <li><b>Trigger:</b> Auto shows the signal also without a trigger, Normal waits, Single stops after one trigger. From 100 ms/div the display rolls. Drag the markers on the screen: zero lines (left), trigger level (right), trigger point (top).</li>
+          <li><b>Calibration:</b> the 6022BE/BL and DSO-6021 carry offset and gain values in their EEPROM, which are used. <i>Zero offsets</i> measures the offsets of all ranges again with the inputs connected to ground and keeps them in this browser.</li>
+          <li><b>Measurements</b> use the whole screen: frequency and duty cycle need at least two periods on it.</li>
+        </ul>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    USB Oscilloscope by <a href="https://github.com/wagiminator">wagiminator</a>. Firmware: Hantek6022API by Ho-Ro, based on sigrok's fx2lafw.
+  </footer>
+
+  <script src="js/hantek.js"></script>
+  <script src="js/scope.js"></script>
+  <script src="js/display.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
