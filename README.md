@@ -38,7 +38,7 @@ apps/
   hex-editor/           Hex Editor (BIN, Intel HEX, S-record, UF2, ELF)
   serial-terminal/      Serial Terminal
   oscilloscope/         USB Oscilloscope (Hantek 6022BE/BL, DSO-6021, DSO-2020, DDS120)
-  signal-analyzer/      Signal Analyzer (logic analyzer for Pico, FX2 and sound card)
+  signal-analyzer/      Signal Analyzer (logic analyzer for Pico, CH32X033, FX2 and sound card)
   power-analyzer/       Power Analyzer (control program for the ATtiny814 Power Analyzer)
   power-profiler/       Power Profiler (for the Nordic Power Profiler Kit II)
   display-converter/    Display Converter (pictures and fonts for OLED, LCD, TFT and e-paper)
@@ -378,6 +378,7 @@ Code: `js/hantek.js` (WebUSB, firmware upload, vendor requests, EEPROM, simulato
 A logic analyzer and simple oscilloscope in the browser for hardware that costs a few euros, with protocol decoders.
 
 - Raspberry Pi Pico with the [sigrok-pico](https://github.com/pico-coder/sigrok-pico) firmware over Web Serial (the protocol of the raspberrypi-pico driver of libsigrok): up to 21 digital channels (GP2–GP22) and 3 analog inputs, sample rates from 5 kS/s to 120 MS/s into the Pico's memory, run-length coded transfer, streaming mode for triggered captures, check of the byte count.
+- CH32X033 development board with its logic analyzer firmware (Development-Boards repository), which speaks the same protocol: 8 channels on PA0–PA7, sample rates of 48 MHz divided by an integer up to 8 MS/s, found by its USB ID (16C0:27DD) next to the Pico.
 - FX2 logic analyzers (the "24 MHz 8 channel" Saleae Logic clones with 0925:3881, Cypress FX2 boards with 04b4:8613 and 16 channels, sigrok fx2grok) over WebUSB: the app loads the [fx2lafw](https://sigrok.org/wiki/Fx2lafw) firmware into the chip as sigrok does (built from source, version 0.1.7, GPL; `apps/signal-analyzer/fw/`), then streams 20 kS/s to 24 MS/s (16 channels up to 12 MS/s) with up to 32 transfers in flight and warns when the computer could not keep up.
 - Sound card over Web Audio: one or two analog channels at 44.1 to 192 kHz from any audio input.
 - Trigger on a digital edge or level or an analog level crossing, with 0 to 75 % of the samples before the trigger; single captures or repeated ones like an oscilloscope.
