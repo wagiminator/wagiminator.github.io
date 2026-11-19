@@ -37,6 +37,7 @@ apps/
   tinypro/              XGecu Memory Programmer
   signal-analyzer/      Signal Analyzer (logic analyzer for Pico, FX2 and sound card)
   power-analyzer/       Power Analyzer (control program for the ATtiny814 Power Analyzer)
+  power-profiler/       Power Profiler (for the Nordic Power Profiler Kit II)
   serial-terminal/      Serial Terminal
   calculators/          Electronics Calculators (regulators, resistors, MCU timing, PCB)
   mt3608-sepic/         redirect to the MT3608 calculator in calculators/
@@ -341,6 +342,20 @@ A logic analyzer and simple oscilloscope in the browser for hardware that costs 
 - Files: sigrok sessions (.sr, read and write, for PulseView and sigrok-cli), VCD and CSV (read and write), decoded data as text, the view as PNG. Eight generated demo signals.
 
 Code: `js/capture.js` (data model and block summaries), `js/view.js` (waveform canvas), `js/sources.js` (Pico, FX2, sound card, trigger), `js/decoders.js`, `js/files.js` (ZIP, .sr, VCD, CSV), `js/demo.js`, `app.js` (user interface); no dependencies.
+
+### Power Profiler
+
+A web app for the Nordic Power Profiler Kit II (PPK2) over Web Serial (Chrome, Edge, Opera on the desktop), with a simulator for trying it without the kit.
+
+- Device: source meter (0.8–5 V, power output on/off) or ampere meter mode; the calibration of the kit is read from its metadata and applied to every sample (ranges, offsets, gains, with the usual smoothing after range switches); lost samples are found by the sample counter and shown.
+- Recording: 100 000 samples per second, or 10 000 … 10 per second as averages for long recordings (hours); a limit for the length with the memory it needs. Samples are kept in chunks with a pyramid of block summaries (min, max, sum, count and the logic bits), so any stretch is summed up at once.
+- Chart: current as min–max band with the average line, linear or logarithmic; the logic inputs D0–D7 below; live view of the last seconds, zoom from hours down to single 10 µs samples, selection by dragging, overview bar.
+- Statistics of the visible part and of the selection: duration, average, minimum, maximum, charge (C and mAh), energy; battery runtime for a capacity.
+- Trigger: current above or below a level, or a logic input rising or falling; single (stops) or repeated, with window length and pre-trigger part.
+- Files: recordings saved and opened as `.pprec` (gzip), CSV export of the selection or the visible part.
+- Protocol: commands for metadata (0x19), mode (0x11), voltage (0x0D), power output (0x0C), start/stop (0x06/0x07); samples are 32-bit words with 14-bit ADC value, range, 6-bit counter and the 8 logic bits. Written after the open source PPK2 libraries; not an official Nordic tool.
+
+Code: `js/ppk2.js` (Web Serial, protocol, calibration, simulator), `js/store.js` (recording with summaries), `js/chart.js` (chart), `app.js` (user interface). No dependencies.
 
 ### Power Analyzer
 

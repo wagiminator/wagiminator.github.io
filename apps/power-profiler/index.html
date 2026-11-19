@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Power Profiler</title>
+  <meta name="description" content="The current of a device from nanoamperes to an ampere, 100 000 times a second, with the Power Profiler Kit II in the browser: live chart, logic inputs, statistics of any stretch, trigger, CSV export.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chivo:wght@400;700&display=swap">
+  <link rel="stylesheet" href="../../assets/css/site.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav class="site-bar" aria-label="Breadcrumb">
+    <a href="../../">wagiminator</a><span class="sep">/</span><span>Apps</span><span class="sep">/</span><span>Power Profiler</span>
+  </nav>
+
+  <main class="app">
+    <header class="app-head">
+      <h1>Power Profiler</h1>
+      <p>The current of a device from nanoamperes to an ampere, 100 000 times a second, with the Nordic Power Profiler Kit II on USB. Supply the device or measure in its supply line, watch the current live together with up to eight logic signals, and sum up any stretch: average, peak, charge and energy. Without a PPK2 the simulator shows how it works.</p>
+    </header>
+
+    <div class="layout">
+      <aside class="side">
+        <section class="panel" aria-labelledby="dev-h">
+          <h2 id="dev-h">Device</h2>
+          <div class="row">
+            <button type="button" class="btn btn-primary" id="btn-connect">Connect PPK2</button>
+            <button type="button" class="btn" id="btn-sim">Simulator</button>
+            <button type="button" class="btn" id="btn-disconnect" hidden>Disconnect</button>
+          </div>
+          <p class="status" id="dev-status" aria-live="polite">Not connected.</p>
+          <div class="ctl" id="dev-ctl">
+            <div class="field"><span>Mode</span>
+              <div class="seg" role="group" aria-label="Mode">
+                <button type="button" id="mode-source" aria-pressed="true">Source meter</button>
+                <button type="button" id="mode-ampere" aria-pressed="false">Ampere meter</button>
+              </div>
+            </div>
+            <p class="hint" id="mode-hint"></p>
+            <label class="field"><span id="volt-label">Supply voltage</span>
+              <span class="volt"><input type="range" id="volt-r" min="0.8" max="5" step="0.05" value="3.3" aria-label="Voltage"><span class="unit"><input id="volt" inputmode="decimal" value="3.30" aria-label="Voltage in volts"><i>V</i></span></span>
+            </label>
+            <button type="button" class="btn power" id="dut" aria-pressed="false">Power output off</button>
+          </div>
+        </section>
+
+        <section class="panel" aria-labelledby="rec-h">
+          <h2 id="rec-h">Recording</h2>
+          <div class="grid2">
+            <label class="field"><span>Samples per second</span><select id="rate">
+              <option value="100000">100 000</option><option value="10000">10 000</option><option value="1000">1 000</option><option value="100">100</option><option value="10">10</option>
+            </select></label>
+            <label class="field"><span>Stop after</span><select id="limit">
+              <option value="10">10 s</option><option value="60" selected>1 min</option><option value="600">10 min</option><option value="3600">1 hour</option><option value="36000">10 hours</option><option value="360000">100 hours</option>
+            </select></label>
+          </div>
+          <p class="hint" id="mem"></p>
+          <button type="button" class="btn btn-primary wide" id="btn-rec" disabled>Start recording</button>
+          <p class="status" id="rec-status" aria-live="polite"></p>
+        </section>
+
+        <section class="panel" aria-labelledby="trig-h">
+          <h2 id="trig-h">Trigger</h2>
+          <div class="grid2">
+            <label class="field"><span>Trigger</span><select id="trig">
+              <option value="off">Off</option><option value="single">Single</option><option value="repeat">Repeated</option>
+            </select></label>
+            <label class="field"><span>When</span><select id="trig-src">
+              <option value="up">Current above</option><option value="down">Current below</option><option value="rise">Input rises</option><option value="fall">Input falls</option>
+            </select></label>
+            <label class="field" id="trig-level-f"><span>Level</span><span class="unit"><input id="trig-level" inputmode="decimal" value="1m"><i>A</i></span></label>
+            <label class="field" id="trig-bit-f" hidden><span>Input</span><select id="trig-bit"><option value="0">D0</option><option value="1">D1</option><option value="2">D2</option><option value="3">D3</option><option value="4">D4</option><option value="5">D5</option><option value="6">D6</option><option value="7">D7</option></select></label>
+            <label class="field"><span>Window</span><span class="unit"><input id="trig-win" inputmode="decimal" value="10"><i>ms</i></span></label>
+            <label class="field"><span>Before the trigger</span><span class="unit"><input id="trig-pre" inputmode="decimal" value="20"><i>%</i></span></label>
+          </div>
+          <p class="hint">Single stops the recording after the window; repeated shows each new window.</p>
+          <p class="status" id="trig-status" aria-live="polite"></p>
+        </section>
+
+        <section class="panel" aria-labelledby="file-h">
+          <h2 id="file-h">Files</h2>
+          <div class="row">
+            <button type="button" class="btn btn-small" id="btn-save" disabled>Save recording</button>
+            <button type="button" class="btn btn-small" id="btn-open">Open recording</button>
+            <button type="button" class="btn btn-small" id="btn-csv" disabled>Export CSV</button>
+          </div>
+          <p class="hint">CSV: the selection, or the visible part when nothing is selected.</p>
+          <p class="status" id="file-status" aria-live="polite"></p>
+          <input type="file" id="file" accept=".pprec,.gz" hidden>
+        </section>
+      </aside>
+
+      <div class="mainc">
+        <section class="panel chart-panel" aria-labelledby="chart-h">
+          <h2 id="chart-h" class="vh">Current</h2>
+          <div class="toolbar">
+            <button type="button" class="btn btn-small" id="live" aria-pressed="true" title="Follow the newest samples">Live</button>
+            <select id="win" aria-label="Width of the live view" title="Width of the live view"><option value="1">1 s</option><option value="5" selected>5 s</option><option value="10">10 s</option><option value="30">30 s</option><option value="60">60 s</option></select>
+            <div class="zoom">
+              <button type="button" class="btn btn-small" id="z-out" aria-label="Zoom out">−</button>
+              <button type="button" class="btn btn-small" id="z-in" aria-label="Zoom in">+</button>
+              <button type="button" class="btn btn-small" id="z-fit" title="Show the whole recording (F)">All</button>
+              <button type="button" class="btn btn-small" id="z-sel" title="Zoom to the selection (double click)" disabled>Selection</button>
+            </div>
+            <label class="check"><input type="checkbox" id="log"> Log scale</label>
+            <div class="seg" role="group" aria-label="Dragging">
+              <button type="button" id="drag-sel" aria-pressed="true" title="Dragging selects a stretch">Select</button>
+              <button type="button" id="drag-move" aria-pressed="false" title="Dragging moves the view">Move</button>
+            </div>
+            <div class="bits" id="bits" role="group" aria-label="Logic inputs shown"></div>
+          </div>
+          <div class="chart" id="chart"></div>
+          <p class="hover" id="hover" aria-live="off"></p>
+        </section>
+
+        <section class="panel stats-panel" aria-labelledby="stats-h">
+          <h2 id="stats-h" class="vh">Statistics</h2>
+          <div class="stats">
+            <table class="st" aria-label="Statistics">
+              <thead><tr><th></th><th>Visible</th><th>Selection</th></tr></thead>
+              <tbody id="stats"></tbody>
+            </table>
+            <div class="battery">
+              <label class="field"><span>Battery capacity</span><span class="unit"><input id="bat" inputmode="decimal" value="220"><i>mAh</i></span></label>
+              <p id="bat-out"></p>
+            </div>
+          </div>
+        </section>
+      </div>
+    </div>
+
+    <section class="panel help" aria-labelledby="help-h">
+      <h2 id="help-h">Good to know</h2>
+      <div class="help-cols">
+        <ul>
+          <li><b>Browser:</b> USB access with Web Serial works in Chrome, Edge and Opera on the desktop. On Linux the user needs access to the serial port (group <code>dialout</code> or a udev rule). Use the USB connector of the PPK2 marked <i>DATA/POWER</i>.</li>
+          <li><b>Source meter:</b> the PPK2 supplies the device with 0.8 to 5 V at up to 1 A and measures its current; connect it to <i>VOUT</i> and <i>GND</i>. <b>Ampere meter:</b> the PPK2 sits in the supply line of the device (<i>VIN</i> from the supply, <i>VOUT</i> to the device); enter the voltage of that supply for the energy.</li>
+          <li><b>Logic inputs:</b> D0–D7 of the PPK2 show what the firmware is doing, for example a pin set while the radio sends. Connect the logic port's <i>VCC</i> to the logic level of the device.</li>
+        </ul>
+        <ul>
+          <li><b>Chart:</b> the light band shows the lowest and highest value of each pixel column, the line the average. Wheel or pinch zooms, dragging selects a stretch (or moves the view in <i>Move</i> mode), double click zooms into the selection, the bar below moves through the whole recording. Keys: ←/→, + and −, F, Esc.</li>
+          <li><b>Long recordings:</b> 100 000 samples per second take 0.5 MB per second of memory. For hours, choose fewer samples per second: each sample is then the average of the 10 µs samples.</li>
+          <li><b>Recordings</b> are saved as <code>.pprec</code> (compressed) and can be opened again here; CSV gives time, current and the logic inputs for spreadsheets.</li>
+        </ul>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    Power Profiler by <a href="https://github.com/wagiminator">wagiminator</a>, for the Power Profiler Kit II by Nordic Semiconductor. Everything runs in your browser.
+  </footer>
+
+  <script src="js/store.js"></script>
+  <script src="js/ppk2.js"></script>
+  <script src="js/chart.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
