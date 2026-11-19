@@ -142,6 +142,36 @@
     $("screen").focus();
   }
 
+  // Load a file from a web address, e.g. from a link like
+  //   .../apps/c64-emulator/?file=https://raw.githubusercontent.com/<user>/<repo>/main/game.crt
+  // GitHub page links (github.com/<user>/<repo>/blob/<branch>/<path>) are turned
+  // into the raw file. The server must allow the download (CORS), as GitHub does.
+  function rawUrl(u) {
+    var m = /^https:\/\/github\.com\/([^/]+)\/([^/]+)\/(?:blob|raw)\/(.+)$/.exec(u);
+    return m ? "https://raw.githubusercontent.com/" + m[1] + "/" + m[2] + "/" + m[3] : u;
+  }
+
+  async function openUrl(u) {
+    var url;
+    try { url = new URL(rawUrl(u.trim())); } catch (e) { showError("The link to the file is not a valid web address."); return; }
+    if (url.protocol !== "https:" && url.hostname !== "localhost") { showError("Only files from https:// addresses can be loaded."); return; }
+    var name = decodeURIComponent(url.pathname.split("/").pop() || "file");
+    notice("Loading " + name + " …");
+    try {
+      var r = await fetch(url.href);
+      if (!r.ok) throw new Error(r.status === 404 ? "The file " + name + " was not found (" + url.host + ")." : "The file " + name + " could not be loaded (HTTP " + r.status + ").");
+      var bytes = new Uint8Array(await r.arrayBuffer());
+      if (bytes.length > 64 * 1024 * 1024) throw new Error("The file is too large.");
+      lastFileName = name;
+      var items = await Media.load(name, bytes);
+      notice("");
+      attach(items, true);
+    } catch (e) {
+      notice("");
+      showError(e instanceof TypeError ? "The file " + name + " could not be downloaded from " + url.host + ". The server may not allow it (CORS), or you are offline." : (e.message || String(e)));
+    }
+  }
+
   function attach(items, autostart) {
     var disks = items.filter(function (i) { return i.kind === "disk"; });
     var first = items[0];
@@ -983,6 +1013,8 @@
     $("click-hint").hidden = !settings.sound;
     updateWakeLock();
     requestAnimationFrame(loop);
+    var link = new URLSearchParams(location.search).get("file");
+    if (link) openUrl(link);
   }
   init();
 })();
