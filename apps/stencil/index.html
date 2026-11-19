@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Solder Paste Stencil</title>
+  <meta name="description" content="A 3D-printable solder paste stencil from the Gerber files of a board: the paste layer as openings in a thin plate, with a frame that holds the board and pins for its holes. STL for the printer, SVG for laser cutters.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chivo:wght@400;700&display=swap">
+  <link rel="stylesheet" href="../../assets/css/site.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav class="site-bar" aria-label="Breadcrumb">
+    <a href="../../">wagiminator</a><span class="sep">/</span><span>Apps</span><span class="sep">/</span><span>Solder Paste Stencil</span>
+  </nav>
+
+  <main class="app">
+    <header class="app-head">
+      <h1>Solder Paste Stencil</h1>
+      <p>Makes a solder paste stencil to print yourself from the Gerber files of a board: the paste openings in a thin plate, a frame that holds the board in place and pins that go into its holes. As STL for the 3D printer, or as SVG for a laser cutter or cutting plotter. With the <a href="../interactive-bom/">Interactive BOM</a> for placing the parts, the board is ready for the hot plate or oven.</p>
+    </header>
+
+    <div class="layout">
+      <section class="panel pv" aria-labelledby="pv-h">
+        <div class="pv-head">
+          <h2 id="pv-h">Stencil</h2>
+          <div class="seg" role="group" aria-label="View" id="view"><button type="button" data-v="2d">From above</button><button type="button" data-v="3d">3D, as printed</button></div>
+        </div>
+        <p class="status" id="info" aria-live="polite"></p>
+        <div class="stage" id="stage">
+          <div class="empty" id="empty">
+            <p>Open the Gerber files of a board: the ZIP as it goes to the board house, or the single files together. The paste layer and the board outline are needed; drill files give the holes for the pins.</p>
+            <div class="row center">
+              <button type="button" class="btn btn-primary" id="open2">Open Gerber files</button>
+              <button type="button" class="btn" id="demo">Try a demo board</button>
+            </div>
+          </div>
+          <canvas id="c2d" hidden aria-label="The stencil seen from above as it lies on the board. Click a hole of the board to put a pin into it or take it away."></canvas>
+          <canvas id="c3d" hidden aria-label="3D view of the stencil as it lies on the print bed. Drag to turn, scroll to zoom, double-click to reset."></canvas>
+        </div>
+        <p class="hint" id="view-hint"></p>
+        <ul class="warn" id="warn" aria-live="polite"></ul>
+      </section>
+
+      <aside class="side">
+        <section class="panel" aria-labelledby="b-h">
+          <h2 id="b-h">Board</h2>
+          <div class="drop" id="drop">
+            <button type="button" class="btn btn-primary" id="open">Open Gerber files</button>
+            <input type="file" id="file" multiple hidden>
+            <p>or drop a ZIP or the files here</p>
+          </div>
+          <p class="hint" id="board-info"></p>
+          <div class="field"><span>Side</span>
+            <div class="seg wide" role="group" aria-label="Side of the board" id="side"><button type="button" data-v="top">Top</button><button type="button" data-v="bottom">Bottom</button></div>
+          </div>
+        </section>
+
+        <section class="panel" aria-labelledby="p-h">
+          <h2 id="p-h">Plate and openings</h2>
+          <div class="pair">
+            <label class="field"><span>Thickness (mm)</span><input type="number" id="thick" min="0.05" max="1" step="0.01"></label>
+            <label class="field"><span>Border (mm)</span><input type="number" id="border" min="2" max="40" step="0.5"></label>
+          </div>
+          <label class="field"><span>Openings larger by (mm per side)</span><input type="number" id="offset" min="-0.3" max="0.3" step="0.01"></label>
+          <p class="hint">Negative values make them smaller. Printers often print openings a little too small; the first test print shows how much to add.</p>
+          <label class="check"><input type="checkbox" id="mark"> Cut corner at the top left (shows which way round)</label>
+        </section>
+
+        <section class="panel" aria-labelledby="f-h">
+          <h2 id="f-h">Frame</h2>
+          <div class="seg wide" role="group" aria-label="Frame" id="frame"><button type="button" data-v="none">None</button><button type="button" data-v="pocket">Around the board</button><button type="button" data-v="rect">Rectangle</button></div>
+          <div class="pair" id="frame-opts">
+            <label class="field"><span>Height (mm)</span><input type="number" id="frameh" min="0.4" max="5" step="0.1"></label>
+            <label class="field"><span>Gap to board (mm)</span><input type="number" id="clear" min="0" max="1" step="0.05"></label>
+          </div>
+          <p class="hint" id="frame-hint">The frame stands on the table around the board, which lies in its pocket: with the height of the board (1.6 mm for most), the plate lies flat on the board.</p>
+        </section>
+
+        <section class="panel" aria-labelledby="pin-h">
+          <h2 id="pin-h">Pins</h2>
+          <p class="hint" id="pin-info">Click holes of the board in the view from above to put pins into them.</p>
+          <div class="pair">
+            <label class="field"><span>Thinner than hole (mm)</span><input type="number" id="pinclear" min="0" max="1" step="0.05"></label>
+            <label class="field"><span>Length (mm)</span><input type="number" id="pinlen" min="0.3" max="5" step="0.1"></label>
+          </div>
+        </section>
+
+        <section class="panel" aria-labelledby="o-h">
+          <h2 id="o-h">Files</h2>
+          <label class="field"><span>Name</span><input id="name" spellcheck="false"></label>
+          <div class="pair">
+            <button type="button" class="btn btn-primary" id="stl" disabled>Download STL</button>
+            <button type="button" class="btn" id="svg" disabled>Download SVG</button>
+          </div>
+          <p class="hint" id="file-info"></p>
+        </section>
+      </aside>
+    </div>
+
+    <section class="panel help" aria-labelledby="help-h">
+      <h2 id="help-h">Good to know</h2>
+      <div class="help-cols">
+        <ul>
+          <li><b>Printing:</b> the STL lies as it is printed, the plate flat on the bed and frame and pins upwards; turned over, it goes onto the board. A resin printer gives the finest openings (down to about 0.3 mm); with a filament printer, a thin nozzle and a plate of two layers, pitches from about 0.8 mm work.</li>
+          <li><b>Thickness:</b> 0.10 to 0.15 mm for fine pitch, up to 0.2 mm for larger parts. A thicker plate gives more paste.</li>
+          <li><b>Openings</b> come from the paste layer of the Gerber files, smoothed to the size the printer can make. Openings narrower than 0.25 mm are pointed out.</li>
+        </ul>
+        <ul>
+          <li><b>Frame and pins:</b> the frame with a pocket in the shape of the board holds it in place; pins in mounting holes or other holes keep the stencil from moving. Pins need holes without paste.</li>
+          <li><b>Bottom side:</b> the stencil is made as seen from the bottom, mirrored against the top view of the board.</li>
+          <li><b>SVG:</b> the plate outline and the openings in millimetres at 1:1, for cutting Kapton or Mylar foil with a laser cutter or cutting plotter.</li>
+        </ul>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    Solder Paste Stencil by <a href="https://github.com/wagiminator">wagiminator</a>.
+  </footer>
+
+  <script src="../gerber-viewer/gerber.js"></script>
+  <script src="js/stencil.js"></script>
+  <script src="js/view3d.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
