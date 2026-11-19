@@ -166,7 +166,7 @@
   Pico.prototype.rates = function (cfg) {
     var a = cfg && cfg.analog ? cfg.analog.length : 0;
     // CH32X033: 48 MHz divided by an integer, up to 8 MS/s
-    if (this.ch32) return [5e3, 10e3, 20e3, 50e3, 100e3, 200e3, 250e3, 500e3, 1e6, 2e6, 3e6, 4e6, 6e6, 8e6];
+    if (this.ch32) return [5e3, 10e3, 20e3, 50e3, 100e3, 200e3, 250e3, 500e3, 1e6, 2e6, 3e6, 4e6];   // the DMA of the CH32X033 cannot go faster
     var list = [5e3, 10e3, 20e3, 50e3, 100e3, 200e3, 250e3, 500e3, 1e6, 2e6, 4e6, 5e6, 10e6, 20e6, 25e6, 40e6, 50e6, 100e6, 120e6];
     if (a) list = list.filter(function (r) { return r <= [0, 500e3, 250e3, 160e3][a] && 24e6 % r === 0; });
     return list;
@@ -270,7 +270,7 @@
     clearInterval(poll);
     this.parser = null;
     var m2 = /\$(\d+)\+/.exec(endText), warn = "";
-    if (aborted) warn = "The " + (this.ch32 ? "board" : "Pico") + " stopped early: it could not send the data fast enough. Use a lower sample rate, fewer channels or no trigger" + (this.ch32 ? " (without trigger, up to 16384 samples are taken into its memory at full speed)." : ".");
+    if (aborted) warn = "The " + (this.ch32 ? "board" : "Pico") + " stopped early: it could not " + (this.ch32 ? "take or send the samples" : "send the data") + " fast enough. Use a lower sample rate, fewer channels or no trigger" + (this.ch32 ? " (without trigger, up to 16384 samples are taken into its memory at full speed)." : ".");
     else if (m2 && +m2[1] !== bytes) warn = "Some data got lost on the way (" + m2[1] + " bytes sent, " + bytes + " received).";
     var chs = this.channels();
     var res = rec.capture(cfg.rate, chs.digital.slice(0, nd), aList.map(function (k) { return chs.analog[k]; }), this.ch32 ? "CH32X033 logic analyzer" : "Raspberry Pi Pico");
