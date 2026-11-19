@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gerber Panelizer</title>
+  <meta name="description" content="Put several PCBs or copies of one PCB onto a panel in the browser: tabs with mouse bites or V-score, a frame with fiducials and tooling holes, and Gerber and Excellon files for the board house as ZIP.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chivo:wght@400;700&display=swap">
+  <link rel="stylesheet" href="../../assets/css/site.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav class="site-bar" aria-label="Breadcrumb">
+    <a href="../../">wagiminator</a><span class="sep">/</span><span>Apps</span><span class="sep">/</span><span>Gerber Panelizer</span>
+  </nav>
+
+  <main class="app">
+    <header class="app-head">
+      <h1>Gerber Panelizer</h1>
+      <p>Puts several boards, or many copies of one board, onto a panel: held by tabs with mouse bites or separated by V-score, with a frame, fiducials and tooling holes. The result is a ZIP with Gerber and Excellon files for the board house. Your files stay in your browser.</p>
+    </header>
+
+    <div class="layout">
+      <section class="panel pv" aria-labelledby="pv-h">
+        <div class="pv-head">
+          <h2 id="pv-h">Panel</h2>
+          <div class="row">
+            <div class="seg" role="group" aria-label="Side" id="side"><button type="button" data-v="top">Top</button><button type="button" data-v="bottom">Bottom</button></div>
+            <label class="inline">Colour <select id="mask" aria-label="Solder mask colour"></select></label>
+          </div>
+        </div>
+        <p class="status" id="info" aria-live="polite"></p>
+        <div class="stage" id="stage">
+          <div class="empty" id="empty">
+            <p>Add the Gerber files of a board: a ZIP as it goes to the board house, or the single files together.</p>
+            <div class="row center">
+              <button type="button" class="btn btn-primary" id="add2">Add a board</button>
+              <button type="button" class="btn" id="demo">Try the demo board</button>
+            </div>
+          </div>
+          <canvas id="view" hidden aria-label="Picture of the panel, made from the generated files"></canvas>
+        </div>
+        <ul class="warn" id="warn" aria-live="polite"></ul>
+        <p class="hint">The picture is drawn from the files in the download, read back with the parser of the <a href="../gerber-viewer/">Gerber Viewer</a>.</p>
+      </section>
+
+      <aside class="side">
+        <section class="panel" aria-labelledby="b-h">
+          <h2 id="b-h">Boards</h2>
+          <div class="drop" id="drop">
+            <button type="button" class="btn btn-primary" id="add">Add a board</button>
+            <input type="file" id="file" multiple hidden accept=".zip,.gbr,.ger,.drl,.xln,.txt,.exc,.gtl,.gbl,.gts,.gbs,.gto,.gbo,.gtp,.gbp,.gko,.gm1,.gml,.g1,.g2,.g3,.g4,.cmp,.sol,.nc,.drd">
+            <p>or drop a ZIP or the files of one board here</p>
+          </div>
+          <ol class="boards" id="boards"></ol>
+        </section>
+
+        <section class="panel" aria-labelledby="l-h">
+          <h2 id="l-h">Arrangement</h2>
+          <div class="pair">
+            <label class="field"><span>Boards per row</span><input type="number" id="perrow" min="0" max="50" placeholder="auto"></label>
+            <label class="field"><span>Spacing (mm)</span><input type="number" id="gap" min="0.5" max="20" step="0.1"></label>
+          </div>
+          <div class="seg wide" role="group" aria-label="Separation" id="sep"><button type="button" data-v="tabs">Tabs</button><button type="button" data-v="vscore">V-score</button></div>
+          <div id="tab-opts">
+            <div class="pair">
+              <label class="field"><span>Tab width (mm)</span><input type="number" id="tabw" min="1" max="20" step="0.1"></label>
+              <label class="field"><span>Tabs per edge</span><select id="peredge"><option value="0">Automatic</option><option>1</option><option>2</option><option>3</option><option>4</option></select></label>
+            </div>
+            <label class="check"><input type="checkbox" id="bites"> Mouse bites (rows of small holes)</label>
+            <div class="trio" id="bite-opts">
+              <label class="field"><span>Hole (mm)</span><input type="number" id="bited" min="0.2" max="1.5" step="0.05"></label>
+              <label class="field"><span>Pitch (mm)</span><input type="number" id="bitep" min="0.4" max="3" step="0.05"></label>
+              <label class="field"><span>Into board</span><input type="number" id="biteo" min="-0.5" max="1" step="0.05"></label>
+            </div>
+          </div>
+          <div id="vs-opts" hidden>
+            <p class="hint">The boards touch each other; the score lines run straight across the panel between them. They go into a file of their own.</p>
+            <label class="check"><input type="checkbox" id="vsout"> Draw the score lines on the outline layer too</label>
+          </div>
+        </section>
+
+        <section class="panel" aria-labelledby="f-h">
+          <h2 id="f-h">Frame</h2>
+          <div class="seg wide four" role="group" aria-label="Frame" id="frame"><button type="button" data-v="none">None</button><button type="button" data-v="tb">Top, bottom</button><button type="button" data-v="lr">Left, right</button><button type="button" data-v="all">All round</button></div>
+          <div id="frame-opts">
+            <label class="field"><span>Rail width (mm)</span><input type="number" id="rail" min="2" max="30" step="0.5"></label>
+            <label class="check"><input type="checkbox" id="fid"> Fiducials (three, for the assembly machine)</label>
+            <div class="pair" id="fid-opts">
+              <label class="field"><span>Copper (mm)</span><input type="number" id="fidd" min="0.5" max="3" step="0.1"></label>
+              <label class="field"><span>Mask opening (mm)</span><input type="number" id="fidm" min="1" max="5" step="0.1"></label>
+            </div>
+            <label class="check"><input type="checkbox" id="tool"> Tooling holes (four, not plated)</label>
+            <label class="field" id="tool-opts"><span>Diameter (mm)</span><input type="number" id="toold" min="1" max="5" step="0.05"></label>
+          </div>
+        </section>
+
+        <section class="panel" aria-labelledby="o-h">
+          <h2 id="o-h">Files</h2>
+          <label class="field"><span>Name</span><input id="name" spellcheck="false"></label>
+          <button type="button" class="btn btn-primary wide-btn" id="save" disabled>Download ZIP</button>
+          <ul class="files" id="files"></ul>
+        </section>
+      </aside>
+    </div>
+
+    <section class="panel help" aria-labelledby="help-h">
+      <h2 id="help-h">Good to know</h2>
+      <div class="help-cols">
+        <ul>
+          <li><b>Files:</b> Gerber RS-274X and X2 from KiCad, EasyEDA, Eagle, Altium and others, with Excellon drill files. The layers are found by name and by the X2 attributes; plated and not plated holes stay apart. Inner layers of multilayer boards are kept.</li>
+          <li><b>Tabs</b> join the boards with each other and with the frame across the milled gap. The board house mills along the outline, which runs around boards, tabs and frame. 2 mm spacing is what most board houses mill.</li>
+          <li><b>Mouse bites</b> are rows of small holes where a tab meets a board, so it breaks cleanly. "Into board" moves them a little inside the board edge, so nothing is left standing out after breaking.</li>
+        </ul>
+        <ul>
+          <li><b>V-score</b> needs rectangular boards of the same size: the board house cuts V-grooves from both sides along straight lines. Ask your board house which layer it wants the score lines on.</li>
+          <li><b>Frame:</b> rails for handling and for the assembly machine, with fiducials (bare copper dots) and tooling holes.</li>
+          <li><b>Ordering:</b> board houses often count each design on a panel and may charge extra for panels made by the customer; check their rules before you order.</li>
+        </ul>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    Gerber Panelizer by <a href="https://github.com/wagiminator">wagiminator</a>.
+  </footer>
+
+  <script src="../gerber-viewer/gerber.js"></script>
+  <script src="js/panel.js"></script>
+  <script src="js/demo.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
