@@ -5,8 +5,33 @@
   "use strict";
   var SA = global.SA;
 
-  var BG = "#10141b", LABEL_BG = "#161b24", GRID = "rgba(255,255,255,0.06)", TEXT = "#c9d1dc", DIM = "#7d8899";
-  var CUR = ["#ffd166", "#5ce1e6"], TRIG = "#ff6b6b";
+  // colours of the two backgrounds; FG is the colour of the light overlays (white on black, black on white)
+  var THEMES = {
+    dark: { BG: "#10141b", LABEL_BG: "#161b24", GRID: "rgba(255,255,255,0.06)", TEXT: "#c9d1dc", DIM: "#7d8899", CUR: ["#ffd166", "#5ce1e6"], TRIG: "#ff6b6b",
+      RULER: "#1a2029", OVERFILL: "rgba(76,154,255,0.55)", FG: "255,255,255" },
+    light: { BG: "#ffffff", LABEL_BG: "#f2f4f8", GRID: "rgba(0,0,0,0.07)", TEXT: "#2b2f36", DIM: "#6b7280", CUR: ["#c08a00", "#0f8a92"], TRIG: "#d0312d",
+      RULER: "#e9ecf2", OVERFILL: "rgba(31,111,178,0.55)", FG: "0,0,0" }
+  };
+  var BG, LABEL_BG, GRID, TEXT, DIM, CUR, TRIG, RULER, OVERFILL, FG, LIGHT = false, inkCache = {};
+  function useTheme(name) {
+    var t = THEMES[name] || THEMES.dark;
+    BG = t.BG; LABEL_BG = t.LABEL_BG; GRID = t.GRID; TEXT = t.TEXT; DIM = t.DIM; CUR = t.CUR; TRIG = t.TRIG; RULER = t.RULER; OVERFILL = t.OVERFILL; FG = t.FG;
+    LIGHT = name === "light";
+  }
+  function fg(a) { return "rgba(" + FG + "," + a + ")"; }
+  // a channel colour that reads well on the background: on white, light colours are darkened
+  function ink(col) {
+    if (!LIGHT || !col) return col;
+    if (inkCache[col]) return inkCache[col];
+    var out = col, m = /^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(col), h = /^hsl\(\s*([\d.]+)\s*,\s*([\d.]+)%\s*,\s*([\d.]+)%\s*\)$/i.exec(col);
+    if (m) {
+      var r = parseInt(m[1], 16), g = parseInt(m[2], 16), b = parseInt(m[3], 16), lum = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
+      var f = lum > 0.85 ? 0.32 : lum > 0.6 ? 0.6 : lum > 0.45 ? 0.75 : 0.9;
+      out = "rgb(" + Math.round(r * f) + "," + Math.round(g * f) + "," + Math.round(b * f) + ")";
+    } else if (h) out = "hsl(" + h[1] + "," + h[2] + "%," + Math.min(+h[3], 40) + "%)";
+    return (inkCache[col] = out);
+  }
+  useTheme("dark");
   var MONO = '11px ui-monospace, "Cascadia Mono", "SF Mono", Menlo, Consolas, monospace';
   var SANS = '12px Chivo, system-ui, sans-serif';
   var CW = 6.7;                                 // width of one character of MONO
@@ -29,6 +54,7 @@
     this.hover = null;
     this.cols = null;
     this.lw = 128;
+    this.theme = "dark";
     this.dirty = false;
     var self = this;
     this.ro = new ResizeObserver(function () { self.layout(); });
@@ -152,6 +178,7 @@
 
   // ---------------------------------------------------------------- drawing
   P.draw = function () {
+    useTheme(this.theme);
     var c = this.main.getContext("2d"), d = this.dpr;
     c.setTransform(d, 0, 0, d, 0, 0);
     c.fillStyle = BG; c.fillRect(0, 0, this.W, this.H);
@@ -174,13 +201,13 @@
       else self.drawAnn(c, r, y);
       c.restore();
       self.drawLabel(c, r, y);
-      c.fillStyle = "rgba(255,255,255,0.05)"; c.fillRect(0, y + r.h - 1, self.W, 1);
+      c.fillStyle = fg(0.05); c.fillRect(0, y + r.h - 1, self.W, 1);
       y += r.h;
     });
     // trigger, cursors, hover
     if (this.cap.trigger != null) this.vline(c, this.cap.trigger, TRIG, [4, 3]);
     this.cur.forEach(function (s, i) { if (s != null) self.vline(c, s, CUR[i], null); });
-    if (this.hover != null) this.vline(c, this.hover, "rgba(255,255,255,0.35)", [2, 3]);
+    if (this.hover != null) this.vline(c, this.hover, fg(0.35), [2, 3]);
     this.drawRuler(tk);
     this.drawOver();
   };
@@ -192,7 +219,7 @@
   };
   P.drawLabel = function (c, r, y) {
     c.fillStyle = LABEL_BG; c.fillRect(0, y, this.lw, r.h);
-    c.fillStyle = r.color || TEXT; c.fillRect(0, y + 3, 3, r.h - 6);
+    c.fillStyle = ink(r.color) || TEXT; c.fillRect(0, y + 3, 3, r.h - 6);
     c.font = SANS; c.textBaseline = "middle";
     var maxw = this.lw - 14, name = r.name;
     c.fillStyle = r.kind === "dec" ? DIM : TEXT;
@@ -204,7 +231,7 @@
       var rg = this.analogRange(r.ch);
       c.fillText(fmtV(rg[1]) + " … " + fmtV(rg[0]), 9, y + r.h / 2 + 9);
     }
-    if (r === this.hoverRow) { c.fillStyle = "rgba(255,255,255,0.05)"; c.fillRect(0, y, this.lw, r.h); }
+    if (r === this.hoverRow) { c.fillStyle = fg(0.05); c.fillRect(0, y, this.lw, r.h); }
   };
   function fmtV(v) { var a = Math.abs(v); return a >= 100 ? v.toFixed(0) : a >= 10 ? v.toFixed(1) : v.toFixed(2); }
 
@@ -226,7 +253,7 @@
   };
   P.drawDigital = function (c, r, y) {
     var ch = r.ch, st = ch.store, bit = ch.bit, n = this.cap.n, X = this.lw, W = this.plotW();
-    var yH = y + 6, yL = y + r.h - 7, col = ch.color;
+    var yH = y + 6, yL = y + r.h - 7, col = ink(ch.color);
     c.strokeStyle = col; c.lineWidth = 1.5; c.lineJoin = "bevel";
     var visible = W * this.spp, fill = [];
     if (visible <= 3 * W) {
@@ -287,19 +314,20 @@
   P.drawAnalog = function (c, r, y) {
     var ch = r.ch, st = ch.store, n = this.cap.n, W = this.plotW(), rg = this.analogRange(ch);
     var top = y + 5, h = r.h - 10, ys = function (v) { return top + h - (v - rg[0]) / (rg[1] - rg[0]) * h; };
-    if (rg[0] < 0 && rg[1] > 0) { c.fillStyle = "rgba(255,255,255,0.1)"; c.fillRect(this.lw, Math.round(ys(0)), W, 1); }
+    if (rg[0] < 0 && rg[1] > 0) { c.fillStyle = fg(0.1); c.fillRect(this.lw, Math.round(ys(0)), W, 1); }
     // threshold of a digital channel made from this one
     var self = this;
     this.cap.channels.forEach(function (o) {
-      if (o.from === ch.id) { c.save(); c.strokeStyle = "rgba(255,255,255,0.4)"; c.setLineDash([5, 4]); c.beginPath(); var ty = Math.round(ys(o.level)) + 0.5; c.moveTo(self.lw, ty); c.lineTo(self.W, ty); c.stroke(); c.restore(); }
+      if (o.from === ch.id) { c.save(); c.strokeStyle = fg(0.4); c.setLineDash([5, 4]); c.beginPath(); var ty = Math.round(ys(o.level)) + 0.5; c.moveTo(self.lw, ty); c.lineTo(self.W, ty); c.stroke(); c.restore(); }
     });
-    c.strokeStyle = ch.color; c.lineWidth = 1.3; c.beginPath();
+    var acol = ink(ch.color);
+    c.strokeStyle = acol; c.lineWidth = 1.3; c.beginPath();
     var visible = W * this.spp;
     if (visible <= 2 * W) {
       var s0 = Math.max(0, Math.floor(this.start)), s1 = Math.min(n, Math.ceil(this.start + visible) + 2), d = st.data;
       for (var s = s0; s < s1; s++) { var x = this.xOf(s), yy = ys(d[s]); if (s === s0) c.moveTo(x, yy); else c.lineTo(x, yy); }
       c.stroke();
-      if (this.spp < 1 / 5) { c.fillStyle = ch.color; for (s = s0; s < s1; s++) c.fillRect(this.xOf(s) - 1.5, ys(d[s]) - 1.5, 3, 3); }
+      if (this.spp < 1 / 5) { c.fillStyle = acol; for (s = s0; s < s1; s++) c.fillRect(this.xOf(s) - 1.5, ys(d[s]) - 1.5, 3, 3); }
     } else {
       var t = {};
       for (var i = 0; i < W; i++) {
@@ -322,7 +350,7 @@
   }
   P.drawAnn = function (c, r, y) {
     var list = r.list, X = this.lw, W = this.plotW();
-    c.fillStyle = "rgba(255,255,255,0.025)"; c.fillRect(X, y, W, r.h - 1);
+    c.fillStyle = fg(0.025); c.fillRect(X, y, W, r.h - 1);
     if (!list || !list.length) return;
     var vs = this.start, ve = this.start + W * this.spp, i;
     // binary search on the start sample, then step back to annotations that reach into view
@@ -369,14 +397,15 @@
     c.lineTo(x, y + r); c.quadraticCurveTo(x, y, x + r, y);
   }
   P.drawRuler = function (tk) {
+    useTheme(this.theme);
     var c = this.ruler.getContext("2d"), d = this.dpr, self = this, h = 26;
     c.setTransform(d, 0, 0, d, 0, 0);
-    c.fillStyle = "#1a2029"; c.fillRect(0, 0, this.W, h);
+    c.fillStyle = RULER; c.fillRect(0, 0, this.W, h);
     c.fillStyle = LABEL_BG; c.fillRect(0, 0, this.lw, h);
     if (!tk) return;
     c.font = MONO; c.textBaseline = "middle"; c.fillStyle = DIM;
     c.fillText(this.cap.trigger != null ? "t = 0: trigger" : "time", 9, h / 2);
-    c.strokeStyle = "rgba(255,255,255,0.25)"; c.beginPath();
+    c.strokeStyle = fg(0.25); c.beginPath();
     tk.list.forEach(function (t) {
       if (t.x < self.lw) return;
       var x = Math.round(t.x) + 0.5;
@@ -400,9 +429,10 @@
     if (this.cur[1] != null) mark(this.cur[1], CUR[1], "B");
   };
   P.drawOver = function () {
+    useTheme(this.theme);
     var c = this.over.getContext("2d"), d = this.dpr, h = 20, W = this.W;
     c.setTransform(d, 0, 0, d, 0, 0);
-    c.fillStyle = "#1a2029"; c.fillRect(0, 0, W, h);
+    c.fillStyle = RULER; c.fillRect(0, 0, W, h);
     c.fillStyle = LABEL_BG; c.fillRect(0, 0, this.lw, h);
     c.font = '11px Chivo, system-ui, sans-serif'; c.fillStyle = DIM; c.textBaseline = "middle";
     c.fillText("overview", 9, h / 2);
@@ -425,11 +455,11 @@
       this.overCache = { cap: this.cap, w: pw, act: act };
     }
     var ac = this.overCache.act;
-    c.fillStyle = "rgba(76,154,255,0.55)";
+    c.fillStyle = OVERFILL;
     for (x = 0; x < pw; x++) if (ac[x] > 0) { var hh = Math.max(2, Math.min(1, ac[x]) * (h - 6)); c.fillRect(X + x, h / 2 - hh / 2, 1, hh); }
     var v0 = X + this.start / n * pw, v1 = X + (this.start + pw * this.spp) / n * pw;
-    c.fillStyle = "rgba(255,255,255,0.13)"; c.fillRect(v0, 1, Math.max(2, v1 - v0), h - 2);
-    c.strokeStyle = "rgba(255,255,255,0.55)"; c.lineWidth = 1; c.strokeRect(Math.round(v0) + 0.5, 1.5, Math.max(2, Math.round(v1 - v0)), h - 3);
+    c.fillStyle = fg(0.13); c.fillRect(v0, 1, Math.max(2, v1 - v0), h - 2);
+    c.strokeStyle = fg(0.55); c.lineWidth = 1; c.strokeRect(Math.round(v0) + 0.5, 1.5, Math.max(2, Math.round(v1 - v0)), h - 3);
   };
 
   // ---------------------------------------------------------------- measuring
