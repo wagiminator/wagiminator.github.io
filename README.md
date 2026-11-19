@@ -36,6 +36,7 @@ apps/
   avrisp/               AVR ISP Programmer
   tinypro/              XGecu Memory Programmer
   hex-editor/           Hex Editor (BIN, Intel HEX, S-record, UF2, ELF)
+  oscilloscope/         USB Oscilloscope (Hantek 6022BE/BL, DSO-6021, DSO-2020, DDS120)
   signal-analyzer/      Signal Analyzer (logic analyzer for Pico, FX2 and sound card)
   power-analyzer/       Power Analyzer (control program for the ATtiny814 Power Analyzer)
   power-profiler/       Power Profiler (for the Nordic Power Profiler Kit II)
@@ -343,6 +344,19 @@ View and edit firmware files in the browser; nothing is uploaded.
 - Saving as binary (gaps filled), Intel HEX (16 or 32 bytes per line, with start address), S-record, UF2 (256-byte blocks, family for RP2040, RP2350, SAMD, ESP32, STM32, nRF52) or the changed ELF; only the ticked regions or only the selection.
 
 Code: `js/formats.js` (readers and writers), `js/grid.js` (hex view and editing), `app.js` (user interface). No dependencies.
+
+### USB Oscilloscope
+
+An oscilloscope for the cheap two-channel USB scopes of the Hantek 6022 family over WebUSB (Chrome, Edge, Opera on the desktop): Hantek 6022BE and 6022BL, Hantek DSO-6021, Voltcraft DSO-2020 and (untested) SainSmart DDS120, with a simulator for trying it without a scope.
+
+- Device: the scopes have a Cypress FX2 without firmware of its own; the open source firmware of [Hantek6022API](https://github.com/Ho-Ro/Hantek6022API) by Ho-Ro (also used by OpenHantek6022) is loaded into its RAM at every connect, after which the scope comes back as "OpenHantek" device. The firmware files in `fw/` are built from its source (GPL-3, licence texts and notes in `fw/`). Offsets and gains from the EEPROM of the scope are used; zero offsets of all ranges can be measured again and are kept in the browser.
+- Acquisition: 20 mV … 5 V/div (probe 1× or 10×), DC/AC coupling (AC on the DDS120 and on modified Hantek scopes), 1 µs … 1 s/div; the sample rate follows the time base (up to 30 MS/s with one channel, 15 MS/s with two) or is chosen by hand. From 100 ms/div the display rolls.
+- Trigger: software trigger with hysteresis and sub-sample placement on either channel, rising or falling, Auto, Normal and Single; level and trigger point can be dragged on the screen, as can the zero lines.
+- Screen: 10 × 8 divisions, black or white background, min–max drawing for dense data and dots for single samples, over-range warning, two time cursors with ΔT, 1/ΔT and the voltages at the cursors, XY mode, spectrum (Hann window, dBV, peak frequency) of one channel with a selectable range.
+- Measurements per channel: frequency, period, duty cycle, Vpp, minimum, maximum, mean, RMS and AC RMS. Auto set finds V/div, time/div and the trigger level.
+- Files: the screen as CSV (time and volts) and as PNG.
+
+Code: `js/hantek.js` (WebUSB, firmware upload, vendor requests, EEPROM, simulator), `js/scope.js` (acquisition, trigger, roll mode, measurements, FFT), `js/display.js` (screen), `app.js` (user interface). No dependencies.
 
 ### Signal Analyzer
 
