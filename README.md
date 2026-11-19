@@ -35,6 +35,7 @@ apps/
   serialupdi/           AVR Serial UPDI Programmer
   avrisp/               AVR ISP Programmer
   tinypro/              XGecu Memory Programmer
+  hex-editor/           Hex Editor (BIN, Intel HEX, S-record, UF2, ELF)
   signal-analyzer/      Signal Analyzer (logic analyzer for Pico, FX2 and sound card)
   power-analyzer/       Power Analyzer (control program for the ATtiny814 Power Analyzer)
   power-profiler/       Power Profiler (for the Nordic Power Profiler Kit II)
@@ -328,6 +329,20 @@ Reads, writes and verifies EPROMs, EEPROMs and flash memory with the XGecu TL866
 - Needs Chrome, Edge or Opera on a desktop computer. On Windows the TL866II+ and T48 work with the XGecu driver, the TL866A/CS needs WinUSB (Zadig); on Linux the udev rules shown in the app.
 
 Code: `tinypro.js` holds the programmer protocols, the memory operations and the chip database functions, `chips.js` the chip database (gzip and base64, generated from minipro's infoic.xml as in tinypro.py), `app.js` is the user interface; `/assets/js/firmware.js` is shared with other apps.
+
+### Hex Editor
+
+View and edit firmware files in the browser; nothing is uploaded.
+
+- Formats: raw binary (at a chosen address), Intel HEX (all record types, checksums checked), Motorola S-record (S1–S3, start address), UF2 (with family ID) and ELF (32 and 64 bit, little and big endian). The format is detected from the content.
+- ELF: the image shows the file bytes of the loadable segments at their load addresses (LMA), exactly as `objcopy -O binary/ihex` writes them, with sections (address, load address, size, flags) and symbols (functions and objects, clickable, underlined in the bytes, shown as `<symbol+offset>` in the status line). The *File* view shows the ELF file itself; both views change the same bytes, and *ELF (changed)* saves the patched file.
+- Hex view with virtual scrolling (files of many MB), 8/16/32 bytes per row, a heading row per region with the gap before it, changed bytes marked. Overwrite in hex or text, selection with mouse or Shift+keys, undo/redo, fill the selection with a byte pattern, copy and paste as hex or text.
+- Go to an address or a symbol; find hex bytes (with `??` wildcards) or text, forwards and backwards.
+- Data inspector at the cursor: 8 to 64-bit integers, float, double, little or big endian, text, and the symbol a 32-bit value points to.
+- Checksums of the selection or the saved regions: CRC-32, CRC-16/CCITT-FALSE, CRC-16/MODBUS, CRC-8, 8 and 32-bit sums, two's complement, XOR, SHA-256.
+- Saving as binary (gaps filled), Intel HEX (16 or 32 bytes per line, with start address), S-record, UF2 (256-byte blocks, family for RP2040, RP2350, SAMD, ESP32, STM32, nRF52) or the changed ELF; only the ticked regions or only the selection.
+
+Code: `js/formats.js` (readers and writers), `js/grid.js` (hex view and editing), `app.js` (user interface). No dependencies.
 
 ### Signal Analyzer
 

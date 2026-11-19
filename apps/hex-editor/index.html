@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hex Editor</title>
+  <meta name="description" content="View and edit firmware files in the browser: BIN, Intel HEX, S-record, UF2 and ELF with segments, sections and symbols; search, data inspector, checksums, and saving in any of the formats.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chivo:wght@400;700&display=swap">
+  <link rel="stylesheet" href="../../assets/css/site.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav class="site-bar" aria-label="Breadcrumb">
+    <a href="../../">wagiminator</a><span class="sep">/</span><span>Apps</span><span class="sep">/</span><span>Hex Editor</span>
+  </nav>
+
+  <main class="app">
+    <header class="app-head">
+      <h1>Hex Editor</h1>
+      <p>Look into firmware files and change single bytes: BIN, Intel HEX, S-record, UF2 and ELF with its segments, sections and symbols. Search for bytes or text, read values with the data inspector, check CRCs, and save the result in any of these formats, for example an ELF as HEX for the programmer.</p>
+    </header>
+
+    <section class="panel bar" aria-label="File">
+      <div class="bar-open">
+        <button type="button" class="btn btn-primary" id="btn-open">Open file…</button>
+        <label class="field sm"><span>Read as</span><select id="how"><option value="auto">Detect format</option><option value="bin">Binary</option></select></label>
+        <label class="field sm" id="base-f"><span>Binary at address</span><input id="base" value="0" spellcheck="false"></label>
+        <span class="hint">or drop a file here</span>
+      </div>
+      <div class="bar-save" id="save-bar">
+        <label class="field sm"><span>Save as</span><select id="fmt">
+          <option value="hex">Intel HEX</option><option value="bin">Binary</option><option value="srec">S-record</option><option value="uf2">UF2</option><option value="elf">ELF (changed)</option>
+        </select></label>
+        <label class="field sm" id="opt-fill-f"><span>Fill gaps with</span><input id="opt-fill" value="FF" spellcheck="false"></label>
+        <label class="field sm" id="opt-rl-f"><span>Bytes per line</span><select id="opt-rl"><option value="16">16</option><option value="32">32</option></select></label>
+        <label class="field sm" id="opt-fam-f"><span>UF2 family</span><select id="opt-fam"></select></label>
+        <label class="check" id="opt-sel-f"><input type="checkbox" id="opt-sel"> Only the selection</label>
+        <button type="button" class="btn" id="btn-save" disabled>Save</button>
+      </div>
+      <p class="info" id="info" aria-live="polite"></p>
+    </section>
+
+    <div class="layout">
+      <section class="panel view" aria-label="Bytes">
+        <div class="toolbar">
+          <form id="goto-f" class="tb-group" autocomplete="off">
+            <input id="goto" placeholder="Address or symbol" spellcheck="false" aria-label="Go to address or symbol" list="sym-list">
+            <button type="submit" class="btn btn-small">Go</button>
+          </form>
+          <form id="find-f" class="tb-group" autocomplete="off">
+            <input id="find" placeholder="Find: DE AD ?? EF or text" spellcheck="false" aria-label="Find">
+            <select id="find-mode" aria-label="Search for"><option value="hex">Hex</option><option value="text">Text</option></select>
+            <button type="button" class="btn btn-small" id="find-prev" aria-label="Find previous">◀</button>
+            <button type="submit" class="btn btn-small" id="find-next" aria-label="Find next">▶</button>
+          </form>
+          <div class="tb-group">
+            <button type="button" class="btn btn-small" id="undo" disabled title="Undo (Ctrl+Z)">Undo</button>
+            <button type="button" class="btn btn-small" id="redo" disabled title="Redo (Ctrl+Y)">Redo</button>
+          </div>
+          <form id="fill-f" class="tb-group" autocomplete="off">
+            <input id="fill" value="FF" spellcheck="false" aria-label="Fill value: hex bytes" title="Hex bytes, repeated over the selection">
+            <button type="submit" class="btn btn-small" id="btn-fill" disabled>Fill selection</button>
+          </form>
+          <div class="tb-group right">
+            <div class="seg" role="group" aria-label="View" id="view-seg" hidden>
+              <button type="button" id="v-image" aria-pressed="true" title="The bytes at their load addresses, as programmed">Image</button>
+              <button type="button" id="v-file" aria-pressed="false" title="The ELF file as it is">File</button>
+            </div>
+            <select id="width" aria-label="Bytes per row"><option value="8">8 per row</option><option value="16" selected>16 per row</option><option value="32">32 per row</option></select>
+          </div>
+        </div>
+        <div class="grid" id="grid" tabindex="0" role="application" aria-label="Bytes. Arrow keys move, Shift selects, hex digits or text overwrite, Tab switches between hex and text."></div>
+        <div class="empty" id="empty"><p><b>No file yet.</b> Open a BIN, HEX, S-record, UF2 or ELF file, or drop it here.</p></div>
+        <p class="statusbar" id="status" aria-live="polite"></p>
+      </section>
+
+      <aside class="side">
+        <section class="panel" aria-labelledby="ins-h">
+          <div class="ph"><h2 id="ins-h">Data inspector</h2>
+            <div class="seg small" role="group" aria-label="Byte order"><button type="button" id="le" aria-pressed="true">LE</button><button type="button" id="be" aria-pressed="false">BE</button></div></div>
+          <table class="kv" id="inspector"></table>
+        </section>
+        <section class="panel" aria-labelledby="sum-h">
+          <h2 id="sum-h">Checksums</h2>
+          <p class="hint" id="sum-what"></p>
+          <table class="kv" id="sums"></table>
+        </section>
+        <section class="panel" aria-labelledby="reg-h">
+          <h2 id="reg-h">Regions</h2>
+          <p class="hint">Ticked regions are saved; click a name to go there.</p>
+          <ul class="list" id="regions"></ul>
+        </section>
+        <section class="panel" id="sec-panel" aria-labelledby="sec-h" hidden>
+          <h2 id="sec-h">Sections</h2>
+          <div class="tbl"><table class="lt" id="sections"></table></div>
+        </section>
+        <section class="panel" id="sym-panel" aria-labelledby="sym-h" hidden>
+          <h2 id="sym-h">Symbols</h2>
+          <input id="sym-filter" type="search" placeholder="Filter" aria-label="Filter the symbols" spellcheck="false">
+          <ul class="list syms" id="symbols"></ul>
+          <datalist id="sym-list"></datalist>
+        </section>
+      </aside>
+    </div>
+
+    <section class="panel help" aria-labelledby="help-h">
+      <h2 id="help-h">Good to know</h2>
+      <div class="help-cols">
+        <ul>
+          <li><b>Formats:</b> Intel HEX and S-records with all address records, UF2 (also with family), ELF (32 and 64 bit, Arm, RISC-V, AVR, …) and anything else as binary. The format is detected from the content; <i>Read as Binary</i> shows a HEX file as text bytes.</li>
+          <li><b>ELF:</b> the image shows the loadable segments at their load addresses, as <code>objcopy</code> writes them for the programmer; <i>File</i> shows the ELF file itself. Both edit the same bytes, and <i>ELF (changed)</i> saves the file with the changes. Click a symbol to go to it.</li>
+          <li><b>Saving:</b> only the ticked regions are saved. Binary fills the gaps between regions; a binary starts at the lowest address saved.</li>
+        </ul>
+        <ul>
+          <li><b>Editing:</b> click a byte, then type hex digits (or text in the right column; Tab switches). Shift with arrows or mouse selects; Ctrl+Z and Ctrl+Y undo and redo; Ctrl+A selects everything; Ctrl+C copies the selection as hex. Changed bytes are marked.</li>
+          <li><b>Search:</b> hex bytes with <code>??</code> for any byte, or text; Enter finds the next one. Go to takes an address in hex (<code>0x0800 0000</code>, <code>8000000</code>) or a symbol name.</li>
+          <li><b>Checksums</b> cover the selection, or all ticked regions when only one byte is selected; gaps are left out.</li>
+        </ul>
+      </div>
+    </section>
+  </main>
+
+  <input type="file" id="file" hidden>
+
+  <footer class="site-footer">
+    Hex Editor by <a href="https://github.com/wagiminator">wagiminator</a>. Your files stay on your computer.
+  </footer>
+
+  <script src="js/formats.js"></script>
+  <script src="js/grid.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
