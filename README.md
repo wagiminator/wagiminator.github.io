@@ -45,6 +45,7 @@ apps/
   calculators/          Electronics Calculators (regulators, resistors, MCU timing, PCB)
   mt3608-sepic/         redirect to the MT3608 calculator in calculators/
   gerber-viewer/        Gerber Viewer
+  panelizer/            Gerber Panelizer
   interactive-bom/      Interactive BOM (parts list and board picture for hand soldering)
 games/
   ironfall/             Ironfall (run-and-gun action platformer)
@@ -427,6 +428,19 @@ Shows the top and bottom side of a printed circuit board from its Gerber and dri
 - Download: each side as a PNG with a transparent background at 300, 600 or 1200 dpi (limited to about 50 megapixels).
 
 Code: `gerber.js` reads ZIP archives, recognizes layers, parses Gerber and Excellon files and draws the board, `app.js` is the user interface (no dependencies).
+
+### Gerber Panelizer
+
+Puts several boards, or copies of one board, onto a panel and writes the Gerber and Excellon files of the panel as ZIP.
+
+- Input: the Gerber ZIP of each board (or its single files) from KiCad, EasyEDA, Eagle, Altium and others; layers are found by name and Gerber X2 attributes, plated and non-plated drill files stay apart, inner layers of multilayer boards are kept. A demo board is built in.
+- Arrangement: copies and rotation (0°, 90°, 180°, 270°) per board, boards per row, spacing.
+- Separation: tabs across the milled gap between the boards and to the frame (width, number per edge), found automatically along facing edges and reaching into boards of any shape; mouse bites (hole, pitch, offset into the board). Or V-score for rectangular boards: score lines in a file of their own, optionally on the outline layer as well.
+- Frame: rails at top and bottom, left and right or all round, with three fiducials (copper dot and mask opening) and four non-plated tooling holes.
+- Output: every command of the source files moved and rotated (apertures turned, aperture macros instantiated in mm and turned, arcs, regions, polarity, step and repeat), written as Gerber X2 in mm (`.GTL`, `.GBL`, `.GTS`, `.GBS`, `.GTO`, `.GBO`, `.GTP`, `.GBP`, `.G1`…, `.GKO`), Excellon for plated and non-plated holes and slots. The milling outline is the boundary of boards, tabs and frame.
+- Preview: the panel is drawn from the generated files, read back with the parser of the Gerber Viewer; top or bottom, solder mask colour; warnings for boards without tab, rails too narrow, V-score with shaped boards.
+
+Code: `js/panel.js` (reading Gerber commands, layout, tabs, mouse bites, outline, writers), `js/demo.js` (demo board), `app.js` (user interface); reading and drawing by `../gerber-viewer/gerber.js`. No other dependencies.
 
 ### Interactive BOM
 
