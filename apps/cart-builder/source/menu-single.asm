@@ -745,20 +745,14 @@ prepare_run:
         iny
         bne !-
 !:      jsr NormalVIC
-        jsr $E453       // load BASIC vectors
-        jsr $E3BF       // init BASIC RAM
-        //jsr $A68E       // set current character pointer to start of basic - 1
-        //jsr $E422       // print BASIC start up messages
-        //ldx #$FB
-        //txs                     
         jsr FindFirstDrive
 
 startCopy:
-        ldy #CartCopyLen    // copy routine to 0340
-!:      lda CartCopy0340,y
-        sta $0340,y
+        ldy #CartCopyLen    // copy routine to 0340 (up to 255 bytes)
+!:      lda CartCopy0340-1,y
+        sta $0340-1,y
         dey
-        bpl !-
+        bne !-
         ldy #0              //calculate program table element address
         sty TableAddress+1  //each table element is 9 bytes
         lda ProgramIndex    //ProgramIndex*8
@@ -803,23 +797,48 @@ sc2:    lda ProgramTable    //add Program table address
         beq sc3     //if high byte of start address != 0
         lda #$4c    //change lda to jmp
         sta pstart  //else, run as basic
-sc3:    jmp $0340
+sc3:    lda drive   //keep the drive found above
+        sta CartDrive
+        // The program is copied and started from the CHRIN vector once the
+        // BASIC ROM has initialised itself. Only the KERNAL jump table, the
+        // KERNAL vectors and the BASIC cold start vector are used, so this
+        // works with every KERNAL/BASIC (also with replacements like the
+        // MEGA65 Open ROMs, which have no BASIC routines at the addresses
+        // of the Commodore ROM).
+        sei
+        lda $0324           //hook into CHRIN
+        sta OldChrin
+        lda $0325
+        sta OldChrin+1
+        lda #<CartCopy
+        sta $0324
+        lda #>CartCopy
+        sta $0325
+        cli
+        jmp ($a000)         //BASIC cold start, then CHRIN -> CartCopy
 
 CartCopy0340:
 .pseudopc $0340 {
+CartCopy:
+        stx SaveX           //BASIC expects X and Y unchanged by CHRIN
+        sty SaveY
+        lda OldChrin        //unhook CHRIN
+        sta $0324
+        lda OldChrin+1
+        sta $0325
         ldx PrgLenLo:#00    //program length lo
         ldy PrgLenHi:#00    //program length hi
+        inx                 //copy exactly length bytes
+        iny
 cbank:  lda CartBank:#00    //cartridge start bank
         sta $de00           //cartridge bank switching address
-caddr:  lda CartAddr:$8200  //cartridge start adr
-        sta MemAddr:$0801   //c64 memory start adr
-        dex
-        cpx #$ff
-        bne cc1
+caddr:  dex
+        bne ccopy
         dey
-        cpy #$ff
         beq crtoff
-cc1:    inc MemAddr
+ccopy:  lda CartAddr:$8200  //cartridge start adr
+        sta MemAddr:$0801   //c64 memory start adr
+        inc MemAddr
         bne cc2
         inc MemAddr+1
 cc2:    inc CartAddr
@@ -844,12 +863,29 @@ crtoff: lda #$ff        //turn off cartridge
         sta $30
         sta $32
         sta $af
+        lda #$00        //RAM up to $9fff is free now
+        ldx #$a0
+        sta $0283       //top of memory
+        stx $0284
+        sta $37         //end of BASIC RAM
+        stx $38
+        sta $33         //string area
+        stx $34
+        lda CartDrive:#08
+        sta drive
 pstart: lda $0801       //start the program
-        lda #00         // basic start
-        jsr $A871       // clr
-        jsr $A533       // re-link
-        jsr $A68E       // set current character pointer to start of basic - 1
-        jmp $A7AE       // run
+        ldx #3          //else type RUN and return to BASIC
+!:      lda RunKeys,x
+        sta $0277,x
+        dex
+        bpl !-
+        lda #4
+        sta $c6
+        ldx SaveX:#00
+        ldy SaveY:#00
+        jmp OldChrin:$f157  //original CHRIN reads the RUN command
+RunKeys:
+        .byte $52,$55,$4e,$0d   // "RUN" + RETURN (PETSCII)
 }
 .label CartCopyLen = *-CartCopy0340
 
