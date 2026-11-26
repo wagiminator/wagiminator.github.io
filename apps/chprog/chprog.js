@@ -43,7 +43,12 @@
 
     async open() {
       const d = this.dev;
-      if (!d.opened) await d.open();
+      if (!d.opened) {
+        try { await d.open(); } catch (e) {
+          if (e && e.name === "NetworkError") throw new ProgError("The bootloader could not be opened. Close other programs that use it (WCHISPTool, chprog) and try again.");
+          throw e;
+        }
+      }
       try { await d.selectConfiguration(1); } catch (e) {
         if (!d.configuration) throw new ProgError("Failed to access the USB device. Check the permissions (Linux: udev rules).");
       }
@@ -205,9 +210,10 @@
       await this.writeFlash(data, CMD.CODE_VERIFY, progress);
     }
 
-    // Reboot (old bootloaders do not reply)
+    // Reboot (old bootloaders do not reply, and the chip may leave the bus
+    // before the transfer completes, which the browser reports as an error)
     async exit() {
-      await this.command(STR_REBOOT, TIMEOUT_REBOOT);
+      try { await this.command(STR_REBOOT, TIMEOUT_REBOOT); } catch (e) { /* the chip has restarted */ }
     }
 
     // Write or verify: encrypted data in packets of 56 bytes
