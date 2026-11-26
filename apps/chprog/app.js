@@ -28,7 +28,7 @@
 
   function errorText(err) {
     if (err && err.name === "SecurityError") return "The browser may not access this device. On Linux add the udev rules, on Windows install the WinUSB driver with Zadig (see Driver setup).";
-    if (err && err.name === "NetworkError") return "The bootloader could not be opened. Close other programs that use it (WCHISPTool, chprog) and try again.";
+    if (err && err.name === "NetworkError") return "The USB transfer failed. The chip may have left bootloader mode; check the cable, put the chip into bootloader mode again and retry.";
     return err && err.message ? err.message : String(err);
   }
 
