@@ -41,7 +41,7 @@ CATEGORY = {
 GENRE = {
     "alien-armada": "Shoot 'em up", "bubble-puff": "Platformer", "deep-diner": "Arcade", "dreamhop": "Platformer",
     "feather-frenzy": "Shooting gallery", "garden-siege": "Tower defense", "ironfall": "Run and gun", "mole-mayhem": "Artillery",
-    "mossling-march": "Puzzle", "pearl-panic": "Puzzle", "primordia": "Shoot 'em up", "starhaul": "Space trading and combat",
+    "modern-general": "Turn-based strategy", "mossling-march": "Puzzle", "pearl-panic": "Puzzle", "primordia": "Shoot 'em up", "starhaul": "Space trading and combat",
     "starlane-command": "Real-time strategy", "sunset-highway": "Racing", "woolly-wallop": "Physics puzzle", "x-abyss": "Shoot 'em up",
 }
 
