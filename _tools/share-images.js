@@ -8,7 +8,7 @@ const path = require("path");
 
 const ROOT = path.join(__dirname, "..");
 const BASE = process.env.BASE || "http://localhost:8123/";
-const SKIP = new Set(["_template", "mt3608-sepic"]);
+const SKIP = new Set(["_template", "mt3608-sepic", "modern-general"]);
 
 (async () => {
   const only = process.argv.slice(2);

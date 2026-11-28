@@ -1,4 +1,4 @@
-/* Modern General: main loop, scaling, fullscreen, screen wake lock, state machine */
+/* Aviation General: main loop, scaling, fullscreen, screen wake lock, state machine */
 "use strict";
 
 (function (MG) {

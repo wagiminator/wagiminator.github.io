@@ -1,4 +1,4 @@
-/* Modern General: the battle screen – camera, selection, orders, overlays, the side panel,
+/* Aviation General: the battle screen – camera, selection, orders, overlays, the side panel,
    playing back what happened (moves, fire, explosions) and running the computer's turn.      */
 "use strict";
 
@@ -352,7 +352,7 @@
     const s = S();
     c.fillStyle = "#11161b"; c.fillRect(0, 0, W, TOP);
     c.fillStyle = "#2c3640"; c.fillRect(0, TOP - 1, W, 1);
-    D.text(c, "MODERN GENERAL", 14, 21, 17, "#ffd36a", "left", 700, D.LOGO);
+    D.text(c, "AVIATION GENERAL", 14, 21, 17, "#ffd36a", "left", 700, D.LOGO);
     D.text(c, "Turn " + s.turn + " / " + s.maxTurn, 210, 21, 19, D.C.text, "left", 700);
     let x = 330;
     const objs = G.objectives();

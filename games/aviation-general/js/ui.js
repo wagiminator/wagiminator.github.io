@@ -1,4 +1,4 @@
-/* Modern General: title, briefing and help screens */
+/* Aviation General: title, briefing and help screens */
 "use strict";
 
 (function (MG) {
@@ -76,7 +76,7 @@
         c.fillStyle = "rgba(10,12,16,0.35)"; c.fillRect(W - 420, 180, 380, (this.items || []).length * 40 + 10);
       } else background(c, 0);
       c.shadowColor = "rgba(0,0,0,0.7)"; c.shadowBlur = 14;
-      D.text(c, "MODERN GENERAL", W / 2, 78, 64, "#ffd36a", "center", 900, D.LOGO);
+      D.text(c, "AVIATION GENERAL", W / 2, 78, 64, "#ffd36a", "center", 900, D.LOGO);
       D.text(c, "Hex Strategy · Combined Arms Warfare · 2031", W / 2, 136, 24, "#ffffff", "center", 700);
       D.text(c, "Attack helicopters, air assault, air defence, mines and bridges", W / 2, 166, 18, "#e8edf2", "center", 600);
       c.shadowBlur = 0;

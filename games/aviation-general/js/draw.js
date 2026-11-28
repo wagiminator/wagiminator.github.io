@@ -1,4 +1,4 @@
-/* Modern General: drawing – the map (pre-rendered from the terrain data), units on their
+/* Aviation General: drawing – the map (pre-rendered from the terrain data), units on their
    party plates, markers and effects. Units are drawn by code until photo sprites exist:
    a file assets/units/<type>.webp replaces the drawn silhouette automatically.            */
 "use strict";

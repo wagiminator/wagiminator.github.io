@@ -1,4 +1,4 @@
-/* Modern General: unit types of the two armies in 2031.
+/* Aviation General: unit types of the two armies in 2031.
    Values are game abstractions (0–20 scale), not real-world performance data.
    mob: track | wheel | foot | air.  range: direct fire in hexes.  ind: indirect fire range.
    aaRange/air: air-defence reach and attack.  armor: false for soft-skinned trucks.             */
