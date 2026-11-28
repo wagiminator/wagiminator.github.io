@@ -557,7 +557,7 @@
     { t: "FARP", s: "Low on fuel or missiles? Fly next to a FARP and choose Rearm: the helicopter lands until your next turn and comes back full.", done: () => G.unitsOf(player()).some((u) => u.type.heli && u.landed) },
     { t: "Air assault", s: "Select an NH90 next to infantry and choose Embark. Fly them over the river and choose Disembark on open ground.", done: () => S().units.some((u) => u.side === player() && u.cargo) },
     { t: "Paratroopers", s: "The Fallschirmjäger wait under SPECIALS in the panel. Choose Jump and pick a drop zone – away from enemy air defence.", done: () => !S().units.some((u) => u.side === player() && u.type.para && u.reserve && u.alive) },
-    { t: "Long range attack UAV", s: "Under SPECIALS choose Strike and click any enemy you have reconnoitred (red hexes). The drones fly around known air defence where they can; air defence on the way shoots some down. A fresh flight of 10 drones is ready every turn.", done: () => S().units.some((u) => u.side === player() && u.type.strike && u.strikeTurn) },
+    { t: "Long range attack UAV", s: "Under SPECIALS choose Strike and click any enemy you have reconnoitred (red hexes). The drones fly around known air defence where they can; air defence on the way shoots some down, at most 5 per system. A fresh flight of 10 drones is ready every turn.", done: () => S().units.some((u) => u.side === player() && u.type.strike && u.strikeTurn) },
     { t: "Take the objectives", s: "Capture all flags before time runs out. Scout ahead and keep the helicopters fed. Esc opens the menu with How to play. Good luck!" },
   ];
   function drawCoach(c) {
