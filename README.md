@@ -72,6 +72,7 @@ games/
   pearl-panic/          Pearl Panic (marble-shooting puzzle game)
   woolly-wallop/        Woolly Wallop (slingshot physics game)
   starhaul/             Starhaul (3D space trading and combat game)
+  aviation-general/     Aviation General (turn-based hex strategy game with helicopters)
 ```
 
 Every app lives in its own folder under `apps/` and is reachable at `https://wagiminator.github.io/apps/<app-name>/`. Apps are plain HTML, CSS and JavaScript without a build step and run entirely in the browser. Browser games live in the same way under `games/<game-name>/` and are listed under "Games" on the start page.
@@ -746,6 +747,22 @@ Code: `js/physics.js` (rigid-body engine), `js/levels.js` (materials, sheep and 
 - Keyboard, mouse and gamepad controls, three graphics settings, fullscreen mode (F).
 
 Code: `src/galaxy.js` (galaxies, systems, markets, ranks), `src/ships.js` (ships, equipment, 3D models), `src/world.js` (renderer, star systems, effects), `src/flight.js` (flight model, AI, weapons, docking, encounters), `src/state.js` (commander, saving, highscores), `src/hud.js` (cockpit HUD and scanner), `src/ui.js` (screens), `src/main.js` (main loop), bundled with three.js into `js/starhaul.js` by `build.sh`; `js/audio.js` (music and sound); see `games/starhaul/README.md`.
+
+### Aviation General
+
+Turn-based hex strategy game as a homage to Panzer General (SSI, 1994), set in a fictional conflict in 2031 with the focus on helicopters. A tutorial battle teaches the game; winning it unlocks four campaigns – Germany, Russia, the USA and China – of eight battles each. The photo maps, ground textures, title picture and unit pictures were made with an image generator (Higgsfield), every map photo from a layout plan of the battle's terrain data so picture and rules agree; rotors are drawn by code and all sound is synthesized with the Web Audio API. Name, scenario and artwork are original; unit values are game abstractions, and the game has no connection to any manufacturer or armed force.
+
+- Hex map with terrain that matters: Go / Slow Go / No Go for tracked, wheeled and foot units, four height levels, line of sight blocked by forests, towns and ridges, rivers crossed only at bridges and fords or by amphibious vehicles.
+- Attack helicopters (Tiger, H145M LKH with Spike ER2, Ka-52M, AH-64E, Z-10ME …) with pop-up attacks, fuel and ammunition, rearmed and refuelled at a FARP where they are open to artillery and drones.
+- Layered air defence that fires on every aircraft and drone it can see; overlays show its reach, and flight paths turn orange or red where they are in danger.
+- Air assault with transport helicopters, Fallschirmjäger jumping from a transport aircraft once per battle, and long range attack UAVs that strike any reconnoitred enemy once per turn and route around known air defence.
+- Engineers, hidden and scattered minefields, mine clearing, bridge layers and bridges blown by the enemy; loitering munitions and reconnaissance drones; infantry that digs in.
+- Computer opponent that knows only what its units spot and attacks or defends along a cost map across bridges, fords and mine lanes.
+- 32 generated campaign battles on maps from 27 × 18 to 36 × 23 hexes, attacks and defences, with prestige for reinforcements carried over between battles; automatic saving at the start of every turn.
+- A synthesized sound for every weapon system with an outdoor echo.
+- Mouse, touch, keyboard and gamepad controls, fullscreen mode.
+
+Code: `js/data.js` (nations, unit types), `js/rules.js` (movement, line of sight, combat, air defence, logistics, air assault, specials), `js/maps.js` (tutorial battle), `js/campaign.js` (campaign map generator and orders of battle), `js/ai.js` (computer opponent), `js/play.js` (map screen, side panel, coach, animations), `js/draw.js` (map, units, drawing helpers), `js/audio.js` (weapon sounds and music), `js/ui.js` (screens), `js/util.js` (helpers), `js/main.js` (main loop); see `games/aviation-general/README.md`.
 
 ## Start page
 

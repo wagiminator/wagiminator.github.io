@@ -339,11 +339,36 @@
 
   // transport aircraft (paradrop) and attack drones flying along their path
   const TRANSPORT = { DE: "a400m", RU: "il76", US: "c17", CN: "y20" };
+  // hex paths zigzag from centre to centre: smooth them into a flowing curve once,
+  // then move along it by distance, so position and heading change without jitter
+  function flightCurve(p) {
+    if (p.pts) return p.pts;
+    let pts = p.path.map((i) => [D.cx(i), D.cy(i)]);
+    if (pts.length === 1) pts.push([pts[0][0] + 1, pts[0][1]]);
+    for (let pass = 0; pass < 4; pass++) {
+      const out = [pts[0]];
+      for (let k = 1; k < pts.length - 1; k++) {
+        let x = 0, y = 0, w = 0;
+        for (let d = -2; d <= 2; d++) { const q = pts[U.clamp(k + d, 0, pts.length - 1)], f = 3 - Math.abs(d); x += q[0] * f; y += q[1] * f; w += f; }
+        out.push([x / w, y / w]);
+      }
+      out.push(pts[pts.length - 1]); pts = out;
+    }
+    const len = [0];
+    for (let k = 1; k < pts.length; k++) len.push(len[k - 1] + Math.hypot(pts[k][0] - pts[k - 1][0], pts[k][1] - pts[k - 1][1]));
+    p.pts = { pts, len, total: len[len.length - 1] || 1 };
+    return p.pts;
+  }
+  function curveAt(cv, d) {
+    d = U.clamp(d, 0, cv.total);
+    let k = 1; while (k < cv.len.length - 1 && cv.len[k] < d) k++;
+    const a = cv.pts[k - 1], b = cv.pts[k], r = (d - cv.len[k - 1]) / ((cv.len[k] - cv.len[k - 1]) || 1);
+    return [U.lerp(a[0], b[0], r), U.lerp(a[1], b[1], r)];
+  }
   function pathPos(p, q) {
-    const n = p.path.length - 1, k = U.clamp(q, 0, 1) * n, i0 = Math.floor(k), a = p.path[i0], b = p.path[Math.min(n, i0 + 1)], r = k - i0;
-    // the heading looks a little ahead, so turns are smooth
-    const ka = Math.min(n, i0 + 2), kb = Math.max(0, i0 - 1);
-    return { x: U.lerp(D.cx(a), D.cx(b), r), y: U.lerp(D.cy(a), D.cy(b), r), ang: Math.atan2(D.cy(p.path[ka]) - D.cy(p.path[kb]), D.cx(p.path[ka]) - D.cx(p.path[kb])) || 0 };
+    const cv = flightCurve(p), d = U.clamp(q, 0, 1) * cv.total, L = D.R * 1.2;
+    const [x, y] = curveAt(cv, d), a = curveAt(cv, d - L), b = curveAt(cv, d + L);
+    return { x, y, ang: Math.atan2(b[1] - a[1], b[0] - a[0]) || 0 };
   }
   function drawAircraft(c, p) {
     const age = P.now - p.t0; if (age < 0) return;
@@ -532,7 +557,7 @@
     { t: "FARP", s: "Low on fuel or missiles? Fly next to a FARP and choose Rearm: the helicopter lands until your next turn and comes back full.", done: () => G.unitsOf(player()).some((u) => u.type.heli && u.landed) },
     { t: "Air assault", s: "Select an NH90 next to infantry and choose Embark. Fly them over the river and choose Disembark on open ground.", done: () => S().units.some((u) => u.side === player() && u.cargo) },
     { t: "Paratroopers", s: "The Fallschirmjäger wait under SPECIALS in the panel. Choose Jump and pick a drop zone – away from enemy air defence.", done: () => !S().units.some((u) => u.side === player() && u.type.para && u.reserve && u.alive) },
-    { t: "Long range attack UAV", s: "Under SPECIALS choose Strike and click any enemy you have reconnoitred (red hexes). The drones fly around known air defence where they can; air defence on the way shoots some down. Once per turn.", done: () => S().units.some((u) => u.side === player() && u.type.strike && (u.strikeTurn || !u.alive)) },
+    { t: "Long range attack UAV", s: "Under SPECIALS choose Strike and click any enemy you have reconnoitred (red hexes). The drones fly around known air defence where they can; air defence on the way shoots some down. A fresh flight of 10 drones is ready every turn.", done: () => S().units.some((u) => u.side === player() && u.type.strike && u.strikeTurn) },
     { t: "Take the objectives", s: "Capture all flags before time runs out. Scout ahead and keep the helicopters fed. Esc opens the menu with How to play. Good luck!" },
   ];
   function drawCoach(c) {
