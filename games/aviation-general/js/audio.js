@@ -1,4 +1,4 @@
-/* Modern General: synthesized sound effects and a quiet drum-and-pad loop (Web Audio API) */
+/* Aviation General: synthesized sound effects and a quiet drum-and-pad loop (Web Audio API) */
 "use strict";
 
 (function (MG) {

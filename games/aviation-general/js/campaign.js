@@ -1,4 +1,4 @@
-/* Modern General: the campaigns – a map generator (rivers, ridges, forests, towns, roads and
+/* Aviation General: the campaigns – a map generator (rivers, ridges, forests, towns, roads and
    bridges from a seed), the four armies' eight battles each, the orders of battle and the
    player's progress. Every battle is built from a fixed seed, so it is the same every time.  */
 "use strict";
@@ -244,10 +244,12 @@
       for (let k = 0; k < n(1 + i * 0.35); k++) E.push("ifv");
       for (let k = 0; k < n(0.6 + i * 0.3); k++) E.push("arty");
       for (let k = 0; k < n(1 + i * 0.3); k++) E.push("shorad");
-      if (i >= 1) E.push("apc", "mlayer", "atk", "farp");
+      E.push("atk", "farp"); // every battle has helicopters on both sides
+      if (i >= 1) E.push("apc", "mlayer");
       if (i >= 2) E.push("sam", "mlrs", "lm", "eng");
       if (i >= 3) E.push("rmine", "recon");
-      if (i >= 5) E.push("sam", "atk", "lm");
+      if (i >= 3) E.push("atk");
+      if (i >= 5) E.push("sam", "lm");
       E.push("uav");
     } else { // enemy attacks
       for (let k = 0; k < n(3 + i * 0.6); k++) E.push(k % 2 ? "mbt2" : "mbt");
@@ -255,7 +257,8 @@
       for (let k = 0; k < n(2 + i * 0.4); k++) E.push("inf");
       E.push("apc", "arty", "shorad", "atk", "farp", "uav", "eng", "bridge");
       if (i >= 2) E.push("mlrs", "lm", "sam", "recon");
-      if (i >= 5) E.push("atk", "mbt", "ifv", "clear", "arty");
+      if (i >= 3) E.push("atk");
+      if (i >= 5) E.push("mbt", "ifv", "clear", "arty");
     }
     void d;
     return { P, E };

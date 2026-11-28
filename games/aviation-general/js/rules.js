@@ -1,4 +1,4 @@
-/* Modern General: the rules – hex grid, terrain and mobility (Go / Slow Go / No Go), line of sight,
+/* Aviation General: the rules – hex grid, terrain and mobility (Go / Slow Go / No Go), line of sight,
    spotting, combat, logistics (FARP), mines, bridges, air defence, air assault and turn order.
    Nothing in here draws; the screens read the state and the event list.                         */
 "use strict";

@@ -1,4 +1,4 @@
-/* Modern General: the computer commander. It only knows what its own units have spotted,
+/* Aviation General: the computer commander. It only knows what its own units have spotted,
    defends or attacks the objectives, and plays one unit at a time so the screen can show it.
    It never makes air assaults or parachute drops, and its FARP stays where it is.              */
 "use strict";

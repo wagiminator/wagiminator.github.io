@@ -1,4 +1,4 @@
-# Modern General
+# Aviation General
 
 A turn-based hex strategy game for the browser in the spirit of *Panzer General* (SSI, 1994), set in a fictional conflict in 2031. A tutorial battle teaches the game: a Bundeswehr brigade has to cross a river held by Russian forces. Winning it unlocks four campaigns – Germany, Russia, the USA and China – of eight battles each. The focus is on the helicopters: attack helicopters, air assault, FARP logistics and enemy air defence.
 The 33 photo maps (tutorial and campaigns), the ground textures, the title picture and the 77 unit pictures were made with an image generator (Higgsfield). Each map photo was generated from a layout plan rendered from the battle's terrain data, so picture and rules agree; if a map photo is missing, the game composites a map from the ground textures instead. The helicopters' main rotors are drawn and turned by code. All sound is synthesized with the Web Audio API. There are no other assets and no build step. The name, scenario and artwork are original, and the game has no connection to any manufacturer or armed force. Unit values are game abstractions, not real performance data.

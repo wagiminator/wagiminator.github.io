@@ -1,4 +1,4 @@
-/* Modern General: scenarios. The map is built from features (forests, towns, ridges, the river,
+/* Aviation General: scenarios. The map is built from features (forests, towns, ridges, the river,
    roads) so that the terrain data and the drawn map always agree.                                  */
 "use strict";
 

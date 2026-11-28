@@ -26,7 +26,7 @@ import subprocess
 SITE = "https://wagiminator.github.io/"
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 AUTHOR = {"@type": "Person", "name": "wagiminator", "url": "https://github.com/wagiminator"}
-SKIP = {"_template", "mt3608-sepic"}     # template, redirect page
+SKIP = {"_template", "mt3608-sepic", "modern-general"}     # template, redirect pages
 
 # applicationCategory of the apps (schema.org); default DeveloperApplication
 CATEGORY = {
@@ -41,7 +41,7 @@ CATEGORY = {
 GENRE = {
     "alien-armada": "Shoot 'em up", "bubble-puff": "Platformer", "deep-diner": "Arcade", "dreamhop": "Platformer",
     "feather-frenzy": "Shooting gallery", "garden-siege": "Tower defense", "ironfall": "Run and gun", "mole-mayhem": "Artillery",
-    "modern-general": "Turn-based strategy", "mossling-march": "Puzzle", "pearl-panic": "Puzzle", "primordia": "Shoot 'em up", "starhaul": "Space trading and combat",
+    "aviation-general": "Turn-based strategy", "mossling-march": "Puzzle", "pearl-panic": "Puzzle", "primordia": "Shoot 'em up", "starhaul": "Space trading and combat",
     "starlane-command": "Real-time strategy", "sunset-highway": "Racing", "woolly-wallop": "Physics puzzle", "x-abyss": "Shoot 'em up",
 }
 

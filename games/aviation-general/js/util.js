@@ -1,4 +1,4 @@
-/* Modern General: helpers, input (mouse, touch, keyboard, gamepad) and storage */
+/* Aviation General: helpers, input (mouse, touch, keyboard, gamepad) and storage */
 "use strict";
 window.MG = window.MG || {};
 
@@ -33,12 +33,18 @@ window.MG = window.MG || {};
   U.binom = (n, p) => { let k = 0; for (let i = 0; i < n; i++) if (U.random() < p) k++; return k; };
 
   /* ---------- Storage ---------- */
+  // saves from the time the game was called Modern General are taken over once
+  try {
+    if (localStorage.getItem("aviationgeneral.progress") == null) {
+      for (const k of ["progress", "save", "tutorialOff"]) { const v = localStorage.getItem("moderngeneral." + k); if (v != null) localStorage.setItem("aviationgeneral." + k, v); }
+    }
+  } catch (e) { /* storage not available */ }
   MG.Store = {
     get(k, d) {
-      try { const v = localStorage.getItem("moderngeneral." + k); return v == null ? d : JSON.parse(v); } catch (e) { return d; }
+      try { const v = localStorage.getItem("aviationgeneral." + k); return v == null ? d : JSON.parse(v); } catch (e) { return d; }
     },
     set(k, v) {
-      try { localStorage.setItem("moderngeneral." + k, JSON.stringify(v)); } catch (e) { /* storage not available */ }
+      try { localStorage.setItem("aviationgeneral." + k, JSON.stringify(v)); } catch (e) { /* storage not available */ }
     },
   };
 
