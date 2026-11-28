@@ -39,7 +39,7 @@
       "Spring 2031. Russian forces hold the east bank of the Lauter and the ridge behind it. " +
       "Your brigade has to cross and take all four objectives – Ostwalde, Hill 312, Furtbach and the city of Kreuzfeld – within 16 turns.\n\n" +
       "The enemy will blow the bridges once you come close. Your helicopters are your trump card: Tigers and LKHs with Spike ER2 strike from behind the ridges, " +
-      "two NH90s can fly infantry across, and a company of Fallschirmjäger waits at the airfield for a jump. " +
+      "two NH90s can fly infantry across, and a company of Fallschirmjäger waits for a jump and long range attack drones are ready under SPECIALS. " +
       "Keep the helicopters fed from your FARPs and keep them out of sight of Pantsir and Tor.",
     hints: [
       "Fly low behind hills and forests: air defence only fires at what it can see.",
@@ -116,6 +116,7 @@
       U("pzgren", "DE", 5, 6);
       U("fsj", "DE", 6, 9);
       U("fsj", "DE", -1, -1, { reserve: true });
+      U("lrauv", "DE", -1, -1, { reserve: true });
       U("pio", "DE", 5, 11);
       U("fennek", "DE", 7, 5);
       U("pzh2000", "DE", 1, 8); U("pzh2000", "DE", 1, 11);

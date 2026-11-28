@@ -777,8 +777,7 @@
         u.cargo = null; g.cargoOf = 0; g.idx = u.idx; g.moved = g.attacked = true; g.noAttack = true; g.still = false;
         u.attackedNoMove = true; u.attacked = true;
         ev({ type: "move", u: g.id, path: [u.idx, u.idx], at: 0, dur: 0.2 });
-        G.log(g.type.name + " lands from the " + T.name + ".", "#cfe3ff"); sfx("steps");
-        const m = S.hex[u.idx].mine;
+        G.log(g.type.name + " lands from the " + T.name + ".", "#cfe3ff"); sfx("steps");        const m = S.hex[u.idx].mine;
         if (m && m.side !== g.side && !m.lane) mineStrike(g, u.idx);
         if (g.alive && nearEnemy(g)) { damage(g, 1); G.log("Hot landing zone: " + g.type.name + " takes fire −1.", "#ffb36a"); }
         if (g.alive) capture(g);
@@ -803,8 +802,12 @@
     S.actor = u;
     const entry = G.idx(S.scen.dropEdge[u.side], G.row(target));
     const path = G.line(entry, target);
+    // the aircraft flies on past the drop zone and leaves the map
+    const dir = G.col(target) >= G.col(entry) ? 1 : -1;
+    const beyond = G.idx(U.clamp(G.col(target) + dir * 6, 0, G.W - 1), G.row(target));
+    const flight = path.concat(G.line(target, beyond).slice(1));
     sfx("plane");
-    ev({ type: "plane", path, side: u.side, dur: path.length * 0.1 });
+    ev({ type: "plane", kind: "transport", path: flight, side: u.side, dur: flight.length * 0.1 });
     // air defence along the flight path fires at the aircraft; the losses fall on the paratroopers
     const fired = new Set();
     for (const i of path) {
@@ -842,6 +845,74 @@
       if (m && m.side !== u.side && !m.lane) mineStrike(u, land);
     }
     if (u.alive) { capture(u); G.log(u.type.name + " jump" + (land === target ? "" : ", scattered by the wind") + ".", "#cfe3ff"); }
+    G.updateVis();
+    G.checkOver();
+    return true;
+  };
+
+  /* ======================= long range attack UAV (a special, like the paratroopers) ======================= */
+  const H_LRUAV = 1.6; // the drones fly low, under the radar
+  G.strikeTargets = (u) => {
+    const S = G.S, out = new Set();
+    for (const t of S.units) if (G.alive(t) && t.side !== u.side && S.spot[u.side].has(t.id) && !G.isFlying(t)) out.add(t.idx);
+    return [...out];
+  };
+  G.canStrike = (u) => u.reserve && u.alive && u.type.strike && G.S.side === u.side && u.strikeTurn !== G.S.turn && u.str > 0;
+  // the route: from the own map edge to the target, around the known air defence where possible
+  G.strikeRoute = function (u, target) {
+    const S = G.S, N2 = G.N, cost = new Float64Array(N2).fill(Infinity), prev = new Int32Array(N2).fill(-1), h = U.heap();
+    const pen = new Float64Array(N2);
+    for (let i = 0; i < N2; i++) pen[i] = G.threat(u.side, i, H_LRUAV) * 40;
+    const col = S.scen.dropEdge ? S.scen.dropEdge[u.side] : 0;
+    for (let r = 0; r < G.H; r++) { const i = G.idx(col, r); cost[i] = 1 + pen[i]; h.push(cost[i], i); }
+    while (h.size) {
+      const [c, i] = h.pop();
+      if (c > cost[i]) continue;
+      if (i === target) break;
+      for (const j of NB[i]) { const nc = c + 1 + (j === target ? 0 : pen[j]); if (nc < cost[j]) { cost[j] = nc; prev[j] = i; h.push(nc, j); } }
+    }
+    const path = []; for (let i = target; i >= 0; i = prev[i]) path.unshift(i);
+    return path;
+  };
+  G.uavStrike = function (u, target) {
+    const S = G.S;
+    if (!G.canStrike(u) || !G.strikeTargets(u).includes(target)) return false;
+    const t = (() => { const g = G.at(target, false); if (g && g.side !== u.side) return g; const a = G.at(target, true); return a && a.side !== u.side ? a : null; })();
+    if (!t) return false;
+    S.actor = u;
+    u.strikeTurn = S.turn;
+    const path = G.strikeRoute(u, target), step = 0.08;
+    sfx("drone");
+    ev({ type: "plane", kind: "uav", path, side: u.side, dur: path.length * step, n: Math.max(1, Math.ceil(u.str / 3)) });
+    const fired = new Set();
+    for (const i of path) {
+      tick(step);
+      for (const a of S.units) {
+        if (u.str <= 0) break;
+        if (!G.alive(a) || a.side === u.side || !a.type.aaRange || a.type.air <= 0 || a.landed || (a.type.aam ? a.aam : a.ammo) <= 0 || fired.has(a.id)) continue;
+        if (G.dist(a.idx, i) > a.type.aaRange || !G.los(a.idx, i, G.eyeH(a), H_LRUAV)) continue;
+        fired.add(a.id);
+        if (a.type.aam) a.aam -= 1; else a.ammo -= a.type.missile ? 1 : 0.5;
+        a.revealed = S.half + 1;
+        { const a0 = S.actor; S.actor = a; sfx(G.weaponSound(a, u, "aa")); S.actor = a0; }
+        ev({ type: "fire", from: a.idx, to: i, kind: "aa", side: a.side, toAir: true });
+        const k = Math.min(u.str, U.binom(Math.max(1, Math.round(a.str * 0.4)), U.clamp(G.hitProb(a.type.air - 7), 0.05, 0.7)));
+        if (k) { u.str -= k; ev({ type: "hit", i, txt: "−" + k, air: true }); ev({ type: "boom", i, size: 0.35, air: true }); }
+        G.log(u.type.name + " under fire from " + a.type.name + (k ? ": −" + k + " drones" : ": missed"), "#ffb0a0");
+      }
+    }
+    if (u.str <= 0) { u.alive = false; u.reserve = false; G.log("All attack drones shot down before reaching the target!", "#ff6a6a"); G.updateVis(); return true; }
+    tick(0.15);
+    let p = G.hitProb((t.type.armor ? u.type.hard : u.type.soft) - defValue(t, null, true));
+    if (t.type.aps && t.type.armor) p *= 0.6;
+    const k = Math.min(t.str, U.binom(u.str, p));
+    sfx("explode");
+    ev({ type: "boom", i: target, size: 1.1 });
+    if (k) ev({ type: "hit", i: target, txt: "−" + k });
+    t.revealed = S.half + 1;
+    G.log(u.type.name + " (" + u.str + ") strikes " + t.type.name + (k ? ": −" + k : ": no effect"), "#cfe3ff");
+    S.sides[u.side].prestige += k * 4;
+    damage(t, k);
     G.updateVis();
     G.checkOver();
     return true;
