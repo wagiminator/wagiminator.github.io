@@ -295,8 +295,26 @@
     // deployment
     const rnd = U.rng(seed + 7);
     const taken = new Set();
-    const okFor = (T, i) => {
+    // the largest area each running gear can drive around in; units are only placed there, so none is boxed in
+    // by forest, rocks, marsh or the map edge
+    const regions = {};
+    const region = (T, side) => {
+      const key = T.mob + (T.amph ? "a" : "");
+      if (regions[key]) return regions[key];
+      let best = new Set();
+      const done = new Uint8Array(N);
+      for (let s0 = 0; s0 < N; s0++) {
+        if (done[s0] || !isFinite(G.stepCost(T, -1, s0, side))) continue;
+        const seen = new Set([s0]), q = [s0];
+        while (q.length) { const i = q.pop(); for (const j of G.nb(i)) if (!seen.has(j) && isFinite(G.stepCost(T, i, j, side))) { seen.add(j); q.push(j); } }
+        for (const i of seen) done[i] = 1;
+        if (seen.size > best.size) best = seen;
+      }
+      return (regions[key] = best);
+    };
+    const okFor = (T, i, side) => {
       const h = S.hex[i];
+      if (!T.isAir && !region(T, side).has(i)) return false;
       if (h.river || h.t === "water" || h.t === "mountain") return false;
       if (T.mob === "track" && h.t === "forest" && !h.road) return false;
       if (T.mob === "wheel" && h.t === "swamp") return false;
@@ -305,7 +323,7 @@
     const place = (tid, side, zone, o = {}) => {
       const T = MG.TYPES[tid];
       if (o.reserve) return G.newUnit(tid, side, -1, o);
-      const c = []; for (let i = 0; i < N; i++) if (zone(i) && okFor(T, i)) c.push(i);
+      const c = []; for (let i = 0; i < N; i++) if (zone(i) && okFor(T, i, side)) c.push(i);
       if (!c.length) return null;
       c.sort((a, b) => (o.score ? o.score(b) - o.score(a) : 0) + (rnd() - 0.5) * (o.jitter == null ? 3 : o.jitter));
       const i = c[0];
