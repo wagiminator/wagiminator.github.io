@@ -857,7 +857,7 @@
     for (const t of S.units) if (G.alive(t) && t.side !== u.side && S.spot[u.side].has(t.id) && !G.isFlying(t)) out.add(t.idx);
     return [...out];
   };
-  G.canStrike = (u) => u.reserve && u.alive && u.type.strike && G.S.side === u.side && u.strikeTurn !== G.S.turn && u.str > 0;
+  G.canStrike = (u) => u.reserve && u.alive && u.type.strike && G.S.side === u.side && u.strikeTurn !== G.S.turn;
   // the route: from the own map edge to the target, around the known air defence where possible
   G.strikeRoute = function (u, target) {
     const S = G.S, N2 = G.N, cost = new Float64Array(N2).fill(Infinity), prev = new Int32Array(N2).fill(-1), h = U.heap();
@@ -881,14 +881,17 @@
     if (!t) return false;
     S.actor = u;
     u.strikeTurn = S.turn;
+    // a fresh flight of 10 drones every turn – losses on the way do not carry over
+    u.str = 10;
+    let n = 10;
     const path = G.strikeRoute(u, target), step = 0.08;
     sfx("drone");
-    ev({ type: "plane", kind: "uav", path, side: u.side, dur: path.length * step, n: Math.max(1, Math.ceil(u.str / 3)) });
+    ev({ type: "plane", kind: "uav", path, side: u.side, dur: path.length * step, n: 4 });
     const fired = new Set();
     for (const i of path) {
       tick(step);
       for (const a of S.units) {
-        if (u.str <= 0) break;
+        if (n <= 0) break;
         if (!G.alive(a) || a.side === u.side || !a.type.aaRange || a.type.air <= 0 || a.landed || (a.type.aam ? a.aam : a.ammo) <= 0 || fired.has(a.id)) continue;
         if (G.dist(a.idx, i) > a.type.aaRange || !G.los(a.idx, i, G.eyeH(a), H_LRUAV)) continue;
         fired.add(a.id);
@@ -896,21 +899,21 @@
         a.revealed = S.half + 1;
         { const a0 = S.actor; S.actor = a; sfx(G.weaponSound(a, u, "aa")); S.actor = a0; }
         ev({ type: "fire", from: a.idx, to: i, kind: "aa", side: a.side, toAir: true });
-        const k = Math.min(u.str, U.binom(Math.max(1, Math.round(a.str * 0.4)), U.clamp(G.hitProb(a.type.air - 7), 0.05, 0.7)));
-        if (k) { u.str -= k; ev({ type: "hit", i, txt: "−" + k, air: true }); ev({ type: "boom", i, size: 0.35, air: true }); }
+        const k = Math.min(n, U.binom(Math.max(1, Math.round(a.str * 0.4)), U.clamp(G.hitProb(a.type.air - 7), 0.05, 0.7)));
+        if (k) { n -= k; ev({ type: "hit", i, txt: "−" + k, air: true }); ev({ type: "boom", i, size: 0.35, air: true }); }
         G.log(u.type.name + " under fire from " + a.type.name + (k ? ": −" + k + " drones" : ": missed"), "#ffb0a0");
       }
     }
-    if (u.str <= 0) { u.alive = false; u.reserve = false; G.log("All attack drones shot down before reaching the target!", "#ff6a6a"); G.updateVis(); return true; }
+    if (n <= 0) { G.log("All attack drones shot down before reaching the target!", "#ff6a6a"); G.updateVis(); return true; }
     tick(0.15);
     let p = G.hitProb((t.type.armor ? u.type.hard : u.type.soft) - defValue(t, null, true));
     if (t.type.aps && t.type.armor) p *= 0.6;
-    const k = Math.min(t.str, U.binom(u.str, p));
+    const k = Math.min(t.str, U.binom(n, p));
     sfx("explode");
     ev({ type: "boom", i: target, size: 1.1 });
     if (k) ev({ type: "hit", i: target, txt: "−" + k });
     t.revealed = S.half + 1;
-    G.log(u.type.name + " (" + u.str + ") strikes " + t.type.name + (k ? ": −" + k : ": no effect"), "#cfe3ff");
+    G.log(u.type.name + " (" + n + ") strikes " + t.type.name + (k ? ": −" + k : ": no effect"), "#cfe3ff");
     S.sides[u.side].prestige += k * 4;
     damage(t, k);
     G.updateVis();
