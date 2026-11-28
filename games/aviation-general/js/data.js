@@ -89,6 +89,7 @@
     plabridge: { nat: "CN", name: "Bridge layer", cls: "Bridge layer", icon: "bridge", mob: "track", move: 6, sight: 2, def: 12, cost: 140, bridge: true },
     placlear: { nat: "CN", name: "Mine-clearing vehicle", cls: "Mine-clearing vehicle", icon: "clear", mob: "track", move: 5, sight: 2, range: 1, soft: 4, hard: 2, def: 13, ammo: 3, cost: 170, clear: "full" },
     /* ---------------- both ---------------- */
+    lrauv: { nat: "*", name: "Long Range Attack UAV", cls: "One-way attack drones (special)", icon: "uav", mob: "air", uav: true, move: 0, sight: 0, soft: 14, hard: 16, airDef: 3, def: 2, cost: 300, strike: true },
     farp: { nat: "*", name: "FARP", cls: "Forward arming and refuelling point", icon: "farp", mob: "wheel", move: 5, sight: 1, def: 4, cost: 120, farp: true, armor: false },
   });
 
@@ -104,7 +105,7 @@
   }
 
   // photo sprites that exist in assets/units/ (top-down, facing right, transparent WebP)
-  MG.SPRITES = ["ah64e", "bmp3", "bmr3", "btr82a", "ch4", "csk", "farp", "fennek", "fsj", "gmz3", "himars", "hq17a", "irist", "isdm", "jltv", "ka52", "kodiak", "lancet", "leguan", "leo2a8", "lkh", "lkh_rkt", "lmteam", "luna", "m1074", "m109a7", "m1150", "m1a2", "m1e3", "m2a4", "mars2", "mi8", "mq1c", "mshorad", "msr", "msta", "mtu72", "nasams", "nh90", "orlan", "pantsir", "pcl181", "pgl625", "phl16", "pio", "plaab", "plabridge", "placlear", "plaeng", "plainf", "plalm", "plamine", "puma", "pzgren", "pzh2000", "sappers", "skyranger", "stryker", "swblade", "t80bvm", "t90m", "tiger", "tigr", "torm2", "tornados", "uh60m", "usab", "useng", "usinf", "vdv", "volcano", "z10", "z20", "zbd04a", "zbl08", "ztz100", "ztz99a"];
+  MG.SPRITES = ["a400m", "ah64e", "bmp3", "bmr3", "btr82a", "c17", "ch4", "csk", "farp", "fennek", "fsj", "gmz3", "himars", "hq17a", "il76", "irist", "isdm", "jltv", "ka52", "kodiak", "lancet", "leguan", "leo2a8", "lkh", "lkh_rkt", "lmteam", "lrauv", "luna", "m1074", "m109a7", "m1150", "m1a2", "m1e3", "m2a4", "mars2", "mi8", "mq1c", "mshorad", "msr", "msta", "mtu72", "nasams", "nh90", "orlan", "pantsir", "pcl181", "pgl625", "phl16", "pio", "plaab", "plabridge", "placlear", "plaeng", "plainf", "plalm", "plamine", "puma", "pzgren", "pzh2000", "sappers", "skyranger", "stryker", "swblade", "t80bvm", "t90m", "tiger", "tigr", "torm2", "tornados", "uh60m", "usab", "useng", "usinf", "vdv", "volcano", "y20", "z10", "z20", "zbd04a", "zbl08", "ztz100", "ztz99a"];
 
   // rotor hubs in the 256 × 256 helicopter pictures (the blades are drawn and turned by code)
   MG.ROTORS = {
@@ -128,9 +129,9 @@
   };
   // which unit type fills each role in an army
   MG.ROLES = {
-    DE: { mbt: "leo2a8", mbt2: "leo2a8", ifv: "puma", apc: "puma", inf: "pzgren", para: "fsj", eng: "pio", recon: "fennek", arty: "pzh2000", mlrs: "mars2", rmine: "mars2", shorad: "skyranger", sam: "irist", atk: "tiger", atk2: "lkh", trans: "nh90", uav: "luna", lm: "lmteam", bridge: "leguan", clear: "kodiak", mlayer: "pio" },
-    RU: { mbt: "t90m", mbt2: "t80bvm", ifv: "bmp3", apc: "btr82a", inf: "msr", para: "vdv", eng: "sappers", recon: "tigr", arty: "msta", mlrs: "tornados", rmine: "isdm", shorad: "pantsir", sam: "torm2", atk: "ka52", atk2: "ka52", trans: "mi8", uav: "orlan", lm: "lancet", bridge: "mtu72", clear: "bmr3", mlayer: "gmz3" },
-    US: { mbt: "m1e3", mbt2: "m1a2", ifv: "m2a4", apc: "stryker", inf: "usinf", para: "usab", eng: "useng", recon: "jltv", arty: "m109a7", mlrs: "himars", rmine: "volcano", shorad: "mshorad", sam: "nasams", atk: "ah64e", atk2: "ah64e", trans: "uh60m", uav: "mq1c", lm: "swblade", bridge: "m1074", clear: "m1150", mlayer: "useng" },
-    CN: { mbt: "ztz100", mbt2: "ztz99a", ifv: "zbd04a", apc: "zbl08", inf: "plainf", para: "plaab", eng: "plaeng", recon: "csk", arty: "pcl181", mlrs: "phl16", rmine: "plamine", shorad: "pgl625", sam: "hq17a", atk: "z10", atk2: "z10", trans: "z20", uav: "ch4", lm: "plalm", bridge: "plabridge", clear: "placlear", mlayer: "plaeng" },
+    DE: { mbt: "leo2a8", mbt2: "leo2a8", ifv: "puma", apc: "puma", inf: "pzgren", para: "fsj", eng: "pio", recon: "fennek", arty: "pzh2000", mlrs: "mars2", rmine: "mars2", shorad: "skyranger", sam: "irist", atk: "tiger", atk2: "lkh", trans: "nh90", uav: "luna", lm: "lmteam", bridge: "leguan", clear: "kodiak", mlayer: "pio", lrauv: "lrauv" },
+    RU: { mbt: "t90m", mbt2: "t80bvm", ifv: "bmp3", apc: "btr82a", inf: "msr", para: "vdv", eng: "sappers", recon: "tigr", arty: "msta", mlrs: "tornados", rmine: "isdm", shorad: "pantsir", sam: "torm2", atk: "ka52", atk2: "ka52", trans: "mi8", uav: "orlan", lm: "lancet", bridge: "mtu72", clear: "bmr3", mlayer: "gmz3", lrauv: "lrauv" },
+    US: { mbt: "m1e3", mbt2: "m1a2", ifv: "m2a4", apc: "stryker", inf: "usinf", para: "usab", eng: "useng", recon: "jltv", arty: "m109a7", mlrs: "himars", rmine: "volcano", shorad: "mshorad", sam: "nasams", atk: "ah64e", atk2: "ah64e", trans: "uh60m", uav: "mq1c", lm: "swblade", bridge: "m1074", clear: "m1150", mlayer: "useng", lrauv: "lrauv" },
+    CN: { mbt: "ztz100", mbt2: "ztz99a", ifv: "zbd04a", apc: "zbl08", inf: "plainf", para: "plaab", eng: "plaeng", recon: "csk", arty: "pcl181", mlrs: "phl16", rmine: "plamine", shorad: "pgl625", sam: "hq17a", atk: "z10", atk2: "z10", trans: "z20", uav: "ch4", lm: "plalm", bridge: "plabridge", clear: "placlear", mlayer: "plaeng", lrauv: "lrauv" },
   };
 })(window.MG);

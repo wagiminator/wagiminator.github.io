@@ -115,6 +115,7 @@
     const u = selU();
     if (P.mode) {
       const m = P.mode;
+      if (m.kind === "strike") { if (m.hexes.includes(i)) { doIt(() => G.uavStrike(G.byId(m.unit), i)); } P.mode = null; return; }
       if (m.kind === "drop") { if (m.hexes.includes(i)) { doIt(() => G.paradrop(G.byId(m.unit), i)); P.mode = null; } else P.mode = null; return; }
       if (m.hexes && m.hexes.includes(i)) {
         let target = i;
@@ -290,7 +291,7 @@
         }
       }
     }
-    if (P.mode && P.mode.hexes) for (const i of P.mode.hexes) { D.hexPath(c, D.cx(i), D.cy(i), D.R * 0.9); c.fillStyle = P.mode.kind === "drop" ? "rgba(120,200,255,0.18)" : "rgba(255,211,106,0.32)"; c.fill(); }
+    if (P.mode && P.mode.hexes) for (const i of P.mode.hexes) { D.hexPath(c, D.cx(i), D.cy(i), D.R * 0.9); c.fillStyle = P.mode.kind === "drop" ? "rgba(120,200,255,0.18)" : P.mode.kind === "strike" ? "rgba(255,80,60,0.35)" : "rgba(255,211,106,0.32)"; c.fill(); }
     // bridges, mines, objectives
     for (let i = 0; i < G.N; i++) {
       const h = s.hex[i];
@@ -321,12 +322,7 @@
     // effects
     for (const f of P.fx) D.fx(c, f, P.now);
     for (const b of P.booms) D.boom(c, b, P.now);
-    for (const p of P.planes) {
-      const age = P.now - p.t0, q = U.clamp(age / p.dur, 0, 1), k = q * (p.path.length - 1), a = p.path[Math.floor(k)], b = p.path[Math.min(p.path.length - 1, Math.floor(k) + 1)], r = k - Math.floor(k);
-      const x = U.lerp(D.cx(a), D.cx(b), r), y = U.lerp(D.cy(a), D.cy(b), r) - 30;
-      c.save(); c.translate(x, y); c.fillStyle = "rgba(0,0,0,0.15)"; c.beginPath(); c.ellipse(4, 34, 22, 6, 0, 0, U.TAU); c.fill();
-      c.fillStyle = "#8d9488"; c.fillRect(-20, -3, 40, 6); c.fillRect(-4, -24, 9, 48); c.fillRect(-20, -9, 5, 18); c.restore();
-    }
+    for (const p of P.planes) drawAircraft(c, p);
     for (const f of P.floats) {
       const age = P.now - f.t0; if (age < 0) continue;
       const x = D.cx(f.i), y = D.cy(f.i) - (f.air ? 20 : 8) - age * 26;
@@ -341,6 +337,36 @@
     if (P.aiOn && !s.over) { c.fillStyle = "rgba(20,26,32,0.85)"; c.fillRect(MAP.x + MAP.w / 2 - 150, MAP.y + 10, 300, 30); D.text(c, MG.NATIONS[s.side].name + " is moving …", MAP.x + MAP.w / 2, MAP.y + 26, 18, "#ffb0a0", "center", 700); }
   };
 
+  // transport aircraft (paradrop) and attack drones flying along their path
+  const TRANSPORT = { DE: "a400m", RU: "il76", US: "c17", CN: "y20" };
+  function pathPos(p, q) {
+    const n = p.path.length - 1, k = U.clamp(q, 0, 1) * n, i0 = Math.floor(k), a = p.path[i0], b = p.path[Math.min(n, i0 + 1)], r = k - i0;
+    // the heading looks a little ahead, so turns are smooth
+    const ka = Math.min(n, i0 + 2), kb = Math.max(0, i0 - 1);
+    return { x: U.lerp(D.cx(a), D.cx(b), r), y: U.lerp(D.cy(a), D.cy(b), r), ang: Math.atan2(D.cy(p.path[ka]) - D.cy(p.path[kb]), D.cx(p.path[ka]) - D.cx(p.path[kb])) || 0 };
+  }
+  function drawAircraft(c, p) {
+    const age = P.now - p.t0; if (age < 0) return;
+    const q = age / p.dur, uav = p.kind === "uav";
+    const im = D.sprite(uav ? "lrauv" : TRANSPORT[p.side] || "a400m");
+    const size = uav ? D.R * 0.95 : D.R * 3.2, alt = uav ? 16 : 46;
+    const fade = U.clamp((1 - q) * 8, 0, 1) * U.clamp(q * 12, 0, 1);
+    const flock = uav ? Math.min(4, p.n || 3) : 1;
+    for (let f = 0; f < flock; f++) {
+      const lag = f * 0.035, pos = pathPos(p, q - lag);
+      const off = uav ? [[0, 0], [-10, -14], [-10, 14], [-20, 0]][f] : [0, 0];
+      c.save(); c.globalAlpha = uav ? 1 : fade;
+      c.translate(pos.x, pos.y); c.rotate(pos.ang);
+      // shadow on the ground, then the aircraft above it
+      if (im) {
+        c.save(); c.translate(off[0] + alt * 0.35, off[1] + alt * 0.8); c.globalAlpha *= 0.28; c.filter = "brightness(0)"; c.drawImage(im, -size / 2, -size / 2, size, size); c.restore();
+        c.translate(off[0], off[1] - alt * 0.2); c.drawImage(im, -size / 2, -size / 2, size, size);
+      } else {
+        c.fillStyle = "#8d9488"; c.fillRect(-size / 2, -3, size, 6); c.fillRect(-4, -size / 2, 9, size);
+      }
+      c.restore();
+    }
+  }
   // a menu button in the top bar (Esc does the same)
   function drawMenuButton(c) {
     if (P.menu) return;
@@ -353,11 +379,11 @@
     c.fillStyle = "#11161b"; c.fillRect(0, 0, W, TOP);
     c.fillStyle = "#2c3640"; c.fillRect(0, TOP - 1, W, 1);
     D.text(c, "AVIATION GENERAL", 14, 21, 17, "#ffd36a", "left", 700, D.LOGO);
-    D.text(c, "Turn " + s.turn + " / " + s.maxTurn, 210, 21, 19, D.C.text, "left", 700);
-    let x = 330;
+    D.text(c, "Turn " + s.turn + " / " + s.maxTurn, 250, 21, 19, D.C.text, "left", 700);
+    let x = 375;
     const objs = G.objectives();
     c.font = `600 16px ${D.FONT}`;
-    const full = objs.reduce((a, i) => a + 30 + c.measureText(s.hex[i].obj.name).width, 0) < W - PW - 340;
+    const full = objs.reduce((a, i) => a + 30 + c.measureText(s.hex[i].obj.name).width, 0) < W - PW - 385;
     for (const i of objs) {
       const h = s.hex[i], name = full ? h.obj.name : h.obj.name.slice(0, 3) + ".";
       c.fillStyle = D.side(h.obj.owner); c.fillRect(x, 13, 14, 14); c.strokeStyle = "#fff"; c.strokeRect(x + 0.5, 13.5, 13, 13);
@@ -428,14 +454,22 @@
       D.para(c, "Click a unit to select it. Click a lit hex to move, a red ring to attack. Drag or use the arrow keys to scroll, the wheel to zoom.", px, y, 14, pw, "#b5c1cd");
       y += 86;
     }
-    // the airfield: paratroopers waiting for a jump
+    // specials: paratroopers waiting for a jump, long range attack drones
     const res = s.units.filter((r) => r.side === me && r.reserve && r.alive);
     if (res.length && myTurn()) {
-      y = Math.max(y, 400);
-      D.text(c, "AIRFIELD", px, y + 8, 14, "#9fc6e8", "left", 700); y += 20;
+      y = Math.max(y, 400 - (res.length - 1) * 34);
+      D.text(c, "SPECIALS", px, y + 8, 14, "#9fc6e8", "left", 700); y += 20;
       for (const r of res) {
-        btn({ x: px, y, w: pw, h: 30, label: "Jump: " + r.type.name + " (" + r.str + ")", col: "#25405a", on: () => { select(null); P.mode = { kind: "drop", unit: r.id, hexes: G.dropTargets(r) }; } });
-        y += 34;
+        if (r.type.strike) {
+          const ok = G.canStrike(r), tg = ok ? G.strikeTargets(r) : [];
+          btn({ x: px, y, w: pw, h: 30, size: 15, label: "Strike: " + r.type.name + " (" + r.str + ")", col: "#4a2a2a", disabled: !ok || !tg.length, on: () => { select(null); P.mode = { kind: "strike", unit: r.id, hexes: tg }; } });
+          if (!ok) D.text(c, "used this turn – ready again next turn", px + pw / 2, y + 40, 12, D.C.dim, "center", 600);
+          else if (!tg.length) D.text(c, "no reconnoitred target", px + pw / 2, y + 40, 12, D.C.dim, "center", 600);
+          y += (!ok || !tg.length) ? 50 : 34;
+        } else {
+          btn({ x: px, y, w: pw, h: 30, size: 15, label: "Jump: " + r.type.name + " (" + r.str + ")", col: "#25405a", on: () => { select(null); P.mode = { kind: "drop", unit: r.id, hexes: G.dropTargets(r) }; } });
+          y += 34;
+        }
       }
     }
     // overlays, next unit, end turn
@@ -476,9 +510,13 @@
       lines.push(["Fuel after flight: " + (u.fuel - n.cost) + (f ? " · FARP here" : ""), u.fuel - n.cost <= 3 ? "#ff7a6a" : "#cfe3ff"]);
     }
     if (h.mine && (h.mine.side === me || h.mine.known[me])) lines.push([(h.mine.side === me ? "Own" : "Enemy") + (h.mine.remote ? " scattered" : "") + " minefield" + (h.mine.lane ? " (lane)" : ""), "#ffd36a"]);
-    const x = Math.min(I.mouse.x + 18, W - PW - 330), y = Math.min(I.mouse.y + 18, H - 20 - lines.length * 18);
-    c.fillStyle = "rgba(15,20,25,0.88)"; c.fillRect(x, y, 320, lines.length * 18 + 10);
-    lines.forEach(([t, col], k) => D.text(c, t, x + 8, y + 14 + k * 18, 14, col, "left", 600));
+    // a compact box: small type, as wide as the longest line
+    const fs = 12, lh = 15;
+    c.font = `600 ${fs}px ${D.FONT}`;
+    const tw = Math.ceil(Math.max(...lines.map(([t]) => c.measureText(t).width))) + 12;
+    const x = Math.min(I.mouse.x + 16, W - PW - tw - 4), y = Math.min(I.mouse.y + 16, H - 8 - lines.length * lh - 6);
+    c.fillStyle = "rgba(15,20,25,0.82)"; c.fillRect(x, y, tw, lines.length * lh + 6);
+    lines.forEach(([t, col], k) => D.text(c, t, x + 6, y + 3 + lh / 2 + k * lh, fs, col, "left", 600));
   }
 
   // the tutorial: a coach that waits for the player to try each thing
@@ -493,7 +531,8 @@
     { t: "End the turn", s: "When everybody has moved, press E or End turn. The enemy moves, then it is your turn again.", done: () => S().turn >= 2 },
     { t: "FARP", s: "Low on fuel or missiles? Fly next to a FARP and choose Rearm: the helicopter lands until your next turn and comes back full.", done: () => G.unitsOf(player()).some((u) => u.type.heli && u.landed) },
     { t: "Air assault", s: "Select an NH90 next to infantry and choose Embark. Fly them over the river and choose Disembark on open ground.", done: () => S().units.some((u) => u.side === player() && u.cargo) },
-    { t: "Paratroopers", s: "The Fallschirmjäger wait at the AIRFIELD in the panel. Choose Jump and pick a drop zone – away from enemy air defence.", done: () => !S().units.some((u) => u.side === player() && u.reserve && u.alive) },
+    { t: "Paratroopers", s: "The Fallschirmjäger wait under SPECIALS in the panel. Choose Jump and pick a drop zone – away from enemy air defence.", done: () => !S().units.some((u) => u.side === player() && u.type.para && u.reserve && u.alive) },
+    { t: "Long range attack UAV", s: "Under SPECIALS choose Strike and click any enemy you have reconnoitred (red hexes). The drones fly around known air defence where they can; air defence on the way shoots some down. Once per turn.", done: () => S().units.some((u) => u.side === player() && u.type.strike && (u.strikeTurn || !u.alive)) },
     { t: "Take the objectives", s: "Capture all flags before time runs out. Scout ahead and keep the helicopters fed. Esc opens the menu with How to play. Good luck!" },
   ];
   function drawCoach(c) {

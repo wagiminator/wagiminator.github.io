@@ -227,7 +227,7 @@
     const P = [], E = [];
     const n = (k) => Math.max(0, Math.round(k));
     // the player's force
-    P.push("mbt", "mbt", "ifv", "inf", "recon", "arty", "shorad", "atk", "atk2", "trans", "farp", "eng", "uav");
+    P.push("mbt", "mbt", "ifv", "inf", "recon", "arty", "shorad", "atk", "atk2", "trans", "farp", "eng", "uav", "lrauv*");
     if (i >= 1) P.push("mlrs", "para*");
     if (i >= 2) P.push("inf", "lm", "clear");
     if (i >= 3) P.push("mbt2", "sam", "farp", "atk2");
