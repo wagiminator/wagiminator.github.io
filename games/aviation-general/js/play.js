@@ -465,6 +465,8 @@
         const p = G.predict(u, e);
         lines.push(["Expected: enemy −" + p.kill.toFixed(1) + ", own −" + p.loss.toFixed(1) + (p.mode === "ind" ? " (indirect)" : ""), "#ffd36a"]);
         if (G.isFlying(u)) { const t = G.threat(me, u.idx, G.airH(u)); if (t > 0) lines.push(["Known air defence covers this position!", "#ff7a6a"]); }
+      } else if (u && u.side === me && myTurn() && (u.type.range || u.type.ind || u.type.air || u.type.drone)) {
+        lines.push([u.type.name + " cannot fire: " + G.whyNot(u, e), "#ff9a7a"]);
       }
     }
     for (const o of ownAt(i)) if (o.id !== P.sel) lines.push([o.type.name + " (" + o.str + ")", "#cfe3ff"]);

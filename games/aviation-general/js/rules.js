@@ -139,7 +139,7 @@
   G.stars = (u) => Math.min(3, Math.floor(u.exp / 100));
   G.isFlying = (u) => u.type.isAir && !u.landed;
   G.value = (u) => (u.type.cost * u.str) / 10;
-  const H_EYE = 0.6, H_HELO = 1.4, H_UAV = 3.0, H_PLANE = 6;
+  const H_EYE = 0.6, H_HELO = 1.4, H_POP = 2.2, H_UAV = 3.0, H_PLANE = 6; // H_POP: a helicopter popping up over the trees to fire
   G.eyeH = (u) => (G.isFlying(u) ? (u.type.uav ? H_UAV : H_HELO) : H_EYE);
   G.airH = (u) => (u.type.uav ? H_UAV : u.type.heli ? H_HELO : H_PLANE);
 
@@ -435,10 +435,11 @@
     if (G.atkValue(u.type, t) <= 0 || !u.type.range) return null;
     let r = u.type.range;
     // in forests and towns direct fire reaches one hex; helicopters look in from above and reach two
-    if (!u.type.nlos && (G.isClose(t.idx) || (!u.type.isAir && G.isClose(u.idx)))) r = u.type.isAir ? Math.min(r, 2) : 1;
+    // in forests and towns direct fire from the ground reaches one hex; helicopters look in from above
+    if (!u.type.nlos && !u.type.isAir && (G.isClose(t.idx) || G.isClose(u.idx))) r = 1;
     if (d > r) return null;
     if (u.type.nlos) return "dir";
-    return G.los(u.idx, t.idx, G.eyeH(u), t.type.isAir ? (t.landed ? 0.3 : G.airH(t)) : H_EYE) ? "dir" : null;
+    return G.los(u.idx, t.idx, G.isFlying(u) ? H_POP : G.eyeH(u), t.type.isAir ? (t.landed ? 0.3 : G.airH(t)) : H_EYE) ? "dir" : null;
   }
   G.fireMode = fireMode;
   G.canAttack = function (u, t) {
@@ -450,6 +451,42 @@
     return !!fireMode(u, t);
   };
   G.targets = (u) => G.S.units.filter((t) => G.canAttack(u, t));
+  // which sound a unit makes when it fires (see audio.js)
+  G.weaponSound = function (u, t, mode) {
+    const T = u.type;
+    if (mode === "ind") return T.icon === "mlrs" ? "mlrs" : "howitzer";
+    if (mode === "aa") {
+      if (T.missile) return "sam";
+      if (T.aam || T.mob === "foot" || T.isAir) return "manpads";
+      return T.icon === "spaag" ? "revolver" : T.icon === "ifv" ? "autocannon" : "mg";
+    }
+    const armour = t && t.type.armor;
+    if (T.isAir) return u.tid === "lkh_rkt" ? "rockets" : T.atgm ? "heliatgm" : "chaingun";
+    if (T.icon === "tank") return "tankgun";
+    if (T.icon === "spaag") return "revolver";
+    if (T.atgm && armour && (T.mob === "foot" || T.icon === "ifv")) return "atgm";
+    if (T.icon === "ifv") return "autocannon";
+    if (T.icon === "apc" || T.icon === "recon" || T.clear || T.bridge || T.mineLay) return "mg";
+    if (T.mob === "foot") return "rifle";
+    return "autocannon";
+  };
+  G.whyNot = function (u, t) {
+    if (u.landed) return "on the ground";
+    if (u.attacked) return "has already fired this turn";
+    if (u.noAttack) return "cannot fire after slow going";
+    const air = airTarget(t), d = G.dist(u.idx, t.idx);
+    if ((u.type.aam && air ? u.aam : u.ammo) <= 0) return air && u.type.aam ? "no Stinger left" : "out of ammunition";
+    if (air) {
+      if (!u.type.air) return "no weapon against aircraft";
+      if (d > u.type.aaRange) return "out of range (air " + u.type.aaRange + ")";
+      return "no line of sight";
+    }
+    if (G.atkValue(u.type, t) <= 0 && !u.type.ind) return "no weapon against this target";
+    const r = !u.type.nlos && !u.type.isAir && (G.isClose(t.idx) || G.isClose(u.idx)) ? 1 : u.type.range;
+    if (d > Math.max(r, u.type.ind || 0)) return "out of range (" + r + (r < u.type.range ? " in close terrain" : "") + ")";
+    if (u.type.ind && d < 2 && !u.type.range) return "too close for indirect fire";
+    return "no line of sight";
+  };
 
   function retalMode(t, u) {
     if (!G.alive(t) || t.landed || t.cargoOf) return null;
@@ -498,7 +535,7 @@
     S.actor = u;
     if (!G.canAttack(u, t)) return false;
     const mode = fireMode(u, t), ind = mode === "ind";
-    if (G.isFlying(u)) { G.adReact(u, u.idx); if (!u.alive) { G.updateVis(); G.checkOver(); return true; } }
+    if (G.isFlying(u)) { G.adReact(u, u.idx, { height: H_POP }); if (!u.alive) { G.updateVis(); G.checkOver(); return true; } }
     u.attacked = true;
     if (u.type.aam && mode === "aa") u.aam -= 1; else u.ammo -= 1;
     if (u.type.isAir) u.attackedNoMove = false;
@@ -508,14 +545,16 @@
     if (t.type.aps && t.type.armor && u.type.atgm) p *= 0.5;
     const kills = Math.min(t.str, U.binom(shots, p));
     ev({ type: "fire", from: u.idx, to: t.idx, kind: ind ? "shell" : mode === "aa" ? "aa" : u.type.atgm || u.type.isAir ? "missile" : "shot", side: u.side, fromAir: G.isFlying(u), toAir: airTarget(t) });
-    sfx(ind ? "artillery" : mode === "aa" ? "missile" : u.type.atgm || u.type.isAir ? "missile" : "cannon");
+    sfx(G.weaponSound(u, t, mode));
     tick(ind ? 0.6 : 0.35);
+    if (ind) sfx("impact");
     let losses = 0;
     if (!ind && retalMode(t, u) && t.str - kills > 0) {
       const rs = t.str - kills;
       let q = G.hitProb(atkMods(t, u, false) - defValue(u, t, false));
       if (u.type.aps && u.type.armor && t.type.atgm) q *= 0.5;
       losses = Math.min(u.str, U.binom(rs, q));
+      tick(0.15); { const a0 = S.actor; S.actor = t; sfx(G.weaponSound(t, u, fireMode(t, u))); S.actor = a0; }
       ev({ type: "fire", from: t.idx, to: u.idx, kind: fireMode(t, u) === "aa" ? "aa" : "shot", side: t.side, toAir: airTarget(u) });
     }
     if (kills) ev({ type: "hit", i: t.idx, txt: "−" + kills, air: airTarget(t) });
@@ -548,7 +587,7 @@
       const shots = Math.max(1, Math.round(a.str * 0.5));
       const k = Math.min(target.str, U.binom(shots, G.hitProb(a.type.air + G.stars(a) - adef)));
       ev({ type: "fire", from: a.idx, to: i, kind: "aa", side: a.side, toAir: true });
-      sfx(a.type.missile ? "missile" : "flak");
+      sfx(G.weaponSound(a, target, "aa"));
       tick(0.25);
       G.log((opt.label || target.type.name) + " under fire from " + a.type.name + (k ? ": −" + k : ": missed"), a.side === S.scen.player ? "#cfe3ff" : "#ffb0a0");
       if (k) ev({ type: "hit", i, txt: "−" + k, air: true });
