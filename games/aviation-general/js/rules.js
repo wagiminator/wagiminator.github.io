@@ -887,22 +887,29 @@
     const path = G.strikeRoute(u, target), step = 0.08;
     sfx("drone");
     ev({ type: "plane", kind: "uav", path, side: u.side, dur: path.length * step, n: 4 });
-    const fired = new Set();
+    // every air defence system engages the swarm once, where it first sees it in reach;
+    // a salvo holds at most 5 interceptors, so one system never downs more than 5 drones (saturation)
+    const MAXKILL = 5, kills = new Map(), shots = new Map();
     for (const i of path) {
       tick(step);
       for (const a of S.units) {
         if (n <= 0) break;
-        if (!G.alive(a) || a.side === u.side || !a.type.aaRange || a.type.air <= 0 || a.landed || (a.type.aam ? a.aam : a.ammo) <= 0 || fired.has(a.id)) continue;
+        if (!G.alive(a) || a.side === u.side || !a.type.aaRange || a.type.air <= 0 || a.landed || (a.type.aam ? a.aam : a.ammo) <= 0) continue;
+        if (shots.has(a.id)) continue;
         if (G.dist(a.idx, i) > a.type.aaRange || !G.los(a.idx, i, G.eyeH(a), H_LRUAV)) continue;
-        fired.add(a.id);
         if (a.type.aam) a.aam -= 1; else a.ammo -= a.type.missile ? 1 : 0.5;
         a.revealed = S.half + 1;
         { const a0 = S.actor; S.actor = a; sfx(G.weaponSound(a, u, "aa")); S.actor = a0; }
         ev({ type: "fire", from: a.idx, to: i, kind: "aa", side: a.side, toAir: true });
-        const k = Math.min(n, U.binom(Math.max(1, Math.round(a.str * 0.4)), U.clamp(G.hitProb(a.type.air - 7), 0.05, 0.7)));
+        const left = MAXKILL - (kills.get(a.id) || 0);
+        const k = Math.min(n, left, U.binom(Math.max(1, Math.round(a.str * 0.5)), U.clamp(G.hitProb(a.type.air - 9), 0.05, 0.7)));
+        kills.set(a.id, (kills.get(a.id) || 0) + k); shots.set(a.id, (shots.get(a.id) || 0) + 1);
         if (k) { n -= k; ev({ type: "hit", i, txt: "−" + k, air: true }); ev({ type: "boom", i, size: 0.35, air: true }); }
-        G.log(u.type.name + " under fire from " + a.type.name + (k ? ": −" + k + " drones" : ": missed"), "#ffb0a0");
       }
+    }
+    for (const id of shots.keys()) {
+      const a = G.byId(id), k = kills.get(id);
+      G.log(u.type.name + " under fire from " + a.type.name + ": " + (k ? "−" + k + " drones" + (k >= MAXKILL ? " – saturated" : "") : "missed"), "#ffb0a0");
     }
     if (n <= 0) { G.log("All attack drones shot down before reaching the target!", "#ff6a6a"); G.updateVis(); return true; }
     tick(0.15);

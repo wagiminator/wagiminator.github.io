@@ -755,7 +755,7 @@ Turn-based hex strategy game as a homage to Panzer General (SSI, 1994), set in a
 - Hex map with terrain that matters: Go / Slow Go / No Go for tracked, wheeled and foot units, four height levels, line of sight blocked by forests, towns and ridges, rivers crossed only at bridges and fords or by amphibious vehicles.
 - Attack helicopters (Tiger, H145M LKH with Spike ER2, Ka-52M, AH-64E, Z-10ME …) with pop-up attacks, fuel and ammunition, rearmed and refuelled at a FARP where they are open to artillery and drones.
 - Layered air defence that fires on every aircraft and drone it can see; overlays show its reach, and flight paths turn orange or red where they are in danger.
-- Air assault with transport helicopters, Fallschirmjäger jumping from a transport aircraft once per battle, and long range attack UAVs that strike any reconnoitred enemy once per turn and route around known air defence.
+- Air assault with transport helicopters, Fallschirmjäger jumping from a transport aircraft once per battle, and long range attack UAVs that strike any reconnoitred enemy once per turn, route around known air defence and can saturate it (at most 5 drones downed per system).
 - Engineers, hidden and scattered minefields, mine clearing, bridge layers and bridges blown by the enemy; loitering munitions and reconnaissance drones; infantry that digs in.
 - Computer opponent that knows only what its units spot and attacks or defends along a cost map across bridges, fords and mine lanes.
 - 32 generated campaign battles on maps from 27 × 18 to 36 × 23 hexes, attacks and defences, with prestige for reinforcements carried over between battles; automatic saving at the start of every turn.
