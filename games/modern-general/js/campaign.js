@@ -59,7 +59,7 @@
     const nObj = Math.min(5, 3 + Math.floor(index / 3));
     const N = MG.NATIONS;
     const sc = {
-      id: "camp-" + army + "-" + index, camp: { army, index }, title, year: 2031,
+      id: "camp-" + army + "-" + index, camp: { army, index }, title, year: 2031, photo: "assets/maps/camp-" + army + "-" + index + ".webp",
       W, H, maxTurn, player: army, sides: [army, enemy], first: attack ? army : enemy, attacker: attack ? army : enemy,
       prestige: { [army]: 250 + index * 40 + (prog ? prog.prestige : 0), [enemy]: 150 },
       dropEdge: { [army]: 0, [enemy]: W - 1 },

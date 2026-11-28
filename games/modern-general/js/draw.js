@@ -96,7 +96,7 @@
     for (const n of TEXN) {
       texWait++;
       const im = new Image();
-      im.onload = () => { tex[n] = im; if (--texWait === 0 && G.S && !G.S.scen.photo) { D.renderMap(); if (D.onMap) D.onMap(); } };
+      im.onload = () => { tex[n] = im; if (--texWait === 0 && G.S && !D.photo(G.S.scen.photo)) { D.renderMap(); if (D.onMap) D.onMap(); } };
       im.onerror = () => { texWait--; };
       im.src = "assets/tex/" + n + (n === "village" || n === "town" ? ".webp" : ".jpg");
     }
@@ -109,12 +109,14 @@
     cv.width = Math.ceil(D.worldW() * k); cv.height = Math.ceil(D.worldH() * k);
     const c = cv.getContext("2d");
     c.scale(k, k);
-    if (!S.scen.photo && D.texReady()) return renderTextured(cv, c, k);
     const photo = D.photo(S.scen.photo);
+    // campaign maps: an aerial photo made from the battle's layout plan; until it has loaded, the textured map
+    if (!photo && S.scen.camp && D.texReady()) return renderTextured(cv, c, k);
     if (photo) {
       c.imageSmoothingQuality = "high";
-      c.filter = D.FADE; c.drawImage(photo, 0, 0, D.worldW(), D.worldH()); c.filter = "none";
-      c.fillStyle = D.VEIL; c.fillRect(0, 0, D.worldW(), D.worldH());
+      // the campaign photos are stored already faded; the tutorial photo is faded here
+      if (S.scen.camp) c.drawImage(photo, 0, 0, D.worldW(), D.worldH());
+      else { c.filter = D.FADE; c.drawImage(photo, 0, 0, D.worldW(), D.worldH()); c.filter = "none"; c.fillStyle = D.VEIL; c.fillRect(0, 0, D.worldW(), D.worldH()); }
       c.lineWidth = 1; c.strokeStyle = "rgba(40,50,40,0.22)";
       for (let i = 0; i < G.N; i++) { D.hexPath(c, D.cx(i), D.cy(i), R); c.stroke(); }
       labels(c);

@@ -65,7 +65,7 @@
       items.push({ label: prog.tut ? "Campaigns" : "Campaigns (win the tutorial)", disabled: !prog.tut, on: () => MG.Main.setState("armies") });
       items.push({ label: "How to play", on: () => MG.Main.setState("help", { back: "title" }) });
       items.push({ label: "Sound: " + (A.muted ? "off" : "on") + " (M)", on: () => A.toggleMute() });
-      items.forEach((b, k) => Object.assign(b, { x: bx, y: 194 + k * 44, w: 340, h: 38 }));
+      items.forEach((b, k) => Object.assign(b, { x: bx, y: 188 + k * 40, w: 340, h: 34, size: 16 }));
       menu(this, items);
     },
     update(dt) { bgT += dt; },
@@ -73,7 +73,7 @@
       if (picture(c, 0)) {
         const g = c.createLinearGradient(0, 0, 0, 200); g.addColorStop(0, "rgba(10,12,16,0.55)"); g.addColorStop(1, "rgba(10,12,16,0)");
         c.fillStyle = g; c.fillRect(0, 0, W, 200);
-        c.fillStyle = "rgba(10,12,16,0.35)"; c.fillRect(W - 420, 182, 380, (this.items || []).length * 44 + 12);
+        c.fillStyle = "rgba(10,12,16,0.35)"; c.fillRect(W - 420, 180, 380, (this.items || []).length * 40 + 10);
       } else background(c, 0);
       c.shadowColor = "rgba(0,0,0,0.7)"; c.shadowBlur = 14;
       D.text(c, "MODERN GENERAL", W / 2, 78, 64, "#ffd36a", "center", 900, D.LOGO);
@@ -97,7 +97,7 @@
     input() {
       const go = () => {
         MG.Store.set("save", null);
-        if (G.S === this.mapFor && D.mapCanvas === this.map) MG.Main.setState("play", { keep: true, ready: true });
+        if (G.S === this.mapFor) MG.Main.setState("play", { keep: true, ready: true });
         else MG.Main.setState("play", { scen: this.sc });
       };
       const items = [
@@ -117,6 +117,7 @@
       D.text(c, N[me].name + (att ? " attacks" : " defends") + " · " + sc.maxTurn + " turns · " + sc.W + " × " + sc.H + " hexes · you command the " + N[me].army + " against the " + N[en].army, 160, 128, 17, "#9fc6e8", "left", 700);
       // the map, if there is room
       let tw = W - 320;
+      if (G.S === this.mapFor && D.mapCanvas) this.map = D.mapCanvas; // the photo may have arrived meanwhile
       if (this.map) {
         const mw = 380, mh = Math.min(300, (mw * this.map.height) / this.map.width), mx = W - 160 - mw, my = 150;
         c.drawImage(this.map, mx, my, mw, mh);
